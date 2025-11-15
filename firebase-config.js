@@ -1,5 +1,4 @@
-// Firebase configuration
-const firebaseConfig = const firebaseConfig = {
+const firebaseConfig = {
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
   authDomain: "voter-25c94.firebaseapp.com",
   databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
@@ -8,7 +7,6 @@ const firebaseConfig = const firebaseConfig = {
   messagingSenderId: "297773534400",
   appId: "1:297773534400:web:3722c487b8c83e9b787125"
 };
-
 
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
