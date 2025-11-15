@@ -21,6 +21,9 @@
   transform: translateY(4px);
   box-shadow: 0 2px 6px rgba(0,0,0,0.4);
 }
+.btn-3d:hover {
+  transform: scale(1.05);
+}
 
 /* 3D Logo */
 .logo-3d {
@@ -39,12 +42,21 @@
 }
 .logo-3d:hover { transform: scale(1.1); }
 
-#screenImage {
-  max-width: 100%;
-  max-height: 300px;
-  margin-top: 10px;
-  border-radius: 10px;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+/* Fullscreen admin image */
+#fullscreenScreenImage {
+  display: none;
+  position: fixed;
+  top:0; left:0; width:100%; height:100%;
+  object-fit: contain;
+  background: rgba(0,0,0,0.8);
+  z-index: 50;
+  padding: 20px;
+}
+
+/* Mobile responsive panels */
+@media(max-width:768px){
+  #mainDiv { flex-direction: column; }
+  #adminPanel, #userPanel, #memberPanel { width: 100%; }
 }
 </style>
 
@@ -60,13 +72,8 @@
   </div>
 
   <!-- Login Button -->
-  <button id="loginBtn" class="btn-3d px-5 py-2 text-white font-bold bg-blue-600 rounded-lg hover:scale-105" onclick="login()">Login with Google</button>
+  <button id="loginBtn" class="btn-3d px-5 py-2 text-white font-bold bg-blue-600 rounded-lg" onclick="login()">Login with Google</button>
 </header>
-
-<!-- Login Prompt -->
-<div id="loginDiv" class="flex justify-center items-center flex-1">
-  <p class="text-gray-700 text-lg">Please click the login button above to continue</p>
-</div>
 
 <!-- Main Div -->
 <div id="mainDiv" class="hidden flex flex-col p-4 gap-4">
@@ -79,8 +86,7 @@
     <div class="p-4 bg-gray-50 rounded flex flex-col gap-2">
       <h3 class="font-semibold">Upload Image to Screen</h3>
       <input type="file" id="screenFile" accept="image/*" class="border p-2 rounded">
-      <button class="btn-3d w-40" onclick="displayScreenImage()">Show Image</button>
-      <img id="screenImage" src="" alt="" class="hidden max-w-full rounded shadow mt-2">
+      <button class="btn-3d w-40" onclick="displayScreenImage()">Show Fullscreen</button>
     </div>
 
     <!-- Add User / Member -->
@@ -119,11 +125,15 @@
       <input type="text" id="memberMobile" placeholder="Mobile" class="border p-2 rounded" required>
       <input type="text" id="memberWard" placeholder="Ward No" class="border p-2 rounded" required>
       <input type="file" id="memberPoster" class="border p-2 rounded" required>
+      <img id="posterPreview" src="" alt="Preview" class="hidden max-w-full rounded shadow mt-2">
       <button type="submit" class="btn-3d w-full">Submit Survey</button>
     </form>
   </div>
 
 </div>
+
+<!-- Fullscreen Admin Image -->
+<img id="fullscreenScreenImage" onclick="this.style.display='none'">
 
 <!-- Firebase Config -->
 <script>
@@ -151,9 +161,8 @@ function login() {
         .then(snapshot => {
           if(snapshot.exists()){
             const role = snapshot.val().role;
-            document.getElementById("loginDiv").style.display = "none";
-            document.getElementById("loginBtn").style.display = "none"; // hide login button
             document.getElementById("mainDiv").style.display = "flex";
+            document.getElementById("loginBtn").style.display = "none";
 
             if(role === "admin") showAdminPanel();
             else if(role === "member") showMemberPanel();
@@ -185,16 +194,30 @@ function showUserPanel(){
 // --- Admin Screen Image ---
 function displayScreenImage(){
   const fileInput = document.getElementById("screenFile");
-  const img = document.getElementById("screenImage");
+  const fullscreenImg = document.getElementById("fullscreenScreenImage");
   if(fileInput.files.length === 0) { alert("Select an image first"); return; }
   const file = fileInput.files[0];
   const reader = new FileReader();
   reader.onload = function(e){
-    img.src = e.target.result;
-    img.classList.remove("hidden");
+    fullscreenImg.src = e.target.result;
+    fullscreenImg.style.display = "block";
   }
   reader.readAsDataURL(file);
 }
+
+// --- Member Poster Preview ---
+document.getElementById("memberPoster").addEventListener("change", function(){
+  const file = this.files[0];
+  const preview = document.getElementById("posterPreview");
+  if(file){
+    const reader = new FileReader();
+    reader.onload = function(e){
+      preview.src = e.target.result;
+      preview.classList.remove("hidden");
+    }
+    reader.readAsDataURL(file);
+  }
+});
 
 // --- Add User / Member ---
 document.getElementById("addUserForm").addEventListener("submit", function(e){
@@ -202,10 +225,8 @@ document.getElementById("addUserForm").addEventListener("submit", function(e){
   const name = document.getElementById("newUserName").value;
   const email = document.getElementById("newUserEmail").value;
   const role = document.getElementById("newUserRole").value;
-
   const usersRef = firebase.database().ref("users");
   const safeEmail = email.replace(/\./g,"_");
-
   usersRef.child(safeEmail).set({name,email,role}, err=>{
     if(err) alert(err); else alert(name + " added as " + role);
     document.getElementById("addUserForm").reset();
@@ -216,7 +237,6 @@ document.getElementById("addUserForm").addEventListener("submit", function(e){
 function importVotersFromSheet(){
   const url = document.getElementById("sheetCSV").value;
   if(!url){ alert("Enter CSV URL"); return; }
-
   Papa.parse(url, { download:true, header:true,
     complete: function(results){
       const data = results.data;
@@ -237,8 +257,7 @@ function loadVoters(){
   const ref = firebase.database().ref("voters");
   const userList = document.getElementById("voterListUser");
   const adminList = document.getElementById("voterListAdmin");
-  userList.innerHTML = "";
-  adminList.innerHTML = "";
+  userList.innerHTML = ""; adminList.innerHTML = "";
   ref.on("value", snapshot=>{
     snapshot.forEach(snap=>{
       const voter = snap.val();
@@ -246,23 +265,19 @@ function loadVoters(){
       if(voter.status==="approved") bg="bg-green-200";
       else if(voter.status==="pending") bg="bg-yellow-200";
       else if(voter.status==="opponent") bg="bg-red-200";
-
       const div = document.createElement("div");
       div.className = `border p-1 my-1 flex justify-between items-center ${bg}`;
       const voterInfo = `<span><b>${voter.name}</b> | EPIC: ${voter.voterID} | Ward: ${voter.ward} | Status: ${voter.status}</span>`;
-
       const waBtn = document.createElement("button");
       waBtn.innerText="Share WhatsApp";
-      waBtn.className="bg-green-500 text-white p-1 rounded ml-2";
+      waBtn.className="btn-3d bg-green-500 text-white p-1 rounded ml-2";
       waBtn.onclick = ()=> {
         const msg = encodeURIComponent(`Voter: ${voter.name}\nEPIC: ${voter.voterID}\nWard: ${voter.ward}\nStatus: ${voter.status}`);
         window.open(`https://wa.me/?text=${msg}`,'_blank');
       };
-
       div.innerHTML = voterInfo;
       div.appendChild(waBtn);
       userList.appendChild(div);
-
       const divAdmin = div.cloneNode(true);
       adminList.appendChild(divAdmin);
     });
@@ -300,6 +315,7 @@ document.getElementById("surveyForm").addEventListener("submit", function(e){
         if(err) alert(err);
         else alert("Survey submitted!");
         document.getElementById("surveyForm").reset();
+        document.getElementById("posterPreview").classList.add("hidden");
         loadMemberCounts();
       });
     }).catch(err=>{ console.error(err); alert("Poster upload failed"); });
@@ -311,7 +327,6 @@ function loadMemberCounts(){
   const countDiv = document.getElementById("memberCount");
   countDiv.innerHTML = "";
   const counts={};
-
   ref.once("value").then(snapshot=>{
     snapshot.forEach(snap=>{
       const mem = snap.val().name;
@@ -328,7 +343,7 @@ function loadMemberCounts(){
 // --- Initial Load ---
 loadVoters();
 loadMemberCounts();
-</script>
 
+</script>
 </body>
 </html>
