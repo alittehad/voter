@@ -5,79 +5,75 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Voter App</title>
 
-<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-
-<!-- PapaParse for CSV -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
-<!-- TailwindCSS -->
 <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.3.2/dist/tailwind.min.css" rel="stylesheet">
-
+<link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-gray-100">
+<body>
 
 <!-- Login -->
 <div id="loginDiv" class="flex justify-center items-center h-screen">
   <button class="bg-blue-500 text-white p-4 rounded" onclick="login()">Login with Google</button>
 </div>
 
-<!-- Main App -->
+<!-- Main SPA -->
 <div id="mainDiv" class="hidden p-4">
 
   <!-- Admin Panel -->
-  <div id="adminPanel" class="hidden border p-4 mb-4 bg-white rounded shadow">
-    <h1 class="text-xl font-bold mb-2">Admin Panel</h1>
+  <div id="adminPanel" class="hidden mb-4 border p-2 rounded">
+    <h1 class="text-xl font-bold">Admin Panel</h1>
 
-    <!-- Add User / Member -->
     <h2 class="mt-2 font-semibold">Add User / Member</h2>
-    <form id="addUserForm" class="border p-2 my-2">
-      <input type="text" id="newUserName" placeholder="Full Name" required class="border p-1 my-1 w-full">
-      <input type="email" id="newUserEmail" placeholder="Email" required class="border p-1 my-1 w-full">
-      <select id="newUserRole" class="border p-1 my-1 w-full" required>
-        <option value="">Select Role</option>
-        <option value="member">Member</option>
+    <form id="addUserForm" class="flex flex-col">
+      <input type="text" id="newUserName" placeholder="Name" class="border p-1 my-1" required>
+      <input type="email" id="newUserEmail" placeholder="Email" class="border p-1 my-1" required>
+      <select id="newUserRole" class="border p-1 my-1">
         <option value="user">User</option>
+        <option value="member">Member</option>
       </select>
       <button type="submit" class="bg-green-500 text-white p-2 rounded my-1">Add</button>
     </form>
 
-    <!-- Import Voter List -->
-    <h2 class="mt-4 font-semibold">Import Voters</h2>
-    <input type="text" id="sheetCSV" placeholder="Google Sheet CSV URL" class="border p-1 my-2 w-full">
-    <button class="bg-green-500 p-2 rounded my-2" onclick="importVotersFromSheet()">Import Voters</button>
+    <h2 class="mt-4 font-semibold">Import Voters from CSV</h2>
+    <input type="text" id="sheetCSV" placeholder="CSV URL" class="border p-1 my-1 w-full">
+    <button class="bg-green-500 p-2 rounded my-1" onclick="importVotersFromSheet()">Import Voters</button>
 
-    <!-- Voter List (Admin View) -->
-    <div id="voterListAdmin" class="overflow-auto max-h-96 mt-2 border p-2 bg-gray-50 rounded"></div>
+    <h2 class="mt-4 font-semibold">Voter List (Admin)</h2>
+    <div id="voterListAdmin" class="overflow-auto max-h-64 mt-2 border p-2"></div>
 
-    <!-- Member Surveys -->
     <h2 class="mt-4 font-semibold">Member Surveys</h2>
-    <div id="memberSurveys" class="overflow-auto max-h-96 mt-2 border p-2 bg-gray-50 rounded"></div>
+    <div id="memberSurveys" class="overflow-auto max-h-64 mt-2 border p-2"></div>
   </div>
 
   <!-- User Panel -->
-  <div id="userPanel" class="hidden border p-4 mb-4 bg-white rounded shadow">
-    <h1 class="text-xl font-bold mb-2">Voter List</h1>
+  <div id="userPanel" class="hidden mb-4 border p-2 rounded">
+    <h1 class="text-xl font-bold">Voter List</h1>
     <input type="text" id="searchInput" placeholder="Search by name..." class="border p-1 my-2 w-full">
-    <div id="voterListUser" class="overflow-auto max-h-96 border p-2 bg-gray-50 rounded"></div>
+    <div id="voterListUser" class="overflow-auto max-h-64 border p-2"></div>
   </div>
 
   <!-- Member Panel -->
-  <div id="memberPanel" class="hidden border p-4 mb-4 bg-white rounded shadow">
-    <h1 class="text-xl font-bold mb-2">Member Survey Form</h1>
-    <form id="surveyForm">
-      <input type="text" id="memberName" placeholder="Your Name" required class="border p-1 my-1 w-full">
-      <input type="text" id="memberMobile" placeholder="Mobile" required class="border p-1 my-1 w-full">
-      <input type="text" id="memberWard" placeholder="Ward No" required class="border p-1 my-1 w-full">
-      <input type="file" id="memberPoster" required class="border p-1 my-1 w-full">
+  <div id="memberPanel" class="hidden mb-4 border p-2 rounded">
+    <h1 class="text-xl font-bold">Member Survey Form</h1>
+    <form id="surveyForm" class="flex flex-col">
+      <input type="text" id="memberName" placeholder="Your Name" required class="border p-1 my-1">
+      <input type="text" id="memberMobile" placeholder="Mobile" required class="border p-1 my-1">
+      <input type="text" id="memberWard" placeholder="Ward No" required class="border p-1 my-1">
+      <input type="file" id="memberPoster" required class="border p-1 my-1">
       <button type="submit" class="bg-blue-500 text-white p-2 rounded my-2">Submit Survey</button>
     </form>
+
+    <h2 class="mt-4 font-semibold">Member Survey Counts</h2>
+    <div id="memberCount" class="overflow-auto max-h-64 mt-2 border p-2"></div>
   </div>
 
 </div>
 
+<script src="firebase-config.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
