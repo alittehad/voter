@@ -1,352 +1,130 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ward 20 Voter App</title>
+<title>Voter App</title>
 
-<script src="https://cdn.tailwindcss.com"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.3.2/dist/tailwind.min.css" rel="stylesheet">
 <style>
-/* 3D Buttons */
-.btn-3d {
-  transition: transform 0.1s ease, box-shadow 0.1s ease;
-  box-shadow: 0 5px 10px rgba(0,0,0,0.3);
-}
-.btn-3d:active {
-  transform: translateY(4px);
-  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
-}
-.btn-3d:hover {
-  transform: scale(1.05);
-}
+  /* 3D Buttons */
+  .btn-3d {
+    background: linear-gradient(to bottom, #3b82f6, #1e40af);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px #1e3a8a;
+    transition: all 0.2s;
+  }
+  .btn-3d:active {
+    transform: translateY(4px);
+    box-shadow: 0 0 #1e3a8a;
+  }
 
-/* 3D Logo */
-.logo-3d {
-  background: linear-gradient(to bottom right, #3b82f6, #1e40af);
-  box-shadow: 0 5px 10px rgba(0,0,0,0.3);
-  color: white;
-  font-weight: bold;
-  border-radius: 50%;
-  width: 56px;
-  height: 56px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 1.25rem;
-  transition: transform 0.2s;
-}
-.logo-3d:hover { transform: scale(1.1); }
+  /* Toast Notifications */
+  #toast {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1e40af;
+    color: white;
+    padding: 1rem 2rem;
+    border-radius: 0.5rem;
+    display: none;
+    z-index: 999;
+  }
 
-/* Fullscreen admin image */
-#fullscreenScreenImage {
-  display: none;
-  position: fixed;
-  top:0; left:0; width:100%; height:100%;
-  object-fit: contain;
-  background: rgba(0,0,0,0.9);
-  z-index: 50;
-  padding: 20px;
-  cursor: pointer;
-}
-
-/* Toast Notification */
-#toastContainer {
-  position: fixed;
-  bottom: 20px; right: 20px;
-  z-index: 100;
-  display: flex; flex-direction: column; gap: 10px;
-}
-.toast {
-  background: #1e40af;
-  color: white;
-  padding: 12px 20px;
-  border-radius: 10px;
-  box-shadow: 0 3px 6px rgba(0,0,0,0.3);
-  opacity: 0.95;
-  animation: slideIn 0.5s;
-}
-@keyframes slideIn { from {opacity:0; transform:translateX(100%);} to {opacity:0.95; transform:translateX(0);} }
-
-/* Member Poster Preview */
-#posterPreview { max-width:100%; max-height:250px; border-radius:8px; margin-top:5px; }
-
-/* Panels responsive */
-@media(max-width:768px){
-  #mainDiv { flex-direction: column; }
-  #adminPanel, #userPanel, #memberPanel { width: 100%; }
-  #voterListUser, #voterListAdmin, #memberCount { max-height: 40vh; overflow-y:auto; }
-}
+  /* Admin fullscreen image */
+  #fullscreenImg {
+    position: fixed;
+    top:0; left:0;
+    width:100%; height:100%;
+    background: rgba(0,0,0,0.9);
+    display:none;
+    justify-content:center;
+    align-items:center;
+    z-index:1000;
+  }
+  #fullscreenImg img {
+    max-width:90%;
+    max-height:90%;
+    border-radius: 1rem;
+  }
 </style>
-
 </head>
-<body class="bg-gray-100 min-h-screen flex flex-col">
+<body class="bg-gray-100">
 
-<!-- Toast Container -->
-<div id="toastContainer"></div>
+<!-- Toast -->
+<div id="toast"></div>
 
-<!-- Header -->
-<header class="w-full flex justify-between items-center p-4 bg-white shadow-lg">
-  <!-- Logo -->
-  <div class="flex items-center gap-3">
-    <div class="logo-3d">20</div>
-    <span class="text-2xl font-extrabold text-gray-800 drop-shadow-lg">Ward 20</span>
-  </div>
+<!-- Fullscreen Image -->
+<div id="fullscreenImg" onclick="this.style.display='none'"><img id="fullImg" src=""></div>
 
-  <!-- Login Button -->
-  <button id="loginBtn" class="btn-3d px-5 py-2 text-white font-bold bg-blue-600 rounded-lg" onclick="login()">Login with Google</button>
-</header>
+<!-- Login -->
+<div id="loginDiv" class="flex justify-center items-center h-screen">
+  <button class="btn-3d text-lg" onclick="login()">Login with Google</button>
+</div>
 
-<!-- Main Div -->
-<div id="mainDiv" class="hidden flex flex-col p-4 gap-4">
+<!-- Main SPA -->
+<div id="mainDiv" class="hidden p-4">
 
   <!-- Admin Panel -->
-  <div id="adminPanel" class="hidden p-4 bg-white rounded shadow flex flex-col gap-4">
+  <div id="adminPanel" class="hidden mb-4 border p-2 rounded bg-white shadow">
+    <h1 class="text-xl font-bold">Admin Panel</h1>
 
-    <h2 class="text-xl font-bold">Admin Panel</h2>
-
-    <!-- Screen Image Upload -->
-    <div class="p-4 bg-gray-50 rounded flex flex-col gap-2">
-      <h3 class="font-semibold">Upload Image to Screen</h3>
-      <input type="file" id="screenFile" accept="image/*" class="border p-2 rounded">
-      <button class="btn-3d w-40" onclick="displayScreenImage()">Show Fullscreen</button>
-    </div>
-
-    <!-- Add User / Member -->
-    <form id="addUserForm" class="flex flex-col gap-2">
-      <input type="text" id="newUserName" placeholder="Name" class="border p-2 rounded" required>
-      <input type="email" id="newUserEmail" placeholder="Email" class="border p-2 rounded" required>
-      <select id="newUserRole" class="border p-2 rounded">
+    <h2 class="mt-2 font-semibold">Add User / Member</h2>
+    <form id="addUserForm" class="flex flex-col">
+      <input type="text" id="newUserName" placeholder="Name" class="border p-1 my-1" required>
+      <input type="email" id="newUserEmail" placeholder="Email" class="border p-1 my-1" required>
+      <select id="newUserRole" class="border p-1 my-1">
         <option value="user">User</option>
         <option value="member">Member</option>
-        <option value="admin">Admin</option>
       </select>
-      <button type="submit" class="btn-3d w-full">Add User/Member</button>
+      <button type="submit" class="btn-3d my-1">Add</button>
     </form>
 
-    <!-- CSV Import / Voter List / Surveys -->
-    <input type="text" id="sheetCSV" placeholder="CSV URL for Voters" class="border p-2 rounded w-full">
-    <button class="btn-3d w-full" onclick="importVotersFromSheet()">Import Voters</button>
-    
-    <h3 class="font-semibold mt-2">Voter List (Admin)</h3>
-    <div id="voterListAdmin" class="border p-2 max-h-64 overflow-auto"></div>
+    <h2 class="mt-4 font-semibold">Import Voters from CSV</h2>
+    <input type="text" id="sheetCSV" placeholder="CSV URL" class="border p-1 my-1 w-full">
+    <button class="btn-3d my-1" onclick="importVotersFromSheet()">Import Voters</button>
 
-    <h3 class="font-semibold mt-2">Member Surveys</h3>
-    <div id="memberCount" class="border p-2 max-h-64 overflow-auto"></div>
+    <h2 class="mt-4 font-semibold">Voter List (Admin)</h2>
+    <div id="voterListAdmin" class="overflow-auto max-h-64 mt-2 border p-2"></div>
+
+    <h2 class="mt-4 font-semibold">Member Surveys</h2>
+    <div id="memberSurveys" class="overflow-auto max-h-64 mt-2 border p-2"></div>
   </div>
 
   <!-- User Panel -->
-  <div id="userPanel" class="hidden p-4 bg-white rounded shadow flex flex-col gap-2">
-    <h2 class="text-xl font-bold">Voter List</h2>
-    <input type="text" id="searchInput" placeholder="Search voters..." class="border p-2 rounded w-full">
-    <div id="voterListUser" class="border p-2 max-h-64 overflow-auto"></div>
+  <div id="userPanel" class="hidden mb-4 border p-2 rounded bg-white shadow">
+    <h1 class="text-xl font-bold">Voter List</h1>
+    <input type="text" id="searchInput" placeholder="Search by name..." class="border p-1 my-2 w-full">
+    <div id="voterListUser" class="overflow-auto max-h-64 border p-2"></div>
   </div>
 
   <!-- Member Panel -->
-  <div id="memberPanel" class="hidden p-4 bg-white rounded shadow flex flex-col gap-2">
-    <h2 class="text-xl font-bold">Member Survey Form</h2>
-    <form id="surveyForm" class="flex flex-col gap-2">
-      <input type="text" id="memberName" placeholder="Your Name" class="border p-2 rounded" required>
-      <input type="text" id="memberMobile" placeholder="Mobile" class="border p-2 rounded" required>
-      <input type="text" id="memberWard" placeholder="Ward No" class="border p-2 rounded" required>
-      <input type="file" id="memberPoster" class="border p-2 rounded" required>
-      <img id="posterPreview" src="" alt="Preview" class="hidden">
-      <button type="submit" class="btn-3d w-full">Submit Survey</button>
+  <div id="memberPanel" class="hidden mb-4 border p-2 rounded bg-white shadow">
+    <h1 class="text-xl font-bold">Member Survey Form</h1>
+    <form id="surveyForm" class="flex flex-col">
+      <input type="text" id="memberName" placeholder="Your Name" required class="border p-1 my-1">
+      <input type="text" id="memberMobile" placeholder="Mobile" required class="border p-1 my-1">
+      <input type="text" id="memberWard" placeholder="Ward No" required class="border p-1 my-1">
+      <input type="file" id="memberPoster" required class="border p-1 my-1">
+      <button type="submit" class="btn-3d my-2">Submit Survey</button>
     </form>
+
+    <h2 class="mt-4 font-semibold">Member Survey Counts</h2>
+    <div id="memberCount" class="overflow-auto max-h-64 mt-2 border p-2"></div>
   </div>
 
 </div>
 
-<!-- Fullscreen Admin Image -->
-<img id="fullscreenScreenImage" onclick="this.style.display='none'">
-
-<!-- Firebase Config -->
-<script>
-const firebaseConfig = {
-  apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
-  authDomain: "voter-25c94.firebaseapp.com",
-  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
-  projectId: "voter-25c94",
-  storageBucket: "voter-25c94.appspot.com",
-  messagingSenderId: "297773534400",
-  appId: "1:297773534400:web:3722c487b8c83e9b787125"
-};
-firebase.initializeApp(firebaseConfig);
-</script>
-
-<script>
-// --- Toast Notification ---
-function showToast(msg){
-  const container = document.getElementById("toastContainer");
-  const div = document.createElement("div");
-  div.className="toast"; div.innerText=msg;
-  container.appendChild(div);
-  setTimeout(()=>div.remove(),3000);
-}
-
-// --- Login ---
-function login(){
-  const provider = new firebase.auth.GoogleAuthProvider();
-  firebase.auth().signInWithPopup(provider)
-    .then(result=>{
-      const user=result.user;
-      const emailKey=user.email.replace(/\./g,"_");
-      firebase.database().ref("users/"+emailKey).once("value")
-      .then(snapshot=>{
-        if(snapshot.exists()){
-          const role=snapshot.val().role;
-          document.getElementById("mainDiv").style.display="flex";
-          document.getElementById("loginBtn").style.display="none";
-          if(role==="admin") showAdminPanel();
-          else if(role==="member") showMemberPanel();
-          else showUserPanel();
-        } else showToast("You are not authorized!");
-      });
-    }).catch(err=>{ console.error(err); showToast("Login failed!"); });
-}
-
-// --- Panels ---
-function showAdminPanel(){
-  document.getElementById("adminPanel").style.display="flex";
-  document.getElementById("userPanel").style.display="flex";
-  document.getElementById("memberPanel").style.display="flex";
-}
-function showMemberPanel(){
-  document.getElementById("adminPanel").style.display="none";
-  document.getElementById("userPanel").style.display="flex";
-  document.getElementById("memberPanel").style.display="flex";
-}
-function showUserPanel(){
-  document.getElementById("adminPanel").style.display="none";
-  document.getElementById("memberPanel").style.display="none";
-  document.getElementById("userPanel").style.display="flex";
-}
-
-// --- Admin Screen Image ---
-function displayScreenImage(){
-  const fileInput=document.getElementById("screenFile");
-  const fullscreenImg=document.getElementById("fullscreenScreenImage");
-  if(fileInput.files.length===0){ showToast("Select an image"); return; }
-  const file=fileInput.files[0];
-  const reader=new FileReader();
-  reader.onload=function(e){ fullscreenImg.src=e.target.result; fullscreenImg.style.display="block"; }
-  reader.readAsDataURL(file);
-}
-document.addEventListener('keydown',function(e){ if(e.key==="Escape"){ document.getElementById("fullscreenScreenImage").style.display="none"; } });
-
-// --- Member Poster Preview ---
-document.getElementById("memberPoster").addEventListener("change",function(){
-  const file=this.files[0]; const preview=document.getElementById("posterPreview");
-  if(file){
-    const reader=new FileReader();
-    reader.onload=function(e){ preview.src=e.target.result; preview.classList.remove("hidden"); }
-    reader.readAsDataURL(file);
-  }
-});
-
-// --- Add User / Member ---
-document.getElementById("addUserForm").addEventListener("submit",function(e){
-  e.preventDefault();
-  const name=document.getElementById("newUserName").value;
-  const email=document.getElementById("newUserEmail").value;
-  const role=document.getElementById("newUserRole").value;
-  const usersRef=firebase.database().ref("users");
-  const safeEmail=email.replace(/\./g,"_");
-  usersRef.child(safeEmail).set({name,email,role},err=>{
-    if(err) showToast(err); else showToast(name+" added as "+role);
-    document.getElementById("addUserForm").reset();
-  });
-});
-
-// --- Import Voters ---
-function importVotersFromSheet(){
-  const url=document.getElementById("sheetCSV").value;
-  if(!url){ showToast("Enter CSV URL"); return; }
-  Papa.parse(url,{download:true,header:true,complete:function(results){
-    const data=results.data;
-    const ref=firebase.database().ref("voters");
-    data.forEach(row=>{
-      const keyRaw=row.EPIC||row.voterID||row["EPIC"]; if(!keyRaw) return;
-      const safeKey=keyRaw.replace(/[.$#[\]/]/g,"_");
-      ref.child(safeKey).set({name:row.Name||row.name,voterID:keyRaw,ward:row.Ward||row.ward,status:"pending"});
-    });
-    showToast("Voters imported successfully!");
-    loadVoters();
-  }});
-}
-
-// --- Load Voters ---
-function loadVoters(){
-  const ref=firebase.database().ref("voters");
-  const userList=document.getElementById("voterListUser");
-  const adminList=document.getElementById("voterListAdmin");
-  userList.innerHTML=""; adminList.innerHTML="";
-  ref.on("value",snapshot=>{
-    snapshot.forEach(snap=>{
-      const voter=snap.val();
-      let bg="";
-      if(voter.status==="approved") bg="bg-green-200";
-      else if(voter.status==="pending") bg="bg-yellow-200";
-      else if(voter.status==="opponent") bg="bg-red-200";
-      const div=document.createElement("div");
-      div.className=`border p-1 my-1 flex justify-between items-center ${bg}`;
-      const voterInfo=`<span><b>${voter.name}</b> | EPIC: ${voter.voterID} | Ward: ${voter.ward} | Status: ${voter.status}</span>`;
-      const waBtn=document.createElement("button");
-      waBtn.innerText="Share WhatsApp";
-      waBtn.className="btn-3d bg-green-500 text-white p-1 rounded ml-2";
-      waBtn.onclick=()=>{ const msg=encodeURIComponent(`Voter: ${voter.name}\nEPIC: ${voter.voterID}\nWard: ${voter.ward}\nStatus: ${voter.status}`); window.open(`https://wa.me/?text=${msg}`,'_blank'); };
-      div.innerHTML=voterInfo; div.appendChild(waBtn);
-      userList.appendChild(div);
-      const divAdmin=div.cloneNode(true); adminList.appendChild(divAdmin);
-    });
-  });
-}
-
-// --- Search ---
-document.getElementById("searchInput").addEventListener("input",function(){
-  const val=this.value.toLowerCase();
-  Array.from(document.getElementById("voterListUser").children).forEach(div=>{ div.style.display=div.textContent.toLowerCase().includes(val)?"flex":"none"; });
-});
-
-// --- Member Survey ---
-document.getElementById("surveyForm").addEventListener("submit",function(e){
-  e.preventDefault();
-  const name=document.getElementById("memberName").value;
-  const mobile=document.getElementById("memberMobile").value;
-  const ward=document.getElementById("memberWard").value;
-  const poster=document.getElementById("memberPoster").files[0];
-  if(!poster) return showToast("Upload poster");
-  const formData=new FormData(); formData.append("image",poster);
-  const imgbbKey="8ece3c1f959f2426083eee1699086c71";
-  fetch(`https://api.imgbb.com/1/upload?key=${imgbbKey}`,{method:"POST",body:formData})
-  .then(res=>res.json())
-  .then(data=>{
-    const posterURL=data.data.display_url;
-    const surveysRef=firebase.database().ref("memberSurveys");
-    surveysRef.push({name,mobile,ward,poster:posterURL,timestamp:Date.now()},err=>{
-      if(err) showToast(err); else { showToast("Survey submitted!"); document.getElementById("surveyForm").reset(); document.getElementById("posterPreview").classList.add("hidden"); loadMemberCounts(); }
-    });
-  }).catch(err=>{ console.error(err); showToast("Poster upload failed"); });
-});
-
-// --- Member Count ---
-function loadMemberCounts(){
-  const ref=firebase.database().ref("memberSurveys");
-  const countDiv=document.getElementById("memberCount"); countDiv.innerHTML="";
-  const counts={};
-  ref.once("value").then(snapshot=>{
-    snapshot.forEach(snap=>{ const mem=snap.val().name; counts[mem]=(counts[mem]||0)+1; });
-    for(let mem in counts){ const d=document.createElement("div"); d.innerText=mem+" -> "+counts[mem]+" surveys"; countDiv.appendChild(d); }
-  });
-}
-
-// --- Initial Load ---
-loadVoters(); loadMemberCounts();
-</script>
-
+<script src="firebase-config.js"></script>
+<script src="app-updated.js"></script>
 </body>
 </html>
