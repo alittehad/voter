@@ -1,79 +1,137 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hi">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Voter App</title>
+<title>Ward 20 Voter App</title>
 
+<!-- TailwindCSS -->
+<script src="https://cdn.tailwindcss.com"></script>
+
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+<!-- PapaParse for CSV -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
-<link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.3.2/dist/tailwind.min.css" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
-</head>
-<body>
+<style>
+/* 3D Button & Logo Effect */
+.btn-3d {
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+  box-shadow: 0 5px 10px rgba(0,0,0,0.3);
+}
+.btn-3d:active {
+  transform: translateY(4px);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+}
+.logo-3d {
+  background: linear-gradient(to bottom right, #3b82f6, #1e40af);
+  box-shadow: 0 5px 10px rgba(0,0,0,0.3);
+  color: white;
+  font-weight: bold;
+  border-radius: 50%;
+  width: 56px;
+  height: 56px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.25rem;
+  transition: transform 0.2s;
+}
+.logo-3d:hover {
+  transform: scale(1.1);
+}
+</style>
 
-<!-- Login -->
-<div id="loginDiv" class="flex justify-center items-center h-screen">
-  <button class="bg-blue-500 text-white p-4 rounded" onclick="login()">Login with Google</button>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col">
+
+<!-- Header -->
+<header class="w-full flex justify-between items-center p-4 bg-white shadow-lg">
+  <!-- Logo -->
+  <div class="flex items-center gap-3">
+    <div class="logo-3d">20</div>
+    <span class="text-2xl font-extrabold text-gray-800 drop-shadow-lg">Ward 20</span>
+  </div>
+
+  <!-- Login Button -->
+  <button id="loginBtn" class="btn-3d px-5 py-2 text-white font-bold bg-blue-600 rounded-lg hover:scale-105" onclick="login()">Login with Google</button>
+</header>
+
+<!-- Login Div -->
+<div id="loginDiv" class="flex justify-center items-center flex-1">
+  <p class="text-gray-700 text-lg">Please click the login button above to continue</p>
 </div>
 
 <!-- Main SPA -->
-<div id="mainDiv" class="hidden p-4">
+<div id="mainDiv" class="hidden flex flex-col p-4 gap-4">
 
   <!-- Admin Panel -->
-  <div id="adminPanel" class="hidden mb-4 border p-2 rounded">
-    <h1 class="text-xl font-bold">Admin Panel</h1>
+  <div id="adminPanel" class="hidden p-4 bg-white rounded shadow flex flex-col gap-2">
+    <h2 class="text-xl font-bold">Admin Panel</h2>
 
-    <h2 class="mt-2 font-semibold">Add User / Member</h2>
-    <form id="addUserForm" class="flex flex-col">
-      <input type="text" id="newUserName" placeholder="Name" class="border p-1 my-1" required>
-      <input type="email" id="newUserEmail" placeholder="Email" class="border p-1 my-1" required>
-      <select id="newUserRole" class="border p-1 my-1">
+    <form id="addUserForm" class="flex flex-col gap-2">
+      <input type="text" id="newUserName" placeholder="Name" class="border p-2 rounded" required>
+      <input type="email" id="newUserEmail" placeholder="Email" class="border p-2 rounded" required>
+      <select id="newUserRole" class="border p-2 rounded">
         <option value="user">User</option>
         <option value="member">Member</option>
+        <option value="admin">Admin</option>
       </select>
-      <button type="submit" class="bg-green-500 text-white p-2 rounded my-1">Add</button>
+      <button type="submit" class="btn-3d w-full">Add User/Member</button>
     </form>
 
-    <h2 class="mt-4 font-semibold">Import Voters from CSV</h2>
-    <input type="text" id="sheetCSV" placeholder="CSV URL" class="border p-1 my-1 w-full">
-    <button class="bg-green-500 p-2 rounded my-1" onclick="importVotersFromSheet()">Import Voters</button>
+    <input type="text" id="sheetCSV" placeholder="CSV URL for Voters" class="border p-2 rounded w-full">
+    <button class="btn-3d w-full" onclick="importVotersFromSheet()">Import Voters</button>
 
-    <h2 class="mt-4 font-semibold">Voter List (Admin)</h2>
-    <div id="voterListAdmin" class="overflow-auto max-h-64 mt-2 border p-2"></div>
+    <h3 class="font-semibold mt-2">Voter List (Admin)</h3>
+    <div id="voterListAdmin" class="border p-2 max-h-64 overflow-auto"></div>
 
-    <h2 class="mt-4 font-semibold">Member Surveys</h2>
-    <div id="memberSurveys" class="overflow-auto max-h-64 mt-2 border p-2"></div>
+    <h3 class="font-semibold mt-2">Member Surveys</h3>
+    <div id="memberCount" class="border p-2 max-h-64 overflow-auto"></div>
   </div>
 
   <!-- User Panel -->
-  <div id="userPanel" class="hidden mb-4 border p-2 rounded">
-    <h1 class="text-xl font-bold">Voter List</h1>
-    <input type="text" id="searchInput" placeholder="Search by name..." class="border p-1 my-2 w-full">
-    <div id="voterListUser" class="overflow-auto max-h-64 border p-2"></div>
+  <div id="userPanel" class="hidden p-4 bg-white rounded shadow flex flex-col gap-2">
+    <h2 class="text-xl font-bold">Voter List</h2>
+    <input type="text" id="searchInput" placeholder="Search voters..." class="border p-2 rounded w-full">
+    <div id="voterListUser" class="border p-2 max-h-64 overflow-auto"></div>
   </div>
 
   <!-- Member Panel -->
-  <div id="memberPanel" class="hidden mb-4 border p-2 rounded">
-    <h1 class="text-xl font-bold">Member Survey Form</h1>
-    <form id="surveyForm" class="flex flex-col">
-      <input type="text" id="memberName" placeholder="Your Name" required class="border p-1 my-1">
-      <input type="text" id="memberMobile" placeholder="Mobile" required class="border p-1 my-1">
-      <input type="text" id="memberWard" placeholder="Ward No" required class="border p-1 my-1">
-      <input type="file" id="memberPoster" required class="border p-1 my-1">
-      <button type="submit" class="bg-blue-500 text-white p-2 rounded my-2">Submit Survey</button>
+  <div id="memberPanel" class="hidden p-4 bg-white rounded shadow flex flex-col gap-2">
+    <h2 class="text-xl font-bold">Member Survey Form</h2>
+    <form id="surveyForm" class="flex flex-col gap-2">
+      <input type="text" id="memberName" placeholder="Your Name" class="border p-2 rounded" required>
+      <input type="text" id="memberMobile" placeholder="Mobile" class="border p-2 rounded" required>
+      <input type="text" id="memberWard" placeholder="Ward No" class="border p-2 rounded" required>
+      <input type="file" id="memberPoster" class="border p-2 rounded" required>
+      <button type="submit" class="btn-3d w-full">Submit Survey</button>
     </form>
-
-    <h2 class="mt-4 font-semibold">Member Survey Counts</h2>
-    <div id="memberCount" class="overflow-auto max-h-64 mt-2 border p-2"></div>
   </div>
 
 </div>
 
-<script src="firebase-config.js"></script>
-<script src="app.js"></script>
+<!-- Firebase Config -->
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
+  authDomain: "voter-25c94.firebaseapp.com",
+  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
+  projectId: "voter-25c94",
+  storageBucket: "voter-25c94.appspot.com",
+  messagingSenderId: "297773534400",
+  appId: "1:297773534400:web:3722c487b8c83e9b787125"
+};
+firebase.initializeApp(firebaseConfig);
+</script>
+
+<!-- App JS -->
+<script>
+// --- Paste your existing JS code here ---
+</script>
+
 </body>
 </html>
