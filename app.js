@@ -1,7 +1,11 @@
 const provider = new firebase.auth.GoogleAuthProvider();
 let currentUser;
 
-// Panels show/hide
+// Allowed users & admin
+const admins = ["ngogrant454@gmail.com"];
+const allowedUsers = ["ngogrant454@gmail.com", "user1@example.com", "member1@example.com"];
+
+// Panels
 function showAdminPanel() { 
   document.getElementById("adminPanel").classList.remove("hidden"); 
   loadVotersAdmin(); 
@@ -21,16 +25,26 @@ function login() {
   firebase.auth().signInWithPopup(provider).then(result => {
     currentUser = result.user;
 
+    if(!allowedUsers.includes(currentUser.email)){
+      alert("You are not authorized to use this app.");
+      firebase.auth().signOut();
+      return;
+    }
+
     document.getElementById("loginDiv").classList.add("hidden");
     document.getElementById("mainDiv").classList.remove("hidden");
 
-    const admins = ["ngogrant454@gmail.com"];
     if(admins.includes(currentUser.email)){
       showAdminPanel();
+      showUserPanel();  // Admin also sees user panel
+    } else if(currentUser.email.includes("member")){
+      showMemberPanel();  // Member panel
     } else {
-      showUserPanel();
-      showMemberPanel();
+      showUserPanel();    // Normal allowed user
     }
+
+    loadMemberSurveys();  // Show surveys
+    loadVotersUser();     // Show voter list
   }).catch(err => {
     alert("Login Error: " + err.message);
   });
@@ -135,15 +149,18 @@ document.getElementById("surveyForm").addEventListener("submit", function(e){
     const dataUrl = reader.result;
     const surveyRef = firebase.database().ref("memberSurveys").push();
     surveyRef.set({
-      name, mobile, ward, poster:dataUrl, submittedBy: currentUser.email
+      name, mobile, ward, poster:dataUrl,
+      submittedBy: currentUser.email,
+      timestamp: Date.now()
     });
     alert("Survey Submitted!");
     document.getElementById("surveyForm").reset();
+    loadMemberSurveys();
   };
   reader.readAsDataURL(posterFile);
 });
 
-// Load Member Surveys (Admin)
+// Load Member Surveys
 function loadMemberSurveys(){
   const db = firebase.database().ref("memberSurveys");
   db.once("value", snapshot=>{
