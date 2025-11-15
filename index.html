@@ -24,16 +24,16 @@
   <div id="adminPanel" class="hidden">
     <h1 class="text-xl font-bold">Admin Panel</h1>
     <button class="bg-green-500 p-2 rounded my-2" onclick="importVotersFromSheet()">Import Voters from Sheet</button>
-    <div id="voterListAdmin"></div>
+    <div id="voterListAdmin" class="overflow-auto max-h-96"></div>
     <h2 class="mt-4 font-semibold">Member Surveys</h2>
-    <div id="memberSurveys"></div>
+    <div id="memberSurveys" class="overflow-auto max-h-96"></div>
   </div>
 
   <!-- User Panel -->
   <div id="userPanel" class="hidden">
     <h1 class="text-xl font-bold">Voter List</h1>
-    <input type="text" id="searchInput" placeholder="Search..." class="border p-1 my-2">
-    <div id="voterListUser"></div>
+    <input type="text" id="searchInput" placeholder="Search..." class="border p-1 my-2 w-full">
+    <div id="voterListUser" class="overflow-auto max-h-96"></div>
   </div>
 
   <!-- Member Panel -->
