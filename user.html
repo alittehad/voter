@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>User - Ward 20</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+.btn-3d { 
+  background: linear-gradient(145deg,#4f46e5,#6366f1); 
+  color:white; font-weight:bold; padding:.7rem 1.5rem; 
+  border-radius:.5rem; box-shadow:4px 4px 6px #333,-4px -4px 6px #777; 
+  cursor:pointer; transition: all .2s; font-size:1rem;
+}
+.btn-3d:hover{
+  box-shadow: inset 4px 4px 6px #333,inset -4px -4px 6px #777;
+}
+</style>
+</head>
+<body class="bg-gray-100 p-4">
+
+<h1 class="text-2xl font-bold mb-4">Voter List - User</h1>
+<input type="text" id="searchInput" placeholder="Search by name..." class="border p-1 mb-4 w-full">
+<div id="voterList" class="border p-2 rounded max-h-96 overflow-auto"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getDatabase, ref as dbRef, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
+  authDomain: "voter-25c94.firebaseapp.com",
+  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
+  projectId: "voter-25c94",
+  storageBucket: "voter-25c94.appspot.com",
+  messagingSenderId: "297773534400",
+  appId: "1:297773534400:web:3722c487b8c83e9b787125"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+const voterDiv = document.getElementById("voterList");
+voterDiv.innerHTML="Loading voters...";
+onValue(dbRef(db,"voters"), snapshot=>{
+  voterDiv.innerHTML="";
+  snapshot.forEach(snap=>{
+    const v = snap.val();
+    const d=document.createElement("div");
+    d.className="border p-1 my-1";
+    d.innerText=`${v.name} | EPIC: ${v.voterID} | Ward: ${v.ward} | Status: ${v.status}`;
+    voterDiv.appendChild(d);
+  });
+});
+
+// Search
+document.getElementById("searchInput").addEventListener("input", function(){
+  const val=this.value.toLowerCase();
+  Array.from(voterDiv.children).forEach(div=>{
+    div.style.display=div.innerText.toLowerCase().includes(val)? "block":"none";
+  });
+});
+</script>
+
+</body>
+</html>
