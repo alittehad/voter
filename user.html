@@ -5,17 +5,31 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ward Status Panel - Admin</title>
 <script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <style>
 body { background: #eef2ff; }
-.card { background:white; border-radius:1rem; box-shadow:0 4px 12px rgba(0,0,0,0.1); padding:16px; }
-.sticky-bar { position: sticky; top:0; z-index:50; backdrop-filter:blur(8px); background: rgba(255,255,255,0.9); padding:12px; border-bottom:1px solid #ddd; }
-.btn { cursor:pointer; padding:0.5rem 1rem; border-radius:0.5rem; font-weight:bold; transition:0.2s; }
+.card {
+  background:white; border-radius:1rem; box-shadow: 6px 6px 12px rgba(0,0,0,0.15), -6px -6px 12px rgba(255,255,255,0.7);
+  padding:16px; margin-bottom:12px; transition: all 0.2s;
+}
+.card:hover { transform: translateY(-3px); }
+.sticky-bar {
+  position: sticky; top:0; z-index:50; backdrop-filter:blur(8px);
+  background: rgba(255,255,255,0.95); padding:12px; border-bottom:1px solid #ddd;
+}
+.btn {
+  cursor:pointer; padding:0.5rem 1rem; border-radius:0.7rem;
+  font-weight:bold; transition: all 0.2s; text-align:center;
+  box-shadow: 4px 4px 6px #bbb, -4px -4px 6px #fff;
+}
+.btn:hover { box-shadow: inset 4px 4px 6px #bbb, inset -4px -4px 6px #fff; }
 .btn-blue { background:#2563eb;color:white; }
 .btn-green { background:#16a34a;color:white; }
 .btn-yellow { background:#facc15;color:black; }
 .btn-red { background:#dc2626;color:white; }
-.btn:hover { opacity:0.8; }
+@media(max-width:640px){
+  .flex-wrap { flex-direction: column; }
+  .grid-cols-3 { grid-template-columns: 1fr; }
+}
 </style>
 </head>
 <body class="p-4">
@@ -26,8 +40,8 @@ body { background: #eef2ff; }
 
 <!-- Sticky Bar -->
 <div class="sticky-bar mb-4">
-  <input id="searchBox" type="text" placeholder="नाम से खोजें…" class="w-full p-2 rounded-xl border mb-3 outline-none focus:ring-2 focus:ring-blue-500">
-  <div class="flex gap-2 mb-3">
+  <input id="searchBox" type="text" placeholder="Search Name / EPIC / Ward / Mobile…" class="w-full p-2 rounded-xl border mb-3 outline-none focus:ring-2 focus:ring-blue-500">
+  <div class="flex gap-2 mb-3 flex-wrap">
     <button class="filterBtn px-3 py-1 rounded-full bg-blue-600 text-white" data-filter="all">All</button>
     <button class="filterBtn px-3 py-1 rounded-full bg-green-600 text-white" data-filter="approved">Approved</button>
     <button class="filterBtn px-3 py-1 rounded-full bg-yellow-600 text-white" data-filter="opponent">Opponent</button>
@@ -47,7 +61,7 @@ body { background: #eef2ff; }
   <input type="text" id="senderMessage" placeholder="Message to send" class="border p-2 w-full mb-2">
   <p class="font-semibold mb-1">Upload Sender Photo:</p>
   <input type="file" id="senderImage" class="border p-2 w-full mb-2">
-  <button id="saveSender" class="bg-blue-600 text-white px-4 py-2 rounded font-bold w-full">Save Sender Info</button>
+  <button id="saveSender" class="btn btn-blue w-full">Save Sender Info</button>
 </div>
 
 <!-- Voter List -->
@@ -57,7 +71,6 @@ body { background: #eef2ff; }
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getDatabase, ref as dbRef, set, onValue, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-// Firebase Config
 const firebaseConfig = {
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
   authDomain: "voter-25c94.firebaseapp.com",
@@ -113,7 +126,11 @@ onValue(dbRef(db,"voters"), snap=>{
     const v = s.val();
     const div=document.createElement("div");
     div.className="card item mt-3";
-    div.dataset.status=v.status; div.dataset.name=v.name.toLowerCase();
+    div.dataset.status=v.status;
+    div.dataset.name=v.name.toLowerCase();
+    div.dataset.epic=v.voterID.toLowerCase();
+    div.dataset.ward=v.ward.toLowerCase();
+    div.dataset.mobile=v.mobile.toLowerCase();
     div.innerHTML=`<h2 class="font-bold">${v.name}</h2>
       <p class="text-sm text-gray-600">EPIC: ${v.voterID} | Ward: ${v.ward} | Status: ${v.status}</p>
       <div class="mt-2 flex gap-2 flex-wrap">
@@ -125,6 +142,18 @@ onValue(dbRef(db,"voters"), snap=>{
       </div>`;
     listDiv.appendChild(div);
 
+    // Optimistic UI: update card color immediately
+    const updateStatus=(newStatus)=>{
+      div.dataset.status=newStatus;
+      div.querySelector("p").innerText = `EPIC: ${v.voterID} | Ward: ${v.ward} | Status: ${newStatus}`;
+      update(dbRef(db,"voters/"+v.voterID.replace(/\W/g,"_")), {status:newStatus});
+      applyFilter();
+    };
+
+    div.querySelector(".approveBtn").onclick=()=>updateStatus("approved");
+    div.querySelector(".opponentBtn").onclick=()=>updateStatus("opponent");
+    div.querySelector(".antiBtn").onclick=()=>updateStatus("anti");
+
     div.querySelector(".sendBtn").onclick=()=>{
       const s=senderCache;
       if(!s.name) return alert("Sender info missing!");
@@ -133,12 +162,14 @@ onValue(dbRef(db,"voters"), snap=>{
     };
     div.querySelector(".printBtn").onclick=()=>{
       const win=window.open();
-      win.document.write(`<h2>Voter Info</h2><p>Name: ${v.name}</p><p>EPIC: ${v.voterID}</p><p>Ward: ${v.ward}</p><p>Mobile: ${v.mobile}</p><p>Status: ${v.status}</p>`);
+      win.document.write(`<h2>Voter Info</h2>
+        <p>Name: ${v.name}</p>
+        <p>EPIC: ${v.voterID}</p>
+        <p>Ward: ${v.ward}</p>
+        <p>Mobile: ${v.mobile}</p>
+        <p>Status: ${v.status}</p>`);
       win.print();
     };
-    div.querySelector(".approveBtn").onclick=()=>update(dbRef(db,"voters/"+v.voterID.replace(/\W/g,"_")),{status:"approved"});
-    div.querySelector(".opponentBtn").onclick=()=>update(dbRef(db,"voters/"+v.voterID.replace(/\W/g,"_")),{status:"opponent"});
-    div.querySelector(".antiBtn").onclick=()=>update(dbRef(db,"voters/"+v.voterID.replace(/\W/g,"_")),{status:"anti"});
   });
   applyFilter();
 });
@@ -153,22 +184,37 @@ document.querySelectorAll(".filterBtn").forEach(btn=>{
     applyFilter();
   });
 });
+
 document.getElementById("searchBox").addEventListener("keyup", applyFilter);
 
 function applyFilter(){
   const keyword=document.getElementById("searchBox").value.toLowerCase();
   const items=document.querySelectorAll(".item");
-  let approved=0,opponent=0,anti=0;
+  let approvedTotal=0,opponentTotal=0,antiTotal=0;
+
   items.forEach(i=>{
-    const name=i.dataset.name,status=i.dataset.status;
-    const matchSearch=name.includes(keyword);
-    const matchFilter=(activeFilter=="all"||activeFilter==status);
-    if(matchSearch&&matchFilter){ i.classList.remove("hidden"); if(status=="approved") approved++; else if(status=="opponent") opponent++; else anti++; }
-    else i.classList.add("hidden");
+    const name=i.dataset.name;
+    const epic=i.dataset.epic;
+    const ward=i.dataset.ward;
+    const mobile=i.dataset.mobile;
+    const status=i.dataset.status;
+
+    // Multi-field search
+    const matchSearch = name.includes(keyword) || epic.includes(keyword) || ward.includes(keyword) || mobile.includes(keyword);
+    const matchFilter = (activeFilter=="all"||activeFilter==status);
+
+    if(matchSearch && matchFilter){ i.classList.remove("hidden"); }
+    else { i.classList.add("hidden"); }
+
+    // Count all statuses (total)
+    if(status=="approved") approvedTotal++;
+    else if(status=="opponent") opponentTotal++;
+    else antiTotal++;
   });
-  document.getElementById("countApproved").innerText=approved;
-  document.getElementById("countOpponent").innerText=opponent;
-  document.getElementById("countAnti").innerText=anti;
+
+  document.getElementById("countApproved").innerText=approvedTotal;
+  document.getElementById("countOpponent").innerText=opponentTotal;
+  document.getElementById("countAnti").innerText=antiTotal;
 }
 </script>
 </body>
