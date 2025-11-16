@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="hi">
 <head>
@@ -49,7 +48,7 @@ body { background:#eef2ff; }
 
   <!-- Search -->
   <div class="bg-white p-4 rounded shadow mb-4">
-    <input type="text" id="searchVoter" placeholder="Search by Name, EPIC, District..." class="border p-2 w-full">
+    <input type="text" id="searchVoter" placeholder="Search by Name, EPIC, Address, Part No..." class="border p-2 w-full">
   </div>
 
   <!-- CSV Upload -->
@@ -64,9 +63,7 @@ body { background:#eef2ff; }
     <h2 class="text-xl font-bold mb-2 text-blue-700">Add Voter Manually</h2>
     <input type="text" id="voterName" placeholder="Name" class="border p-2 w-full mb-2">
     <input type="text" id="voterEPIC" placeholder="EPIC" class="border p-2 w-full mb-2">
-      <input type="text" id="voterAddress" placeholder="Address" class="border p-2 w-full mb-2">
-   
-  
+    <input type="text" id="voterAddress" placeholder="Address" class="border p-2 w-full mb-2">
     <input type="text" id="voterPart" placeholder="Part No" class="border p-2 w-full mb-2">
     <button id="addVoterManual" class="btn btn-green w-full">Add Voter</button>
   </div>
@@ -77,7 +74,7 @@ body { background:#eef2ff; }
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref as dbRef, set, onValue, remove, child, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref as dbRef, set, onValue, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 // Firebase config
@@ -101,7 +98,6 @@ let senderImageURL = "";
 document.getElementById("googleLoginBtn").onclick = ()=>{
   signInWithPopup(auth, provider).then(res=>{
     const emailKey = res.user.email.replace(/\./g,"_");
-    // Hardcoded Admin/User
     const admins = ["ngogrant454@gmail_com"];
     const users  = ["zarafix3@gmail_com"];
     if(admins.includes(emailKey) || users.includes(emailKey)){
@@ -116,7 +112,18 @@ document.getElementById("googleLoginBtn").onclick = ()=>{
   }).catch(err=>{ console.error(err); alert("Login failed!"); });
 };
 
-
+// Upload Sender Image
+document.getElementById("uploadSenderImage").onclick = ()=>{
+  const file = document.getElementById("senderImage").files[0];
+  if(!file) return alert("Select image first!");
+  const reader = new FileReader();
+  reader.onload = e=>{
+    senderImageURL = e.target.result;
+    document.getElementById("senderImgPreview").src = senderImageURL;
+    document.getElementById("senderImgPreview").classList.remove("hidden");
+  };
+  reader.readAsDataURL(file);
+};
 
 // Update card color
 function updateCardColor(cardDiv,status){
@@ -135,7 +142,7 @@ function renderVoters(){
     voterListDiv.innerHTML='';
     snap.forEach(s=>{
       const v = s.val(); const key=s.key;
-      const combined = `${v.name} ${v.voterID} ${v.district} ${v.acNo} ${v.partNo}`.toLowerCase();
+      const combined = `${v.name} ${v.voterID} ${v.address} ${v.partNo}`.toLowerCase();
       if(query && !combined.includes(query)) return;
       const div = document.createElement("div");
       div.className="card";
@@ -146,7 +153,7 @@ function renderVoters(){
           <div>
             <h2 class='font-bold'>${v.name}</h2>
             <p class='text-sm text-gray-600'>
-              EPIC: ${v.voterID} | Part: ${v.partNo} | Booth: ${v.booth || ''} | Age: ${v.age || ''} | Status: ${v.status}
+              EPIC: ${v.voterID} | Address: ${v.address} | Part: ${v.partNo} | Booth: ${v.booth || ''} | Age: ${v.age || ''} | Status: ${v.status}
             </p>
           </div>
         </div>
@@ -177,13 +184,11 @@ document.getElementById("searchVoter").addEventListener("input", renderVoters);
 document.getElementById("addVoterManual").onclick = ()=>{
   const name = document.getElementById("voterName").value.trim();
   const epic = document.getElementById("voterEPIC").value.trim();
-  const state = document.getElementById("voterState").value.trim();
-  const district = document.getElementById("voterDistrict").value.trim();
-  const acNo = document.getElementById("voterAC").value.trim();
+  const address = document.getElementById("voterAddress").value.trim();
   const partNo = document.getElementById("voterPart").value.trim();
   if(!name || !epic) return alert("Name & EPIC required!");
   const key = epic.replace(/\W/g,"_");
-  set(dbRef(db,"voters/"+key), { name, voterID:epic, state, district, acNo, partNo, status:"anti" });
+  set(dbRef(db,"voters/"+key), { name, voterID:epic, address, partNo, status:"anti" });
   alert("Voter added!");
   renderVoters();
 };
@@ -202,9 +207,14 @@ document.getElementById("uploadCSV").onclick = ()=>{
         if(!row.EPIC) return;
         const key=row.EPIC.replace(/\W/g,"_");
         set(dbRef(db,"voters/"+key),{
-          name: row.Name || "", voterID: row.EPIC, state: row.State || "", district: row.District || "",
-          acNo: row["AC No"] || "", partNo: row["Part No"] || "", mobile: row.Mobile || "", age: row.Age || "",
-          booth: row.Booth || "", status:"anti"
+          name: row.Name || "",
+          voterID: row.EPIC,
+          address: row.Address || "",
+          partNo: row["Part No"] || "",
+          mobile: row.Mobile || "",
+          age: row.Age || "",
+          booth: row.Booth || "",
+          status:"anti"
         });
       });
       alert("CSV uploaded!");
