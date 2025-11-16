@@ -3,48 +3,23 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ward 20 Voter App</title>
+<title>Voter App - Ward 20</title>
 <script src="https://cdn.tailwindcss.com"></script>
-
-<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js"></script>
-
-<!-- PapaParse -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-
 <style>
-  .btn-3d {
-    background: linear-gradient(145deg, #4f46e5, #6366f1);
-    color: white;
-    font-weight: bold;
-    padding: 0.5rem 1rem;
-    border-radius: 0.5rem;
-    box-shadow: 4px 4px 6px #333, -4px -4px 6px #777;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  .btn-3d:hover {
-    box-shadow: inset 4px 4px 6px #333, inset -4px -4px 6px #777;
-  }
-  #fullscreenImg {
-    display: none;
-    position: fixed;
-    top:0; left:0;
-    width:100%; height:100%;
-    background: rgba(0,0,0,0.8);
-    justify-content:center;
-    align-items:center;
-    z-index:9999;
-  }
-  #fullscreenImg img { max-width:90%; max-height:90%; border-radius:0.5rem; }
+.btn-3d { background: linear-gradient(145deg, #4f46e5, #6366f1); color: white; font-weight: bold; padding: 0.5rem 1rem; border-radius: 0.5rem; box-shadow: 4px 4px 6px #333, -4px -4px 6px #777; cursor: pointer; transition: all 0.2s; }
+.btn-3d:hover { box-shadow: inset 4px 4px 6px #333, inset -4px -4px 6px #777; }
+#fullscreenImg { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); justify-content:center; align-items:center; z-index:9999; }
+#fullscreenImg img { max-width:90%; max-height:90%; border-radius:0.5rem; }
 </style>
 </head>
 <body class="bg-gray-100">
 
-<!-- Login Screen -->
+<!-- Login -->
 <div id="loginDiv" class="flex justify-center items-center h-screen">
   <button class="btn-3d" id="loginBtn">Login with Google</button>
 </div>
@@ -52,23 +27,22 @@
 <!-- Main App -->
 <div id="mainDiv" class="hidden p-4">
 
-  <!-- Top Logo + Admin Image Upload -->
+  <!-- Top Bar -->
   <div class="flex items-center justify-between bg-white p-2 shadow-md mb-4 sticky top-0 z-50">
     <div class="flex items-center">
-      <img src="logo.png" alt="Logo" class="h-12 w-12 mr-2 rounded-full shadow-lg cursor-pointer">
+      <img src="logo.png" alt="Logo" class="h-12 w-12 mr-2 rounded-full shadow-lg cursor-pointer" onclick="alert('Logo Clicked!')">
       <h1 class="text-xl font-bold">Ward 20</h1>
     </div>
     <div id="adminImageUploadDiv" class="hidden flex items-center">
       <input type="file" id="adminScreenImage" class="border p-1 mr-2 rounded">
-      <button class="btn-3d" id="setAdminImgBtn">Set Screen Image</button>
+      <button class="btn-3d" onclick="setAdminScreenImage()">Set Screen Image</button>
     </div>
+    <button class="btn-3d" onclick="logout()">Logout</button>
   </div>
 
   <!-- Admin Panel -->
   <div id="adminPanel" class="hidden mb-4 border p-2 rounded bg-white shadow">
-    <h1 class="text-xl font-bold mb-2">Admin Panel</h1>
-
-    <!-- Add User / Member -->
+    <h1 class="text-xl font-bold">Admin Panel</h1>
     <h2 class="mt-2 font-semibold">Add User / Member</h2>
     <form id="addUserForm" class="flex flex-col">
       <input type="text" id="newUserName" placeholder="Name" class="border p-1 my-1" required>
@@ -80,12 +54,10 @@
       <button type="submit" class="btn-3d my-1">Add</button>
     </form>
 
-    <!-- Import Voters -->
     <h2 class="mt-4 font-semibold">Import Voters from CSV</h2>
     <input type="text" id="sheetCSV" placeholder="CSV URL" class="border p-1 my-1 w-full">
-    <button class="btn-3d my-1" id="importVotersBtn">Import Voters</button>
+    <button class="btn-3d my-1" onclick="importVotersFromSheet()">Import Voters</button>
 
-    <!-- Voter List (Admin) -->
     <h2 class="mt-4 font-semibold">Voter List (Admin)</h2>
     <div id="voterListAdmin" class="overflow-auto max-h-64 mt-2 border p-2"></div>
   </div>
@@ -121,19 +93,19 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getDatabase, ref, set, onValue, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getDatabase, ref as dbRef, set, get, child, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
-// Firebase Config
+// --- Firebase Config ---
 const firebaseConfig = {
-  apiKey: "AIzaSyCLCUAiPz-sqhFDskG9g9AwyUI1RdTQWfk",
-  authDomain: "zaracrimefiles.firebaseapp.com",
-  databaseURL: "https://zaracrimefiles-default-rtdb.firebaseio.com",
-  projectId: "zaracrimefiles",
-  storageBucket: "zaracrimefiles.appspot.com",
-  messagingSenderId: "957627078663",
-  appId: "1:957627078663:web:546f6a8c77b91f72c35ccc"
+  apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
+  authDomain: "voter-25c94.firebaseapp.com",
+  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
+  projectId: "voter-25c94",
+  storageBucket: "voter-25c94.firebasestorage.app",
+  messagingSenderId: "297773534400",
+  appId: "1:297773534400:web:3722c487b8c83e9b787125"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -142,168 +114,151 @@ const db = getDatabase(app);
 const storage = getStorage(app);
 const provider = new GoogleAuthProvider();
 
-// --- Login ---
-const loginBtn = document.getElementById("loginBtn");
-loginBtn.addEventListener("click", ()=>{
-  signInWithPopup(auth, provider)
-    .catch(err=>console.error(err));
+// --- Login / Logout ---
+document.getElementById("loginBtn").addEventListener("click", () => {
+  signInWithPopup(auth, provider).catch(console.error);
 });
 
-// --- Auth State Change ---
-onAuthStateChanged(auth, user=>{
-  if(!user){
-    document.getElementById("loginDiv").style.display="flex";
-    document.getElementById("mainDiv").style.display="none";
-    return;
-  }
+function logout() {
+  signOut(auth).then(() => localStorage.clear()).catch(console.error);
+}
 
-  document.getElementById("loginDiv").style.display="none";
-  document.getElementById("mainDiv").style.display="block";
+// --- Panels ---
+function showAdminPanel(){ document.getElementById("adminPanel").style.display="block"; document.getElementById("userPanel").style.display="block"; document.getElementById("memberPanel").style.display="block"; document.getElementById("adminImageUploadDiv").style.display="flex"; }
+function showMemberPanel(){ document.getElementById("adminPanel").style.display="none"; document.getElementById("userPanel").style.display="block"; document.getElementById("memberPanel").style.display="block"; document.getElementById("adminImageUploadDiv").style.display="none"; }
+function showUserPanel(){ document.getElementById("adminPanel").style.display="none"; document.getElementById("memberPanel").style.display="none"; document.getElementById("userPanel").style.display="block"; document.getElementById("adminImageUploadDiv").style.display="none"; }
 
+// --- Auth State ---
+onAuthStateChanged(auth, user => {
+  if(!user){ document.getElementById("loginDiv").style.display="flex"; document.getElementById("mainDiv").style.display="none"; return; }
+  document.getElementById("loginDiv").style.display="none"; document.getElementById("mainDiv").style.display="block";
   const emailKey = user.email.replace(/\./g,"_");
-
-  get(ref(db,"users/"+emailKey)).then(snapshot=>{
-    if(!snapshot.exists()){
-      alert("Not Authorized!");
-      signOut(auth);
-      return;
-    }
-
+  get(child(dbRef(db),"users/"+emailKey)).then(snapshot=>{
+    if(!snapshot.exists()){ alert("Not Authorized!"); signOut(auth); return; }
     const role = snapshot.val().role;
-
     if(role==="admin") showAdminPanel();
     else if(role==="member") showMemberPanel();
     else showUserPanel();
   });
 });
 
-// --- Panels ---
-function showAdminPanel(){
-  document.getElementById("adminPanel").style.display="block";
-  document.getElementById("userPanel").style.display="block";
-  document.getElementById("memberPanel").style.display="block";
-  document.getElementById("adminImageUploadDiv").style.display="flex";
-}
-function showMemberPanel(){
-  document.getElementById("adminPanel").style.display="none";
-  document.getElementById("userPanel").style.display="block";
-  document.getElementById("memberPanel").style.display="block";
-  document.getElementById("adminImageUploadDiv").style.display="none";
-}
-function showUserPanel(){
-  document.getElementById("adminPanel").style.display="none";
-  document.getElementById("memberPanel").style.display="none";
-  document.getElementById("userPanel").style.display="block";
-  document.getElementById("adminImageUploadDiv").style.display="none";
+// --- Admin Screen Image ---
+function setAdminScreenImage(){
+  const file = document.getElementById("adminScreenImage").files[0];
+  if(!file) return alert("Select an image first!");
+  const reader = new FileReader();
+  reader.onload = e=>{
+    document.getElementById("fullImg").src=e.target.result;
+    document.getElementById("fullscreenImg").style.display="flex";
+    alert("Admin image set!");
+  };
+  reader.readAsDataURL(file);
 }
 
 // --- Add User / Member ---
-document.getElementById("addUserForm").addEventListener("submit", e=>{
+document.getElementById("addUserForm").addEventListener("submit",e=>{
   e.preventDefault();
   const name=document.getElementById("newUserName").value;
   const email=document.getElementById("newUserEmail").value;
   const role=document.getElementById("newUserRole").value;
-  const safeEmail = email.replace(/\./g,"_");
-
-  set(ref(db,"users/"+safeEmail), {name,email,role})
-    .then(()=>{ alert(`${name} added as ${role}`); document.getElementById("addUserForm").reset(); })
-    .catch(err=>alert(err));
+  const safeEmail=email.replace(/\./g,"_");
+  set(dbRef(db,"users/"+safeEmail),{name,email,role}).then(()=>alert(name+" added as "+role)).catch(alert);
+  e.target.reset();
 });
 
 // --- Import Voters ---
-document.getElementById("importVotersBtn").addEventListener("click", ()=>{
-  const url = document.getElementById("sheetCSV").value;
-  if(!url){ alert("Enter CSV URL"); return; }
-  Papa.parse(url, { download:true, header:true, complete(results){
+function importVotersFromSheet(){
+  const url=document.getElementById("sheetCSV").value;
+  if(!url) return alert("Enter CSV URL");
+  Papa.parse(url,{download:true,header:true,complete:function(results){
     results.data.forEach(row=>{
-      const keyRaw = row.EPIC || row.voterID || row["EPIC"];
+      const keyRaw=row.EPIC||row.voterID||row["EPIC"];
       if(!keyRaw) return;
-      const safeKey = keyRaw.replace(/\./g,"_").replace(/\$/g,"_").replace(/#/g,"_")
-                             .replace(/\[/g,"_").replace(/\]/g,"_").replace(/\//g,"_");
-      set(ref(db,"voters/"+safeKey),{
-        name: row.Name || row.name,
-        voterID: keyRaw,
-        ward: row.Ward || row.ward,
-        status: "pending"
-      });
+      const safeKey=keyRaw.replace(/\./g,"_").replace(/\$/g,"_").replace(/#/g,"_").replace(/\[/g,"_").replace(/\]/g,"_").replace(/\//g,"_");
+      set(dbRef(db,"voters/"+safeKey),{name:row.Name||row.name,voterID:keyRaw,ward:row.Ward||row.ward,status:"pending"});
     });
     alert("Voters imported successfully!");
-  }} );
-});
-
-// --- Update Voter Status ---
-function updateVoterStatus(voterID,status){
-  const safeKey = voterID.replace(/\./g,"_").replace(/\$/g,"_").replace(/#/g,"_")
-                         .replace(/\[/g,"_").replace(/\]/g,"_").replace(/\//g,"_");
-  set(ref(db,"voters/"+safeKey+"/status"), status)
-    .then(()=> loadVoters())
-    .catch(err=>console.error(err));
+    loadVoters();
+  }});
 }
 
 // --- Load Voters ---
 function loadVoters(){
-  const adminContainer=document.getElementById("voterListAdmin");
-  const userContainer=document.getElementById("voterListUser");
-  onValue(ref(db,"voters"), snapshot=>{
-    adminContainer.innerHTML="";
-    userContainer.innerHTML="";
+  const ref=dbRef(db,"voters");
+  const userList=document.getElementById("voterListUser");
+  const adminList=document.getElementById("voterListAdmin");
+  userList.innerHTML=""; adminList.innerHTML="";
+  onValue(ref,snapshot=>{
     snapshot.forEach(snap=>{
-      const v = snap.val();
-      let bg="bg-yellow-200"; if(v.status==="approved") bg="bg-green-200"; else if(v.status==="opponent") bg="bg-red-200";
-
-      // Admin Div
-      const divAdmin=document.createElement("div");
-      divAdmin.className=`border p-2 my-1 flex justify-between items-center ${bg}`;
-      divAdmin.innerHTML=`<span><b>${v.name}</b> | EPIC: ${v.voterID} | Ward: ${v.ward} | Status: ${v.status}</span>`;
-
-      const btnGroup=document.createElement("div");
-      ["approved","pending","opponent"].forEach(st=>{
-        const btn=document.createElement("button");
-        btn.innerText=st.charAt(0).toUpperCase()+st.slice(1);
-        btn.className="btn-3d ml-1 text-sm";
-        btn.onclick=()=>updateVoterStatus(v.voterID,st);
-        btnGroup.appendChild(btn);
-      });
-
+      const voter=snap.val();
+      let bg="";
+      if(voter.status==="approved") bg="bg-green-200";
+      else if(voter.status==="pending") bg="bg-yellow-200";
+      else if(voter.status==="opponent") bg="bg-red-200";
+      const div=document.createElement("div");
+      div.className=`border p-1 my-1 flex justify-between items-center ${bg}`;
+      div.innerHTML=`<span><b>${voter.name}</b> | EPIC: ${voter.voterID} | Ward: ${voter.ward} | Status: ${voter.status}</span>`;
       const waBtn=document.createElement("button");
       waBtn.innerText="Share WhatsApp";
       waBtn.className="btn-3d ml-2";
-      waBtn.onclick=()=>{
-        const msg=encodeURIComponent(`Voter: ${v.name}\nEPIC: ${v.voterID}\nWard: ${v.ward}\nStatus: ${v.status}`);
-        window.open(`https://wa.me/?text=${msg}`,"_blank");
-      };
-
-      divAdmin.appendChild(btnGroup);
-      divAdmin.appendChild(waBtn);
-      adminContainer.appendChild(divAdmin);
-
-      // User Div
-      const divUser=divAdmin.cloneNode(true);
-      divUser.querySelector("div").remove(); // remove status buttons for user
-      userContainer.appendChild(divUser);
+      waBtn.onclick=()=>window.open(`https://wa.me/?text=${encodeURIComponent(`Voter: ${voter.name}\nEPIC: ${voter.voterID}\nWard: ${voter.ward}\nStatus: ${voter.status}`)}`,'_blank');
+      div.appendChild(waBtn);
+      userList.appendChild(div);
+      adminList.appendChild(div.cloneNode(true));
     });
   });
 }
 
 // --- Search ---
-document.getElementById("searchInput").addEventListener("input", function(){
+document.getElementById("searchInput").addEventListener("input",function(){
   const val=this.value.toLowerCase();
-  document.querySelectorAll("#voterListUser div").forEach(div=>{
+  Array.from(document.getElementById("voterListUser").children).forEach(div=>{
     div.style.display=div.textContent.toLowerCase().includes(val)?"flex":"none";
   });
 });
 
-// --- Admin Screen Image ---
-document.getElementById("setAdminImgBtn").addEventListener("click", ()=>{
-  const file=document.getElementById("adminScreenImage").files[0];
-  if(!file) return alert("Select an image first!");
-  uploadBytes(sRef(storage,"adminScreen.jpg"), file)
-    .then(()=>alert("Admin screen image uploaded!"))
-    .catch(err=>console.error(err));
+// --- Member Survey ---
+document.getElementById("surveyForm").addEventListener("submit",function(e){
+  e.preventDefault();
+  const name=document.getElementById("memberName").value;
+  const mobile=document.getElementById("memberMobile").value;
+  const ward=document.getElementById("memberWard").value;
+  const poster=document.getElementById("memberPoster").files[0];
+  if(!poster) return alert("Upload poster");
+  const formData=new FormData(); formData.append("image",poster);
+  const imgbbKey="8ece3c1f959f2426083eee1699086c71";
+  fetch(`https://api.imgbb.com/1/upload?key=${imgbbKey}`,{method:"POST",body:formData})
+    .then(res=>res.json())
+    .then(data=>{
+      const posterURL=data.data.display_url;
+      const surveysRef=dbRef(db,"memberSurveys");
+      const newSurveyRef=child(surveysRef,Date.now().toString());
+      set(newSurveyRef,{name,mobile,ward,poster:posterURL,timestamp:Date.now()}).then(()=>{alert("Survey submitted!"); e.target.reset(); loadMemberCounts();}).catch(alert);
+    }).catch(err=>{console.error(err); alert("Poster upload failed");});
 });
+
+// --- Member Counts ---
+function loadMemberCounts(){
+  const ref=dbRef(db,"memberSurveys");
+  const countDiv=document.getElementById("memberCount");
+  countDiv.innerHTML="";
+  get(ref).then(snapshot=>{
+    const counts={};
+    snapshot.forEach(snap=>{
+      const mem=snap.val().name;
+      counts[mem]=(counts[mem]||0)+1;
+    });
+    for(let mem in counts){
+      const d=document.createElement("div");
+      d.innerText=mem+" -> "+counts[mem]+" surveys";
+      countDiv.appendChild(d);
+    }
+  });
+}
 
 // --- Initial Load ---
 loadVoters();
+loadMemberCounts();
 </script>
 
 </body>
