@@ -93,24 +93,41 @@ const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 
 let senderImageURL = "";
+const voterListDiv = document.getElementById("voterList");
 
-// Login
+// Login button
 document.getElementById("googleLoginBtn").onclick = ()=>{
   signInWithPopup(auth, provider).then(res=>{
     const emailKey = res.user.email.replace(/\./g,"_");
     const admins = ["ngogrant454@gmail_com"];
     const users  = ["zarafix3@gmail_com"];
     if(admins.includes(emailKey) || users.includes(emailKey)){
-      document.getElementById("loginDiv").classList.add("hidden");
-      document.getElementById("panelDiv").classList.remove("hidden");
       alert(`Welcome ${res.user.displayName}`);
-      renderVoters();
     } else {
       alert("Access denied!");
       auth.signOut();
     }
   }).catch(err=>{ console.error(err); alert("Login failed!"); });
 };
+
+// Persist login using onAuthStateChanged
+auth.onAuthStateChanged(user => {
+  if(user){
+    const emailKey = user.email.replace(/\./g,"_");
+    const admins = ["ngogrant454@gmail_com"];
+    const users  = ["zarafix3@gmail_com"];
+    if(admins.includes(emailKey) || users.includes(emailKey)){
+      document.getElementById("loginDiv").classList.add("hidden");
+      document.getElementById("panelDiv").classList.remove("hidden");
+      renderVoters();
+    } else {
+      auth.signOut();
+    }
+  } else {
+    document.getElementById("loginDiv").classList.remove("hidden");
+    document.getElementById("panelDiv").classList.add("hidden");
+  }
+});
 
 // Upload Sender Image
 document.getElementById("uploadSenderImage").onclick = ()=>{
@@ -125,7 +142,7 @@ document.getElementById("uploadSenderImage").onclick = ()=>{
   reader.readAsDataURL(file);
 };
 
-// Update card color
+// Render voters
 function updateCardColor(cardDiv,status){
   cardDiv.classList.remove("card-approved","card-opponent","card-anti");
   if(status==="approved") cardDiv.classList.add("card-approved");
@@ -133,9 +150,6 @@ function updateCardColor(cardDiv,status){
   else cardDiv.classList.add("card-anti");
 }
 
-const voterListDiv = document.getElementById("voterList");
-
-// Render voters
 function renderVoters(){
   onValue(dbRef(db,"voters"), snap=>{
     const query = document.getElementById("searchVoter").value.trim().toLowerCase();
