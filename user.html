@@ -57,7 +57,7 @@ body { background:#eef2ff; }
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref as dbRef, set, onValue, remove, get, child } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref as dbRef, set, onValue, remove, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 // Firebase config
@@ -81,43 +81,43 @@ let senderImageURL = "";
 const loginDiv = document.getElementById("loginDiv");
 const panelDiv = document.getElementById("panelDiv");
 
-document.getElementById("googleLoginBtn").onclick = ()=>{
-    signInWithPopup(auth, provider)
-    .then(res=>{
+document.getElementById("googleLoginBtn").onclick = async ()=>{
+    try{
+        const res = await signInWithPopup(auth, provider);
         const user = res.user;
+        if(!user.email) throw new Error("Email missing in Google account!");
         const emailKey = user.email.replace(/\./g,"_");
-
-        get(child(dbRef(db,"admins"))).then(adminSnap=>{
-            get(child(dbRef(db,"users"))).then(userSnap=>{
-                if(adminSnap.hasChild(emailKey) || userSnap.hasChild(emailKey)){
-                    loginDiv.classList.add("hidden");
-                    panelDiv.classList.remove("hidden");
-                    alert(`Welcome ${user.displayName}!`);
-                    renderVoters();
-                } else {
-                    alert("Access denied! Only admin/user allowed.");
-                    auth.signOut();
-                }
-            });
-        });
-    })
-    .catch(err=>{ console.error(err); alert("Login failed! "+err.message); });
+        const adminSnap = await get(dbRef(db,"admins"));
+        const userSnap = await get(dbRef(db,"users"));
+        if(adminSnap.hasChild(emailKey) || userSnap.hasChild(emailKey)){
+            loginDiv.classList.add("hidden");
+            panelDiv.classList.remove("hidden");
+            alert(`Welcome ${user.displayName || user.email}!`);
+            renderVoters();
+        } else {
+            alert("Access denied! Only admin/user allowed.");
+            auth.signOut();
+        }
+    }catch(err){
+        console.error(err);
+        alert("Login failed! "+err.message);
+    }
 };
 
 // ---------------- Upload Sender Image ----------------
-document.getElementById("uploadSenderImage").onclick = ()=>{
+document.getElementById("uploadSenderImage").onclick = async ()=>{
     const file = document.getElementById("senderImage").files[0];
     if(!file) return alert("Select an image first!");
     const formData = new FormData();
     formData.append('image', file);
-    fetch('https://api.imgbb.com/1/upload?key=8ece3c1f959f2426083eee1699086c71', { method:'POST', body: formData })
-    .then(res=>res.json())
-    .then(data=>{
+    try{
+        const res = await fetch('https://api.imgbb.com/1/upload?key=8ece3c1f959f2426083eee1699086c71',{method:'POST', body: formData});
+        const data = await res.json();
         senderImageURL = data.data.url;
         document.getElementById("senderImgPreview").src = senderImageURL;
         document.getElementById("senderImgPreview").classList.remove("hidden");
         alert("Sender image uploaded!");
-    }).catch(err=>{ console.error(err); alert("Upload failed!"); });
+    }catch(err){ console.error(err); alert("Upload failed!"); }
 };
 
 // ---------------- Helper ----------------
@@ -125,7 +125,7 @@ function updateCardColor(cardDiv, status){
     cardDiv.classList.remove("card-approved","card-opponent","card-anti");
     if(status==="approved") cardDiv.classList.add("card-approved");
     else if(status==="opponent") cardDiv.classList.add("card-opponent");
-    else cardDiv.classList.add("card-anti");
+    else cardDiv.classList.add("anti","card-anti");
 }
 
 // ---------------- Render Voters ----------------
@@ -134,7 +134,8 @@ function renderVoters(){
     onValue(dbRef(db,"voters"), snap=>{
         voterListDiv.innerHTML = '';
         snap.forEach(s=>{
-            const v = s.val(); const key=s.key;
+            const v = s.val();
+            const key = s.key;
             const div = document.createElement("div");
             div.className="card";
             updateCardColor(div,v.status);
@@ -144,9 +145,7 @@ function renderVoters(){
                     <div>
                         <h2 class='font-bold'>${v.name}</h2>
                         <p class='text-sm text-gray-600'>
-                            EPIC: ${v.voterID} | State: ${v.state} | District: ${v.district} | 
-                            AC: ${v.acNo} | Part: ${v.partNo} | Booth: ${v.booth} | 
-                            Age: ${v.age} | Status: ${v.status}
+                            EPIC: ${v.voterID} | State: ${v.state} | District: ${v.district} | AC: ${v.acNo} | Part: ${v.partNo} | Booth: ${v.booth} | Age: ${v.age} | Status: ${v.status}
                         </p>
                     </div>
                 </div>
