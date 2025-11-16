@@ -70,10 +70,6 @@ body { background:#eef2ff; }
 
   <!-- Voter List -->
   <div id="voterList" class="flex-wrap"></div>
-  <div class="mt-4 flex gap-2">
-    <button id="sendAllBtn" class="btn btn-blue">Send WhatsApp (All)</button>
-    <button id="printAllBtn" class="btn btn-green">Print All</button>
-  </div>
 </div>
 
 <script type="module">
@@ -182,13 +178,37 @@ function renderVoters(){
           <button class='btn btn-yellow opponentBtn'>Opponent</button>
           <button class='btn btn-red antiBtn'>Anti</button>
           <button class='btn btn-gray deleteBtn'>Delete</button>
+          <button class='btn btn-blue sendBtn'>Send WhatsApp</button>
+          <button class='btn btn-green printBtn'>Print</button>
         </div>`;
       voterListDiv.appendChild(div);
 
+      // Actions
       div.querySelector(".approveBtn").onclick = ()=>{ set(dbRef(db,"voters/"+key), {...v,status:"approved"}); updateCardColor(div,"approved"); };
       div.querySelector(".opponentBtn").onclick = ()=>{ set(dbRef(db,"voters/"+key), {...v,status:"opponent"}); updateCardColor(div,"opponent"); };
       div.querySelector(".antiBtn").onclick = ()=>{ set(dbRef(db,"voters/"+key), {...v,status:"anti"}); updateCardColor(div,"anti"); };
       div.querySelector(".deleteBtn").onclick = ()=>{ if(confirm(`Delete ${v.name}?`)) remove(dbRef(db,"voters/"+key)); };
+
+      // WhatsApp for individual voter
+      div.querySelector(".sendBtn").onclick = ()=>{
+        let msg = document.getElementById("senderDesc").value + "\n\n";
+        if(senderImageURL) msg += "[Sender Image Attached]\n";
+        msg += `${v.name} | EPIC:${v.voterID} | Address:${v.address} | Part:${v.partNo} | Status:${v.status}`;
+        const url = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+        window.open(url,"_blank");
+      };
+
+      // Print individual voter
+      div.querySelector(".printBtn").onclick = ()=>{
+        let html = `<h2>Sender Info</h2>`;
+        if(senderImageURL) html += `<img src="${senderImageURL}" style="width:50px;height:50px;border-radius:50%;"><br>`;
+        html += `<pre>${document.getElementById("senderDesc").value}</pre><hr>`;
+        html += `<p>${v.name} | EPIC:${v.voterID} | Address:${v.address} | Part:${v.partNo} | Status:${v.status}</p>`;
+        const w = window.open();
+        w.document.write(html);
+        w.print();
+        w.close();
+      };
     });
   });
 }
@@ -237,37 +257,6 @@ document.getElementById("uploadCSV").onclick = ()=>{
       renderVoters();
     }});
   }).catch(err=>{ console.error(err); alert("CSV fetch failed!"); });
-};
-
-// Send WhatsApp (All)
-document.getElementById("sendAllBtn").onclick = ()=>{
-  onValue(dbRef(db,"voters"), snap=>{
-    let message = document.getElementById("senderDesc").value + "\n\n";
-    snap.forEach(s=>{
-      const v = s.val();
-      message += `${v.name} | EPIC:${v.voterID} | Address:${v.address} | Part:${v.partNo} | Status:${v.status}\n`;
-    });
-    // WhatsApp URL encode
-    const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
-    window.open(url,"_blank");
-  }, {onlyOnce:true});
-};
-
-// Print All
-document.getElementById("printAllBtn").onclick = ()=>{
-  onValue(dbRef(db,"voters"), snap=>{
-    let html = `<h2>Sender Info</h2>`;
-    if(senderImageURL) html += `<img src="${senderImageURL}" style="width:50px;height:50px;border-radius:50%;"><br>`;
-    html += `<pre>${document.getElementById("senderDesc").value}</pre><hr>`;
-    snap.forEach(s=>{
-      const v = s.val();
-      html += `<p>${v.name} | EPIC:${v.voterID} | Address:${v.address} | Part:${v.partNo} | Status:${v.status}</p>`;
-    });
-    const w = window.open();
-    w.document.write(html);
-    w.print();
-    w.close();
-  }, {onlyOnce:true});
 };
 </script>
 </body>
