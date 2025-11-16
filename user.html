@@ -51,6 +51,9 @@ body { background:#eef2ff; }
   <input type="text" id="vWard" placeholder="Ward" class="border p-2 w-full mb-2">
   <input type="text" id="vAddress" placeholder="Address" class="border p-2 w-full mb-2">
   <input type="text" id="vMobile" placeholder="Mobile" class="border p-2 w-full mb-2">
+  <input type="text" id="vWhatsApp" placeholder="WhatsApp Number" class="border p-2 w-full mb-2">
+  <input type="text" id="vSender" placeholder="Sender Name" class="border p-2 w-full mb-2">
+  <input type="file" id="vImage" class="border p-2 w-full mb-2">
   <select id="vStatus" class="border p-2 w-full mb-2">
     <option value="anti">Anti</option>
     <option value="opponent">Opponent</option>
@@ -81,6 +84,9 @@ body { background:#eef2ff; }
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getDatabase, ref as dbRef, set, onValue, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
+// ----------------------- Imgbb API Key -----------------------
+const imgbbAPIKey = "5735107daf1af173af2008a3899a2496";
+
 // Firebase Config
 const firebaseConfig = {
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
@@ -100,6 +106,19 @@ function updateCardColor(cardDiv, status){
     if(status==="approved") cardDiv.classList.add("card-approved");
     else if(status==="opponent") cardDiv.classList.add("card-opponent");
     else cardDiv.classList.add("card-anti");
+}
+
+// ---------------------- Imgbb Upload ----------------------
+async function uploadToImgbb(file){
+  const formData = new FormData();
+  formData.append("image", file);
+  const res = await fetch(`https://api.imgbb.com/1/upload?key=${imgbbAPIKey}`, {
+    method: "POST",
+    body: formData
+  });
+  const data = await res.json();
+  if(data.success) return data.data.url;
+  else throw new Error("Image upload failed");
 }
 
 // ---------------------- Render Voter List ----------------------
@@ -124,30 +143,44 @@ function renderVoters(filter="") {
 
             if(v.status==="approved") approved++;
             else if(v.status==="opponent") opponent++;
-            else if(v.status==="anti") anti++;
+            else anti++;
 
             const div = document.createElement("div");
             div.className="card flex flex-wrap justify-between items-center";
             updateCardColor(div, v.status);
 
             div.innerHTML=`<div>
+                <img src="${v.imageURL || ''}" class="w-16 h-16 rounded-full mb-2">
                 <h2 class="font-bold">${v.name}</h2>
                 <p class="text-sm text-gray-600">EPIC: ${v.voterID} | Ward: ${v.ward} | Address: ${v.address || ""} | Status: ${v.status}</p>
+                <p class="text-sm text-gray-600">Sender: ${v.sender || ""}</p>
             </div>
             <div class="flex gap-2 flex-wrap">
                 <button class="btn btn-yellow approveBtn">Approve</button>
                 <button class="btn btn-yellow opponentBtn">Opponent</button>
                 <button class="btn btn-red antiBtn">Anti</button>
                 <button class="btn btn-gray deleteBtn">Delete</button>
-                <button class="btn btn-blue colorBtn">Change Color</button>
+                <button class="btn btn-blue sendBtn">Send WhatsApp</button>
+                <button class="btn btn-gray printBtn">Print</button>
             </div>`;
             voterListDiv.appendChild(div);
 
+            // Buttons
             div.querySelector(".approveBtn").onclick = ()=>{ set(dbRef(db,"voters/"+key), {...v, status:"approved"}); updateCardColor(div,"approved"); };
             div.querySelector(".opponentBtn").onclick = ()=>{ set(dbRef(db,"voters/"+key), {...v, status:"opponent"}); updateCardColor(div,"opponent"); };
             div.querySelector(".antiBtn").onclick = ()=>{ set(dbRef(db,"voters/"+key), {...v, status:"anti"}); updateCardColor(div,"anti"); };
             div.querySelector(".deleteBtn").onclick = ()=>{ if(confirm(`Delete voter ${v.name}?`)) remove(dbRef(db,"voters/"+key)); };
-            div.querySelector(".colorBtn").onclick = ()=>{ updateCardColor(div, v.status); };
+            div.querySelector(".sendBtn").onclick = ()=> {
+                if(!v.whatsapp) return alert("WhatsApp number missing!");
+                const msg = `Hello ${v.name}, Your voter info: Ward ${v.ward}, Address: ${v.address}. Sent by ${v.sender}`;
+                window.open(`https://wa.me/${v.whatsapp}?text=${encodeURIComponent(msg)}`, "_blank");
+            };
+            div.querySelector(".printBtn").onclick = ()=> {
+                const printContent = `Voter: ${v.name}\nEPIC: ${v.voterID}\nWard: ${v.ward}\nAddress: ${v.address}\nSender: ${v.sender}`;
+                const newWin = window.open("", "_blank");
+                newWin.document.write("<pre>"+printContent+"</pre>");
+                newWin.print();
+            };
         });
 
         document.getElementById("countApproved").innerText = approved;
@@ -160,27 +193,36 @@ function renderVoters(filter="") {
 renderVoters();
 
 // ---------------------- Manual Add ----------------------
-document.getElementById("addVoter").onclick = () => {
+document.getElementById("addVoter").onclick = async () => {
     const n=document.getElementById("vName").value.trim();
     const e=document.getElementById("vEPIC").value.trim();
     const w=document.getElementById("vWard").value.trim() || "20";
     const a=document.getElementById("vAddress").value.trim();
     const m=document.getElementById("vMobile").value.trim();
+    const whatsapp=document.getElementById("vWhatsApp").value.trim();
+    const sender=document.getElementById("vSender").value.trim();
     const s=document.getElementById("vStatus").value;
+    const imgFile=document.getElementById("vImage").files[0];
     if(!n||!e) return alert("Name और EPIC जरूरी हैं!");
+
+    let imageURL = "";
+    if(imgFile) imageURL = await uploadToImgbb(imgFile);
+
     const key = e.replace(/\W/g,"_");
-    set(dbRef(db,"voters/"+key), { name:n, voterID:e, ward:w, address:a, mobile:m, status:s })
+    set(dbRef(db,"voters/"+key), { name:n, voterID:e, ward:w, address:a, mobile:m, whatsapp, sender, status:s, imageURL })
     .then(()=>{
-        alert("Voter added!");
+        alert("Voter added with image!");
         document.getElementById("vName").value="";
         document.getElementById("vEPIC").value="";
         document.getElementById("vWard").value="";
         document.getElementById("vAddress").value="";
         document.getElementById("vMobile").value="";
+        document.getElementById("vWhatsApp").value="";
+        document.getElementById("vSender").value="";
         document.getElementById("vStatus").value="anti";
+        document.getElementById("vImage").value="";
         renderVoters();
-    })
-    .catch(err=>{ console.error(err); alert("Add voter failed!"); });
+    }).catch(err=>console.error(err));
 };
 
 // ---------------------- CSV / Google Sheet Upload ----------------------
@@ -194,7 +236,7 @@ document.getElementById("uploadCSV").onclick = () => {
     fetch(link)
     .then(res=>res.text())
     .then(csvText=>{
-        Papa.parse(csvText, { header:true, skipEmptyLines:true, complete: results=>{
+        Papa.parse(csvText,{header:true,skipEmptyLines:true,complete: results=>{
             results.data.forEach(row=>{
                 if(!row.EPIC) return;
                 const key = row.EPIC.replace(/\W/g,"_");
@@ -204,27 +246,22 @@ document.getElementById("uploadCSV").onclick = () => {
                     ward: row.Ward || "20",
                     address: row.Address || "",
                     mobile: row.Mobile || "",
-                    status: "anti"
-                }).catch(err=>console.error("CSV upload failed:", row.EPIC, err));
+                    whatsapp: row.WhatsApp || "",
+                    sender: row.Sender || "",
+                    status: "anti",
+                    imageURL: row.ImageURL || ""
+                });
             });
-            alert("CSV uploaded successfully!");
+            alert("CSV uploaded with images!");
             renderVoters();
         }});
-    })
-    .catch(err=>{ console.error(err); alert("CSV fetch failed!"); });
+    }).catch(err=>console.error(err));
 };
 
-// ---------------------- Search ----------------------
-document.getElementById("searchBtn").onclick = ()=> {
-    const q = document.getElementById("searchInput").value.trim();
-    renderVoters(q);
-};
+// ---------------------- Search & Reset ----------------------
+document.getElementById("searchBtn").onclick = ()=> { renderVoters(document.getElementById("searchInput").value.trim()); };
+document.getElementById("resetBtn").onclick = ()=> { document.getElementById("searchInput").value=""; renderVoters(); };
 
-// ---------------------- Reset ----------------------
-document.getElementById("resetBtn").onclick = ()=> {
-    document.getElementById("searchInput").value="";
-    renderVoters();
-};
 </script>
 </body>
 </html>
