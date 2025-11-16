@@ -10,29 +10,36 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <style>
 .btn-3d { 
-  background: linear-gradient(145deg,#4f46e5,#6366f1); 
   color:white; font-weight:bold; padding:.5rem 1rem; 
   border-radius:.5rem; box-shadow:4px 4px 6px #333,-4px -4px 6px #777; 
-  cursor:pointer; transition: all .2s;
-  text-align:center;
+  cursor:pointer; transition: all .2s; text-align:center; margin:2px;
 }
 .btn-3d:hover{
   box-shadow: inset 4px 4px 6px #333,inset -4px -4px 6px #777;
 }
 .card { border-radius:.5rem; padding:1rem; margin:0.5rem 0; box-shadow:4px 4px 6px #ccc,-4px -4px 6px #eee; }
-.yellow{background:#fefcbf;} .red{background:#fecaca;} .green{background:#bbf7d0;}
+.green{background:#bbf7d0;} .red{background:#fecaca;} .yellow{background:#fefcbf;}
 </style>
 </head>
 <body class="bg-gray-100 p-4">
 
-<h1 class="text-2xl font-bold mb-4 text-center">Voter WhatsApp Sender - Ward 20</h1>
+<h1 class="text-2xl font-bold mb-4 flex items-center justify-center gap-2">
+  <img src="https://i.postimg.cc/htFMsTSZ/Numeral-20-with-Bold-Ward.png" class="h-12 w-12 rounded-full shadow-lg">
+  Voter List - Ward 20
+</h1>
 
-<!-- CSV Upload + Image -->
+<!-- Sender Info Form -->
 <div class="bg-white p-4 rounded shadow mb-4">
+  <h2 class="text-xl font-bold mb-2">Sender Info</h2>
+  <input type="text" id="senderPhoto" placeholder="Photo URL to send" class="border p-2 w-full mb-2">
+</div>
+
+<!-- CSV Upload -->
+<div class="bg-white p-4 rounded shadow mb-4">
+  <h2 class="text-xl font-bold mb-2">Upload Voter CSV</h2>
   <input type="file" id="csvFile" class="border p-2 w-full mb-2">
   <input type="text" id="csvLink" placeholder="Or paste CSV link here" class="border p-2 w-full mb-2">
-  <input type="text" id="senderPhoto" placeholder="Photo URL to send with all voters" class="border p-2 w-full mb-2">
-  <button id="uploadBtn" class="btn-3d w-full">Upload CSV to Firebase</button>
+  <button id="uploadBtn" class="btn-3d w-full" style="background:linear-gradient(145deg,#4f46e5,#6366f1)">Upload CSV</button>
 </div>
 
 <!-- Voter Cards -->
@@ -108,11 +115,11 @@ function loadVoters(){
         <div><b>${voter.name}</b> | EPIC: ${voter.voterID} | Ward: ${voter.ward}</div>
         <div>Mobile: ${voter.mobile}</div>
         <div class="flex mt-2 gap-2 flex-wrap">
-          <button class="btn-3d sendBtn">Send WhatsApp</button>
-          <button class="btn-3d printBtn">Print</button>
-          <button class="btn-3d statusBtn" data-status="approved">Approve</button>
-          <button class="btn-3d statusBtn" data-status="opponent">Opponent</button>
-          <button class="btn-3d statusBtn" data-status="anti">anti</button>
+          <button class="btn-3d sendBtn" style="background:linear-gradient(145deg,#4f46e5,#6366f1)">Send WhatsApp</button>
+          <button class="btn-3d printBtn" style="background:linear-gradient(145deg,#4f46e5,#6366f1)">Print</button>
+          <button class="btn-3d statusBtn" data-status="approved" style="background:#bbf7d0">Approve</button>
+          <button class="btn-3d statusBtn" data-status="opponent" style="background:#fecaca">Opponent</button>
+          <button class="btn-3d statusBtn" data-status="anti" style="background:#fefcbf">Anti</button>
         </div>
       `;
       voterCardsDiv.appendChild(card);
