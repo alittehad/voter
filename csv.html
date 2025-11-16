@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voter CSV Upload - Ward 20</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+.btn-3d { 
+  background: linear-gradient(145deg,#4f46e5,#6366f1); 
+  color:white; font-weight:bold; padding:.5rem 1rem; 
+  border-radius:.5rem; box-shadow:4px 4px 6px #333,-4px -4px 6px #777; 
+  cursor:pointer; transition: all .2s;
+}
+.btn-3d:hover{
+  box-shadow: inset 4px 4px 6px #333,inset -4px -4px 6px #777;
+}
+</style>
+</head>
+<body class="bg-gray-100 p-4">
+
+<h1 class="text-2xl font-bold mb-4 text-center">Voter CSV Upload</h1>
+
+<div class="bg-white p-4 rounded shadow mb-4">
+  <input type="file" id="csvFile" class="border p-2 w-full mb-2">
+  <button id="uploadBtn" class="btn-3d w-full">Upload CSV to Firebase</button>
+</div>
+
+<h2 class="text-xl font-bold mb-2">Voter List</h2>
+<div id="voterList" class="overflow-auto max-h-64 border p-2 bg-white rounded shadow"></div>
+
+<script type="module">
+// ---------------- Firebase Setup ----------------
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getDatabase, ref as dbRef, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
+  authDomain: "voter-25c94.firebaseapp.com",
+  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
+  projectId: "voter-25c94",
+  storageBucket: "voter-25c94.appspot.com",
+  messagingSenderId: "297773534400",
+  appId: "1:297773534400:web:3722c487b8c83e9b787125"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// ---------------- Upload CSV ----------------
+document.getElementById("uploadBtn").addEventListener("click", () => {
+  const file = document.getElementById("csvFile").files[0];
+  if(!file) return alert("Please select a CSV file");
+
+  Papa.parse(file, { header: true, skipEmptyLines: true, complete: function(results) {
+    results.data.forEach(row => {
+      const keyRaw = row.EPIC || row.voterID;
+      if(!keyRaw) return;
+      const safeKey = keyRaw.replace(/\W/g,"_");
+      set(dbRef(db,"voters/"+safeKey), {
+        name: row.Name || row.name,
+        voterID: keyRaw,
+        ward: row.Ward || row.ward || "20",
+        status: "pending"
+      });
+    });
+    alert("CSV uploaded successfully!");
+  }});
+});
+
+// ---------------- Display Voter List ----------------
+const voterListDiv = document.getElementById("voterList");
+
+function loadVoters() {
+  voterListDiv.innerHTML = "";
+  onValue(dbRef(db,"voters"), snapshot => {
+    voterListDiv.innerHTML = "";
+    snapshot.forEach(snap => {
+      const voter = snap.val();
+      const div = document.createElement("div");
+      let bg = voter.status==="approved"?"bg-green-200":voter.status==="opponent"?"bg-red-200":"bg-yellow-200";
+      div.className = `border p-2 my-1 rounded ${bg} flex justify-between`;
+      div.innerHTML = `<span><b>${voter.name}</b> | EPIC: ${voter.voterID} | Ward: ${voter.ward} | Status: ${voter.status}</span>`;
+      voterListDiv.appendChild(div);
+    });
+  });
+}
+
+// Load voters on page load
+loadVoters();
+</script>
+
+</body>
+</html>
