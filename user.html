@@ -86,17 +86,13 @@ const panelDiv = document.getElementById("panelDiv");
 document.getElementById("googleLoginBtn").onclick = async ()=>{
   try{
     const res = await signInWithPopup(auth, provider);
-    const emailKey = res.user.email.replace(/\./g,"_");
-
-    const adminSnap = await get(child(dbRef(db,"admins")));
-    const userSnap = await get(child(dbRef(db,"users")));
-
-    const isAdmin = adminSnap.exists() && adminSnap.hasChild(emailKey);
-    const isUser  = userSnap.exists() && userSnap.hasChild(emailKey);
-
-    console.log("Email Key:", emailKey, "isAdmin:", isAdmin, "isUser:", isUser);
-
-    if(isAdmin || isUser){
+    const emailKey = res.user.email.replace(/\./g,"_").replace(/@/g,"_");
+    
+    // Hardcoded Admin/User check
+    const admins = ["ngogrant454_gmail_com"];
+    const users  = ["zarafix3_gmail_com"];
+    
+    if(admins.includes(emailKey) || users.includes(emailKey)){
       loginDiv.classList.add("hidden");
       panelDiv.classList.remove("hidden");
       alert(`Welcome ${res.user.displayName}`);
@@ -111,41 +107,40 @@ document.getElementById("googleLoginBtn").onclick = async ()=>{
   }
 };
 
-// ---------------- Upload Sender Image ----------------
-document.getElementById("uploadSenderImage").onclick = async ()=>{
+// ----------------- Sender Image Upload -----------------
+document.getElementById("uploadSenderImage").onclick = ()=>{
   const file = document.getElementById("senderImage").files[0];
   if(!file) return alert("Select an image first!");
   const formData = new FormData();
   formData.append('image', file);
-  try{
-    const res = await fetch('https://api.imgbb.com/1/upload?key=8ece3c1f959f2426083eee1699086c71', { method:'POST', body: formData });
-    const data = await res.json();
+  fetch('https://api.imgbb.com/1/upload?key=8ece3c1f959f2426083eee1699086c71', { method:'POST', body: formData })
+  .then(res=>res.json())
+  .then(data=>{
     senderImageURL = data.data.url;
     document.getElementById("senderImgPreview").src = senderImageURL;
     document.getElementById("senderImgPreview").classList.remove("hidden");
     alert("Sender image uploaded!");
-  }catch(err){ console.error(err); alert("Upload failed!"); }
+  }).catch(err=>{ console.error(err); alert("Upload failed!"); });
 };
 
-// ---------------- Helper ----------------
-function updateCardColor(cardDiv, status){
+// ----------------- Render Voters -----------------
+function updateCardColor(cardDiv,status){
   cardDiv.classList.remove("card-approved","card-opponent","card-anti");
   if(status==="approved") cardDiv.classList.add("card-approved");
   else if(status==="opponent") cardDiv.classList.add("card-opponent");
   else cardDiv.classList.add("card-anti");
 }
 
-// ---------------- Render Voters ----------------
 const voterListDiv = document.getElementById("voterList");
 function renderVoters(){
   onValue(dbRef(db,"voters"), snap=>{
     voterListDiv.innerHTML = '';
     snap.forEach(s=>{
-      const v = s.val(); const key=s.key;
-      const div = document.createElement("div");
+      const v=s.val(); const key=s.key;
+      const div=document.createElement("div");
       div.className="card";
       updateCardColor(div,v.status);
-      div.innerHTML = `
+      div.innerHTML=`
         <div style="display:flex; align-items:center;">
           ${senderImageURL ? `<img src='${senderImageURL}' class='img-sender'>` : ''}
           <div>
@@ -172,24 +167,21 @@ function renderVoters(){
       div.querySelector(".antiBtn").onclick = ()=>{ set(dbRef(db,"voters/"+key), {...v,status:"anti"}); updateCardColor(div,"anti"); };
       div.querySelector(".deleteBtn").onclick = ()=>{ if(confirm(`Delete ${v.name}?`)) remove(dbRef(db,"voters/"+key)); };
       div.querySelector(".sendBtn").onclick = ()=>{
-        const senderName = document.getElementById("senderName").value.trim();
-        const senderMobile = document.getElementById("senderMobile").value.trim();
+        const senderName=document.getElementById("senderName").value.trim();
+        const senderMobile=document.getElementById("senderMobile").value.trim();
         if(!senderName || !senderMobile) return alert("Enter sender info!");
         if(!v.mobile) return alert("Voter mobile missing!");
-        const msg = `Name: ${v.name}\nEPIC: ${v.voterID}\nState: ${v.state}\nDistrict: ${v.district}\nAC: ${v.acNo}\nPart: ${v.partNo}\nBooth: ${v.booth}\nAge: ${v.age}\nStatus: ${v.status}\nSender: ${senderName} ${senderMobile}`;
+        const msg=`Name: ${v.name}\nEPIC: ${v.voterID}\nState: ${v.state}\nDistrict: ${v.district}\nAC: ${v.acNo}\nPart: ${v.partNo}\nBooth: ${v.booth}\nAge: ${v.age}\nStatus: ${v.status}\nSender: ${senderName} ${senderMobile}`;
         window.open(`https://wa.me/${v.mobile}?text=${encodeURIComponent(msg)}`,'_blank');
       };
       div.querySelector(".printBtn").onclick = ()=>{
-        const w = window.open();
-        w.document.write(`<pre>${div.innerText}</pre>`);
-        w.print();
-        w.close();
+        const w=window.open(); w.document.write(`<pre>${div.innerText}</pre>`); w.print(); w.close();
       };
     });
   });
 }
 
-// ---------------- CSV Upload ----------------
+// ----------------- CSV Upload -----------------
 document.getElementById("uploadCSV").onclick = ()=>{
   let link = document.getElementById("csvLink").value.trim();
   if(!link) return alert("Enter CSV link!");
@@ -201,7 +193,7 @@ document.getElementById("uploadCSV").onclick = ()=>{
     Papa.parse(csvText,{header:true,skipEmptyLines:true,complete:results=>{
       results.data.forEach(row=>{
         if(!row.EPIC) return;
-        const key = row.EPIC.replace(/\W/g,"_");
+        const key=row.EPIC.replace(/\W/g,"_");
         set(dbRef(db,"voters/"+key),{
           name: row.Name || "",
           voterID: row.EPIC,
