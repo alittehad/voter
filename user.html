@@ -58,7 +58,7 @@ body { background:#eef2ff; }
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getDatabase, ref as dbRef, set, onValue, remove, get, child } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 // Firebase config
 const firebaseConfig = {
@@ -82,12 +82,14 @@ const loginDiv = document.getElementById("loginDiv");
 const panelDiv = document.getElementById("panelDiv");
 
 document.getElementById("googleLoginBtn").onclick = ()=>{
-    signInWithPopup(auth, provider).then(res=>{
+    signInWithPopup(auth, provider)
+    .then(res=>{
         const user = res.user;
-        const email = user.email;
+        const emailKey = user.email.replace(/\./g,"_");
+
         get(child(dbRef(db,"admins"))).then(adminSnap=>{
             get(child(dbRef(db,"users"))).then(userSnap=>{
-                if(adminSnap.hasChild(email.replace(/\./g,"_")) || userSnap.hasChild(email.replace(/\./g,"_"))){
+                if(adminSnap.hasChild(emailKey) || userSnap.hasChild(emailKey)){
                     loginDiv.classList.add("hidden");
                     panelDiv.classList.remove("hidden");
                     alert(`Welcome ${user.displayName}!`);
@@ -98,7 +100,8 @@ document.getElementById("googleLoginBtn").onclick = ()=>{
                 }
             });
         });
-    }).catch(err=>{ console.error(err); alert("Login failed!"); });
+    })
+    .catch(err=>{ console.error(err); alert("Login failed! "+err.message); });
 };
 
 // ---------------- Upload Sender Image ----------------
@@ -140,7 +143,11 @@ function renderVoters(){
                     ${senderImageURL ? `<img src='${senderImageURL}' class='img-sender'>` : ''}
                     <div>
                         <h2 class='font-bold'>${v.name}</h2>
-                        <p class='text-sm text-gray-600'>EPIC: ${v.voterID} | State: ${v.state} | District: ${v.district} | AC: ${v.acNo} | Part: ${v.partNo} | Booth: ${v.booth} | Age: ${v.age} | Status: ${v.status}</p>
+                        <p class='text-sm text-gray-600'>
+                            EPIC: ${v.voterID} | State: ${v.state} | District: ${v.district} | 
+                            AC: ${v.acNo} | Part: ${v.partNo} | Booth: ${v.booth} | 
+                            Age: ${v.age} | Status: ${v.status}
+                        </p>
                     </div>
                 </div>
                 <div class='flex gap-2 flex-wrap mt-2'>
@@ -151,6 +158,7 @@ function renderVoters(){
                     <button class='btn btn-blue sendBtn'>Send WhatsApp</button>
                 </div>`;
             voterListDiv.appendChild(div);
+
             div.querySelector(".approveBtn").onclick = ()=>{ set(dbRef(db,"voters/"+key), {...v,status:"approved"}); updateCardColor(div,"approved"); };
             div.querySelector(".opponentBtn").onclick = ()=>{ set(dbRef(db,"voters/"+key), {...v,status:"opponent"}); updateCardColor(div,"opponent"); };
             div.querySelector(".antiBtn").onclick = ()=>{ set(dbRef(db,"voters/"+key), {...v,status:"anti"}); updateCardColor(div,"anti"); };
@@ -198,7 +206,6 @@ document.getElementById("uploadCSV").onclick = ()=>{
         }});
     }).catch(err=>{ console.error(err); alert("CSV fetch failed!"); });
 };
-
 </script>
 </body>
 </html>
