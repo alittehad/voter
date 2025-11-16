@@ -8,8 +8,15 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <style>
 body { background:#eef2ff; }
-.card { background:white; border-radius:1rem; box-shadow:6px 6px 12px rgba(0,0,0,0.1), -6px -6px 12px rgba(255,255,255,0.7); padding:16px; margin-bottom:12px; transition: all 0.2s; }
+
+.card { border-radius:1rem; box-shadow:6px 6px 12px rgba(0,0,0,0.1), -6px -6px 12px rgba(255,255,255,0.7); padding:16px; margin-bottom:12px; transition: all 0.2s; }
 .card:hover { transform: translateY(-3px); }
+
+/* Status colors */
+.card-approved { background-color: #dcfce7; }   /* हल्का green */
+.card-opponent { background-color: #fef9c3; }   /* हल्का yellow */
+.card-anti { background-color: #fee2e2; }       /* हल्का red */
+
 .btn { cursor:pointer; padding:0.5rem 1rem; border-radius:0.7rem; font-weight:bold; transition: all 0.2s; text-align:center; box-shadow:4px 4px 6px #bbb, -4px -4px 6px #fff; }
 .btn:hover { box-shadow: inset 4px 4px 6px #bbb, inset -4px -4px 6px #fff; }
 .btn-blue { background:#2563eb;color:white; }
@@ -17,6 +24,7 @@ body { background:#eef2ff; }
 .btn-yellow { background:#facc15;color:black; }
 .btn-red { background:#dc2626;color:white; }
 .btn-gray { background:#9ca3af;color:white; }
+
 @media(max-width:640px){
   .flex-wrap { flex-direction: column; }
   .grid-cols-3 { grid-template-columns: 1fr; }
@@ -31,8 +39,8 @@ body { background:#eef2ff; }
 
 <!-- CSV Upload -->
 <div class="bg-white p-4 rounded shadow mb-4">
-  <h2 class="text-xl font-bold mb-2 text-blue-700">Upload Voter CSV</h2>
-  <input type="text" id="csvLink" placeholder="Direct CSV Link" class="border p-2 w-full mb-2">
+  <h2 class="text-xl font-bold mb-2 text-blue-700">Upload Voter CSV / Google Sheet</h2>
+  <input type="text" id="csvLink" placeholder="CSV / Google Sheet link" class="border p-2 w-full mb-2">
   <button id="uploadCSV" class="btn btn-blue w-full">Upload CSV</button>
 </div>
 
@@ -78,54 +86,63 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
+// ---------------------- Helper: Card Color ----------------------
+function updateCardColor(cardDiv, status){
+    cardDiv.classList.remove("card-approved", "card-opponent", "card-anti");
+    if(status==="approved") cardDiv.classList.add("card-approved");
+    else if(status==="opponent") cardDiv.classList.add("card-opponent");
+    else cardDiv.classList.add("card-anti");
+}
+
 // ---------------------- Manual Add ----------------------
 document.getElementById("addVoter").onclick = () => {
-  const n=document.getElementById("vName").value.trim();
-  const e=document.getElementById("vEPIC").value.trim();
-  const w=document.getElementById("vWard").value.trim() || "20";
-  const m=document.getElementById("vMobile").value.trim();
-  const s=document.getElementById("vStatus").value;
-  if(!n||!e) return alert("Name और EPIC जरूरी हैं!");
-  const key = e.replace(/\W/g,"_");
-  set(dbRef(db,"voters/"+key), { name:n, voterID:e, ward:w, mobile:m, status:s })
+    const n=document.getElementById("vName").value.trim();
+    const e=document.getElementById("vEPIC").value.trim();
+    const w=document.getElementById("vWard").value.trim() || "20";
+    const m=document.getElementById("vMobile").value.trim();
+    const s=document.getElementById("vStatus").value;
+    if(!n||!e) return alert("Name और EPIC जरूरी हैं!");
+    const key = e.replace(/\W/g,"_");
+    set(dbRef(db,"voters/"+key), { name:n, voterID:e, ward:w, mobile:m, status:s })
     .then(()=>{
-      alert("Voter added!");
-      document.getElementById("vName").value="";
-      document.getElementById("vEPIC").value="";
-      document.getElementById("vWard").value="";
-      document.getElementById("vMobile").value="";
-      document.getElementById("vStatus").value="anti";
+        alert("Voter added!");
+        document.getElementById("vName").value="";
+        document.getElementById("vEPIC").value="";
+        document.getElementById("vWard").value="";
+        document.getElementById("vMobile").value="";
+        document.getElementById("vStatus").value="anti";
     })
     .catch(err=>{ console.error(err); alert("Add voter failed!"); });
 };
 
-// ---------------------- CSV Upload ----------------------
+// ---------------------- CSV / Google Sheet Upload ----------------------
 document.getElementById("uploadCSV").onclick = () => {
-  const link = document.getElementById("csvLink").value.trim();
-  if(!link) return alert("Direct CSV link डालें");
-  
-  fetch(link)
-    .then(res => res.text())
+    let link = document.getElementById("csvLink").value.trim();
+    if(!link) return alert("CSV / Google Sheet link डालें");
+
+    // अगर Google Sheet share link हो तो convert करें
+    if(link.includes("docs.google.com/spreadsheets/d/")) {
+        const idMatch = link.match(/\/d\/([a-zA-Z0-9-_]+)/);
+        if(idMatch) link = `https://docs.google.com/spreadsheets/d/${idMatch[1]}/export?format=csv`;
+    }
+
+    fetch(link)
+    .then(res=>res.text())
     .then(csvText=>{
-      Papa.parse(csvText, {
-        header:true,
-        skipEmptyLines:true,
-        complete: results => {
-          console.log("CSV parsed:", results.data);
-          results.data.forEach(row=>{
-            if(!row.EPIC) return;
-            const key = row.EPIC.replace(/\W/g,"_");
-            set(dbRef(db,"voters/"+key), {
-              name: row.Name || "",
-              voterID: row.EPIC,
-              ward: row.Ward || "20",
-              mobile: row.Mobile || "",
-              status: "anti"
-            }).catch(err=>console.error("CSV upload failed:", row.EPIC, err));
-          });
-          alert("CSV uploaded successfully!");
-        }
-      });
+        Papa.parse(csvText, { header:true, skipEmptyLines:true, complete: results=>{
+            results.data.forEach(row=>{
+                if(!row.EPIC) return;
+                const key = row.EPIC.replace(/\W/g,"_");
+                set(dbRef(db,"voters/"+key), {
+                    name: row.Name || "",
+                    voterID: row.EPIC,
+                    ward: row.Ward || "20",
+                    mobile: row.Mobile || "",
+                    status: "anti"
+                }).catch(err=>console.error("CSV upload failed:", row.EPIC, err));
+            });
+            alert("CSV uploaded successfully!");
+        }});
     })
     .catch(err=>{ console.error(err); alert("CSV fetch failed!"); });
 };
@@ -133,39 +150,55 @@ document.getElementById("uploadCSV").onclick = () => {
 // ---------------------- Render Voter List ----------------------
 const voterListDiv = document.getElementById("voterList");
 onValue(dbRef(db,"voters"), snap => {
-  voterListDiv.innerHTML="";
-  let approved=0, opponent=0, anti=0;
-  snap.forEach(s => {
-    const v = s.val();
-    const key = s.key;
-    if(v.status=="approved") approved++;
-    else if(v.status=="opponent") opponent++;
-    else anti++;
+    voterListDiv.innerHTML="";
+    let approved=0, opponent=0, anti=0;
 
-    const div = document.createElement("div");
-    div.className="card flex flex-wrap justify-between items-center";
-    div.innerHTML=`<div>
-      <h2 class="font-bold">${v.name}</h2>
-      <p class="text-sm text-gray-600">EPIC: ${v.voterID} | Ward: ${v.ward} | Status: ${v.status}</p>
-    </div>
-    <div class="flex gap-2 flex-wrap">
-      <button class="btn btn-yellow approveBtn">Approve</button>
-      <button class="btn btn-yellow opponentBtn">Opponent</button>
-      <button class="btn btn-red antiBtn">Anti</button>
-      <button class="btn btn-gray deleteBtn">Delete</button>
-    </div>`;
-    voterListDiv.appendChild(div);
+    snap.forEach(s=>{
+        const v = s.val();
+        const key = s.key;
 
-    div.querySelector(".approveBtn").onclick = ()=>set(dbRef(db,"voters/"+key), {...v, status:"approved"});
-    div.querySelector(".opponentBtn").onclick = ()=>set(dbRef(db,"voters/"+key), {...v, status:"opponent"});
-    div.querySelector(".antiBtn").onclick = ()=>set(dbRef(db,"voters/"+key), {...v, status:"anti"});
-    div.querySelector(".deleteBtn").onclick = ()=>{
-      if(confirm(`Delete voter ${v.name}?`)) remove(dbRef(db,"voters/"+key));
-    };
-  });
-  document.getElementById("countApproved").innerText = approved;
-  document.getElementById("countOpponent").innerText = opponent;
-  document.getElementById("countAnti").innerText = anti;
+        if(v.status==="approved") approved++;
+        else if(v.status==="opponent") opponent++;
+        else anti++;
+
+        const div = document.createElement("div");
+        div.className="card flex flex-wrap justify-between items-center";
+        updateCardColor(div, v.status);
+
+        div.innerHTML=`<div>
+            <h2 class="font-bold">${v.name}</h2>
+            <p class="text-sm text-gray-600">EPIC: ${v.voterID} | Ward: ${v.ward} | Status: ${v.status}</p>
+        </div>
+        <div class="flex gap-2 flex-wrap">
+            <button class="btn btn-yellow approveBtn">Approve</button>
+            <button class="btn btn-yellow opponentBtn">Opponent</button>
+            <button class="btn btn-red antiBtn">Anti</button>
+            <button class="btn btn-gray deleteBtn">Delete</button>
+        </div>`;
+
+        voterListDiv.appendChild(div);
+
+        // Buttons
+        div.querySelector(".approveBtn").onclick = ()=>{
+            set(dbRef(db,"voters/"+key), {...v, status:"approved"});
+            updateCardColor(div,"approved");
+        };
+        div.querySelector(".opponentBtn").onclick = ()=>{
+            set(dbRef(db,"voters/"+key), {...v, status:"opponent"});
+            updateCardColor(div,"opponent");
+        };
+        div.querySelector(".antiBtn").onclick = ()=>{
+            set(dbRef(db,"voters/"+key), {...v, status:"anti"});
+            updateCardColor(div,"anti");
+        };
+        div.querySelector(".deleteBtn").onclick = ()=>{
+            if(confirm(`Delete voter ${v.name}?`)) remove(dbRef(db,"voters/"+key));
+        };
+    });
+
+    document.getElementById("countApproved").innerText = approved;
+    document.getElementById("countOpponent").innerText = opponent;
+    document.getElementById("countAnti").innerText = anti;
 });
 </script>
 </body>
