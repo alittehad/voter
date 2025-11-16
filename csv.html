@@ -3,51 +3,69 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Voter WhatsApp Sender - Ward 20</title>
+<title>Voter List - Ward 20</title>
+
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
 <style>
 .btn-3d { 
-  color:white; font-weight:bold; padding:.5rem 1rem; 
-  border-radius:.5rem; box-shadow:4px 4px 6px #333,-4px -4px 6px #777; 
-  cursor:pointer; transition: all .2s; text-align:center; margin:2px;
+  background: linear-gradient(145deg,#4f46e5,#6366f1);
+  color:white; font-weight:bold; padding:.5rem 1rem;
+  border-radius:.5rem; box-shadow:4px 4px 6px #333,-4px -4px 6px #777;
+  cursor:pointer; transition: all .2s; text-align:center;
 }
-.btn-3d:hover{
-  box-shadow: inset 4px 4px 6px #333,inset -4px -4px 6px #777;
-}
-.card { border-radius:.5rem; padding:1rem; margin:0.5rem 0; box-shadow:4px 4px 6px #ccc,-4px -4px 6px #eee; }
-.green{background:#bbf7d0;} .red{background:#fecaca;} .yellow{background:#fefcbf;}
+.btn-3d:hover { box-shadow: inset 4px 4px 6px #333,inset -4px -4px 6px #777; }
+
+.card { border-radius:.7rem; padding:1rem; margin:1rem 0;
+  box-shadow:4px 4px 6px #aaa,-4px -4px 6px #fff; }
+
+.red { background:#fecaca; }      /* ANTI */
+.yellow { background:#fef9c3; }   /* OPPONENT */
+.green { background:#bbf7d0; }    /* APPROVED */
 </style>
 </head>
+
 <body class="bg-gray-100 p-4">
 
-<h1 class="text-2xl font-bold mb-4 flex items-center justify-center gap-2">
-  <img src="https://i.postimg.cc/htFMsTSZ/Numeral-20-with-Bold-Ward.png" class="h-12 w-12 rounded-full shadow-lg">
-  Voter List - Ward 20
-</h1>
-
-<!-- Sender Info Form -->
-<div class="bg-white p-4 rounded shadow mb-4">
-  <h2 class="text-xl font-bold mb-2">Sender Info</h2>
-  <input type="text" id="senderPhoto" placeholder="Photo URL to send" class="border p-2 w-full mb-2">
+<!-- HEADER WITH LOGO -->
+<div class="flex items-center justify-center mb-4">
+  <img src="https://i.postimg.cc/htFMsTSZ/Numeral-20-with-Bold-Ward.png" class="w-24 h-24 mr-3">
+  <h1 class="text-3xl font-bold">Voter List - Ward 20</h1>
 </div>
 
-<!-- CSV Upload -->
+<!-- SENDER INFO SECTION -->
 <div class="bg-white p-4 rounded shadow mb-4">
-  <h2 class="text-xl font-bold mb-2">Upload Voter CSV</h2>
-  <input type="file" id="csvFile" class="border p-2 w-full mb-2">
-  <input type="text" id="csvLink" placeholder="Or paste CSV link here" class="border p-2 w-full mb-2">
-  <button id="uploadBtn" class="btn-3d w-full" style="background:linear-gradient(145deg,#4f46e5,#6366f1)">Upload CSV</button>
+  <h2 class="text-xl font-bold mb-2">Sender Information</h2>
+
+  <input type="text" id="senderName" placeholder="Sender Name" class="border p-2 w-full mb-2">
+
+  <input type="text" id="senderMessage" placeholder="Message to send" class="border p-2 w-full mb-2">
+
+  <p class="font-semibold mb-1">Upload Sender Photo:</p>
+  <input type="file" id="senderImage" class="border p-2 w-full mb-2">
+
+  <button id="saveSender" class="btn-3d w-full">Save Sender Info</button>
 </div>
 
-<!-- Voter Cards -->
+<!-- CSV LINK UPLOAD -->
+<div class="bg-white p-4 rounded shadow mb-4">
+  <h2 class="text-xl font-bold mb-2">Upload Voter CSV (URL Link)</h2>
+
+  <input type="text" id="csvLink" placeholder="Paste CSV Link Here" class="border p-2 w-full mb-2">
+
+  <button id="uploadBtn" class="btn-3d w-full">Upload CSV</button>
+</div>
+
+<!-- VOTER CARDS -->
 <div id="voterCards"></div>
+
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref as dbRef, set, onValue, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref as dbRef, set, update, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
@@ -62,103 +80,145 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// ---------------- Upload CSV ----------------
-document.getElementById("uploadBtn").addEventListener("click", () => {
-  const file = document.getElementById("csvFile").files[0];
-  const link = document.getElementById("csvLink").value;
-  const senderPhoto = document.getElementById("senderPhoto").value;
-  if(!file && !link) return alert("Please select CSV file or paste link");
-  if(!senderPhoto) return alert("Enter photo URL");
+let senderPhoto64 = "";
 
-  const parseCSV = (csvText) => {
-    Papa.parse(csvText, { header:true, skipEmptyLines:true, complete: results => {
-      results.data.forEach(row => {
-        const keyRaw = row.EPIC || row.voterID;
-        if(!keyRaw) return;
-        const safeKey = keyRaw.replace(/\W/g,"_");
-        set(dbRef(db,"voters/"+safeKey), {
-          name: row.Name || row.name,
-          voterID: keyRaw,
-          ward: row.Ward || row.ward || "20",
-          status: "anti",
-          mobile: row.Mobile || row.mobile || "",
-          senderPhoto: senderPhoto
-        });
-      });
-      alert("CSV uploaded successfully!");
-    }});
-  }
-
-  if(file){
-    const reader = new FileReader();
-    reader.onload = e => parseCSV(e.target.result);
-    reader.readAsText(file);
-  } else {
-    fetch(link).then(res => res.text()).then(text => parseCSV(text));
-  }
+/* ---------------- SENDER IMAGE UPLOAD ---------------- */
+document.getElementById("senderImage").addEventListener("change", function(){
+  const file = this.files[0];
+  const reader = new FileReader();
+  reader.onload = e => senderPhoto64 = e.target.result;
+  reader.readAsDataURL(file);
 });
 
-// ---------------- Display Voter Cards ----------------
+/* ---------------- SAVE SENDER INFO ---------------- */
+document.getElementById("saveSender").addEventListener("click", () => {
+  const name = document.getElementById("senderName").value;
+  const msg = document.getElementById("senderMessage").value;
+
+  if(!name || !msg || !senderPhoto64)
+    return alert("Fill all sender info and upload photo!");
+
+  set(dbRef(db,"senderInfo"), {
+    name:name,
+    message:msg,
+    photo:senderPhoto64
+  });
+
+  alert("Sender info saved successfully!");
+});
+
+/* ---------------- CSV UPLOAD BY LINK ---------------- */
+document.getElementById("uploadBtn").addEventListener("click", () => {
+  const link = document.getElementById("csvLink").value;
+  if(!link) return alert("Enter CSV link");
+
+  fetch(link)
+    .then(res => res.text())
+    .then(csvText => {
+      Papa.parse(csvText, { header:true, skipEmptyLines:true, complete: results => {
+        results.data.forEach(row => {
+          if(!row.EPIC) return;
+
+          const key = row.EPIC.replace(/\W/g,"_");
+          set(dbRef(db,"voters/"+key), {
+            name: row.Name || "",
+            voterID: row.EPIC,
+            ward: row.Ward || "20",
+            mobile: row.Mobile || "",
+            status: "anti"   // default = RED
+          });
+        });
+
+        alert("CSV Uploaded");
+      }});
+    });
+});
+
+/* ---------------- LOAD VOTERS ---------------- */
 const voterCardsDiv = document.getElementById("voterCards");
 
-function loadVoters(){
+onValue(dbRef(db,"voters"), snapshot => {
   voterCardsDiv.innerHTML = "";
-  onValue(dbRef(db,"voters"), snapshot => {
-    voterCardsDiv.innerHTML = "";
-    snapshot.forEach(snap => {
-      const voter = snap.val();
-      const key = snap.key;
-      const card = document.createElement("div");
-      let colorClass = voter.status==="approved"?"green":voter.status==="opponent"?"red":"yellow";
-      card.className = `card ${colorClass} flex flex-col`;
-      card.innerHTML = `
-        <div><b>${voter.name}</b> | EPIC: ${voter.voterID} | Ward: ${voter.ward}</div>
-        <div>Mobile: ${voter.mobile}</div>
-        <div class="flex mt-2 gap-2 flex-wrap">
-          <button class="btn-3d sendBtn" style="background:linear-gradient(145deg,#4f46e5,#6366f1)">Send WhatsApp</button>
-          <button class="btn-3d printBtn" style="background:linear-gradient(145deg,#4f46e5,#6366f1)">Print</button>
-          <button class="btn-3d statusBtn" data-status="approved" style="background:#bbf7d0">Approve</button>
-          <button class="btn-3d statusBtn" data-status="opponent" style="background:#fecaca">Opponent</button>
-          <button class="btn-3d statusBtn" data-status="anti" style="background:#fefcbf">Anti</button>
-        </div>
-      `;
-      voterCardsDiv.appendChild(card);
 
-      // Send WhatsApp
-      card.querySelector(".sendBtn").addEventListener("click", () => {
-        const senderPhoto = voter.senderPhoto;
-        const text = `Photo: ${senderPhoto}\n\nVoter Info:\nName: ${voter.name}\nEPIC: ${voter.voterID}\nWard: ${voter.ward}`;
-        const url = `https://wa.me/${voter.mobile}?text=${encodeURIComponent(text)}`;
-        window.open(url,'_blank');
-      });
+  snapshot.forEach(snap => {
+    const v = snap.val();
+    const key = snap.key;
 
-      // Print
-      card.querySelector(".printBtn").addEventListener("click", () => {
-        const printContent = `
-          <h2>Voter Info</h2>
-          Name: ${voter.name}<br>
-          EPIC: ${voter.voterID}<br>
-          Ward: ${voter.ward}<br>
-          Mobile: ${voter.mobile}<br>
-          <img src="${voter.senderPhoto}" width="100"><br>
-        `;
-        const w = window.open();
-        w.document.write(printContent);
-        w.print();
-      });
+    // COLOR FIX — EXACTLY AS YOU WANTED
+    let colorClass =
+      v.status==="approved" ? "green" :
+      v.status==="opponent" ? "yellow" :
+      "red";  // anti = red
 
-      // Status buttons
-      card.querySelectorAll(".statusBtn").forEach(btn => {
-        btn.addEventListener("click", () => {
-          const newStatus = btn.dataset.status;
-          update(dbRef(db,"voters/"+key), {status:newStatus});
-        });
-      });
-    });
+    const card = document.createElement("div");
+    card.className = `card ${colorClass}`;
+
+    card.innerHTML = `
+      <div class="font-bold text-lg">${v.name}</div>
+      <div>EPIC: ${v.voterID}</div>
+      <div>Ward: ${v.ward}</div>
+      <div>Mobile: ${v.mobile}</div>
+
+      <div class="mt-3 flex gap-2 flex-wrap">
+        <button class="btn-3d approve">Approve</button>
+        <button class="btn-3d opponent">Opponent</button>
+        <button class="btn-3d anti">Anti</button>
+        <button class="btn-3d send">Send WhatsApp</button>
+        <button class="btn-3d print">Print</button>
+      </div>
+    `;
+
+    voterCardsDiv.appendChild(card);
+
+
+    /* --- STATUS BUTTONS --- */
+    card.querySelector(".approve").onclick = () =>
+      update(dbRef(db,"voters/"+key),{status:"approved"});
+
+    card.querySelector(".opponent").onclick = () =>
+      update(dbRef(db,"voters/"+key),{status:"opponent"});
+
+    card.querySelector(".anti").onclick = () =>
+      update(dbRef(db,"voters/"+key),{status:"anti"});
+
+
+    /* --- SEND WHATSAPP --- */
+    card.querySelector(".send").onclick = () => {
+      onValue(dbRef(db,"senderInfo"), snapSender => {
+        const s = snapSender.val();
+
+        const text =
+`📣 *${s.name} का संदेश*  
+${s.message}
+
+🗳 *Voter Info:*  
+नाम: ${v.name}  
+EPIC: ${v.voterID}  
+Ward: ${v.ward}
+
+👇 Sender Photo:
+${s.photo}
+`;
+
+        window.open(`https://wa.me/${v.mobile}?text=${encodeURIComponent(text)}`,"_blank");
+      },{onlyOnce:true});
+    };
+
+
+    /* --- PRINT --- */
+    card.querySelector(".print").onclick = () => {
+      const win = window.open();
+      win.document.write(`
+        <h2>Voter Information</h2>
+        <p>Name: ${v.name}</p>
+        <p>EPIC: ${v.voterID}</p>
+        <p>Ward: ${v.ward}</p>
+        <p>Mobile: ${v.mobile}</p>
+      `);
+      win.print();
+    };
   });
-}
-
-loadVoters();
+});
 </script>
 
 </body>
