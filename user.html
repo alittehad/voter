@@ -26,11 +26,13 @@ body { background:#eef2ff; }
 </head>
 <body class="p-4">
 
+<!-- Login -->
 <div id="loginDiv" class="text-center mb-4">
   <h1 class="text-2xl font-bold text-blue-700">Login to Access Voter Panel</h1>
   <button id="googleLoginBtn" class="btn btn-blue mt-4">Login with Google</button>
 </div>
 
+<!-- Panel -->
 <div id="panelDiv" class="hidden">
   <h1 class="text-2xl font-bold text-blue-700 text-center mb-4">Voter Management Panel</h1>
 
@@ -60,6 +62,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebas
 import { getDatabase, ref as dbRef, set, onValue, remove, get, child } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
+// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
   authDomain: "voter-25c94.firebaseapp.com",
@@ -74,129 +77,140 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
+
 let senderImageURL = "";
 
-// Login
+// ----------------- Google Login -----------------
+const loginDiv = document.getElementById("loginDiv");
+const panelDiv = document.getElementById("panelDiv");
+
 document.getElementById("googleLoginBtn").onclick = ()=>{
-  signInWithPopup(auth, provider).then(res=>{
-    const email = res.user.email.replace(/\./g,"_");
-    get(child(dbRef(db,"admins"))).then(adminSnap=>{
-      get(child(dbRef(db,"users"))).then(userSnap=>{
-        if(adminSnap.hasChild(email) || userSnap.hasChild(email)){
-          document.getElementById("loginDiv").classList.add("hidden");
-          document.getElementById("panelDiv").classList.remove("hidden");
-          alert(`Welcome ${res.user.displayName}`);
-          renderVoters();
-        } else {
-          alert("Access denied! Only admin/user allowed.");
-          auth.signOut();
-        }
-      });
-    });
-  }).catch(err=>{ console.error(err); alert("Login failed!"); });
+    signInWithPopup(auth, provider).then(res=>{
+        const email = res.user.email.replace(/\./g,"_");
+        get(child(dbRef(db,"admins"))).then(adminSnap=>{
+            get(child(dbRef(db,"users"))).then(userSnap=>{
+                const isAdmin = adminSnap.exists() && adminSnap.hasChild(email);
+                const isUser  = userSnap.exists() && userSnap.hasChild(email);
+                if(isAdmin || isUser){
+                    loginDiv.classList.add("hidden");
+                    panelDiv.classList.remove("hidden");
+                    alert(`Welcome ${res.user.displayName}`);
+                    renderVoters();
+                } else {
+                    alert("Access denied! Only admin/user allowed.");
+                    auth.signOut();
+                }
+            });
+        });
+    }).catch(err=>{ console.error(err); alert("Login failed!"); });
 };
 
-// Upload sender image
+// ---------------- Upload Sender Image ----------------
 document.getElementById("uploadSenderImage").onclick = ()=>{
-  const file = document.getElementById("senderImage").files[0];
-  if(!file) return alert("Select an image first!");
-  const formData = new FormData();
-  formData.append('image', file);
-  fetch('https://api.imgbb.com/1/upload?key=8ece3c1f959f2426083eee1699086c71',{method:'POST',body:formData})
-  .then(r=>r.json()).then(data=>{
-    senderImageURL = data.data.url;
-    document.getElementById("senderImgPreview").src = senderImageURL;
-    document.getElementById("senderImgPreview").classList.remove("hidden");
-    alert("Sender image uploaded!");
-  }).catch(err=>{console.error(err); alert("Upload failed!");});
+    const file = document.getElementById("senderImage").files[0];
+    if(!file) return alert("Select an image first!");
+    const formData = new FormData();
+    formData.append('image', file);
+    fetch('https://api.imgbb.com/1/upload?key=8ece3c1f959f2426083eee1699086c71', { method:'POST', body: formData })
+    .then(res=>res.json())
+    .then(data=>{
+        senderImageURL = data.data.url;
+        document.getElementById("senderImgPreview").src = senderImageURL;
+        document.getElementById("senderImgPreview").classList.remove("hidden");
+        alert("Sender image uploaded!");
+    }).catch(err=>{ console.error(err); alert("Upload failed!"); });
 };
 
-// Helper
-function updateCardColor(div,status){
-  div.classList.remove("card-approved","card-opponent","card-anti");
-  if(status==="approved") div.classList.add("card-approved");
-  else if(status==="opponent") div.classList.add("card-opponent");
-  else div.classList.add("card-anti");
+// ---------------- Helper ----------------
+function updateCardColor(cardDiv, status){
+    cardDiv.classList.remove("card-approved","card-opponent","card-anti");
+    if(status==="approved") cardDiv.classList.add("card-approved");
+    else if(status==="opponent") cardDiv.classList.add("card-opponent");
+    else cardDiv.classList.add("card-anti");
 }
 
-// Render voters
+// ---------------- Render Voters ----------------
 const voterListDiv = document.getElementById("voterList");
 function renderVoters(){
-  onValue(dbRef(db,"voters"), snap=>{
-    voterListDiv.innerHTML="";
-    snap.forEach(s=>{
-      const v = s.val(); const key=s.key;
-      const div=document.createElement("div"); div.className="card"; updateCardColor(div,v.status);
-      div.innerHTML=`
-      <div style="display:flex; align-items:center;">
-        ${senderImageURL ? `<img src='${senderImageURL}' class='img-sender'>` : ''}
-        <div>
-          <h2 class='font-bold'>${v.name}</h2>
-          <p class='text-sm text-gray-600'>EPIC: ${v.voterID} | State: ${v.state} | District: ${v.district} | AC: ${v.acNo} | Part: ${v.partNo} | Booth: ${v.booth} | Age: ${v.age} | Status: ${v.status}</p>
-        </div>
-      </div>
-      <div class='flex gap-2 flex-wrap mt-2'>
-        <button class='btn btn-yellow approveBtn'>Approve</button>
-        <button class='btn btn-yellow opponentBtn'>Opponent</button>
-        <button class='btn btn-red antiBtn'>Anti</button>
-        <button class='btn btn-gray deleteBtn'>Delete</button>
-        <button class='btn btn-blue sendBtn'>Send WhatsApp</button>
-        <button class='btn btn-green printBtn'>Print</button>
-      </div>`;
-      voterListDiv.appendChild(div);
+    onValue(dbRef(db,"voters"), snap=>{
+        voterListDiv.innerHTML = '';
+        snap.forEach(s=>{
+            const v = s.val(); const key=s.key;
+            const div = document.createElement("div");
+            div.className="card";
+            updateCardColor(div,v.status);
+            div.innerHTML = `
+                <div style="display:flex; align-items:center;">
+                    ${senderImageURL ? `<img src='${senderImageURL}' class='img-sender'>` : ''}
+                    <div>
+                        <h2 class='font-bold'>${v.name}</h2>
+                        <p class='text-sm text-gray-600'>EPIC: ${v.voterID} | State: ${v.state} | District: ${v.district} | AC: ${v.acNo} | Part: ${v.partNo} | Booth: ${v.booth} | Age: ${v.age} | Status: ${v.status}</p>
+                    </div>
+                </div>
+                <div class='flex gap-2 flex-wrap mt-2'>
+                    <button class='btn btn-yellow approveBtn'>Approve</button>
+                    <button class='btn btn-yellow opponentBtn'>Opponent</button>
+                    <button class='btn btn-red antiBtn'>Anti</button>
+                    <button class='btn btn-gray deleteBtn'>Delete</button>
+                    <button class='btn btn-blue sendBtn'>Send WhatsApp</button>
+                    <button class='btn btn-green printBtn'>Print</button>
+                </div>`;
+            voterListDiv.appendChild(div);
 
-      div.querySelector(".approveBtn").onclick = ()=>{ set(dbRef(db,"voters/"+key), {...v,status:"approved"}); updateCardColor(div,"approved"); };
-      div.querySelector(".opponentBtn").onclick = ()=>{ set(dbRef(db,"voters/"+key), {...v,status:"opponent"}); updateCardColor(div,"opponent"); };
-      div.querySelector(".antiBtn").onclick = ()=>{ set(dbRef(db,"voters/"+key), {...v,status:"anti"}); updateCardColor(div,"anti"); };
-      div.querySelector(".deleteBtn").onclick = ()=>{ if(confirm(`Delete ${v.name}?`)) remove(dbRef(db,"voters/"+key)); };
-      div.querySelector(".sendBtn").onclick = ()=>{
-        const senderName=document.getElementById("senderName").value.trim();
-        const senderMobile=document.getElementById("senderMobile").value.trim();
-        if(!senderName||!senderMobile) return alert("Enter sender info!");
-        if(!v.mobile) return alert("Voter mobile missing!");
-        const msg = `Name: ${v.name}\nEPIC: ${v.voterID}\nState: ${v.state}\nDistrict: ${v.district}\nAC: ${v.acNo}\nPart: ${v.partNo}\nBooth: ${v.booth}\nAge: ${v.age}\nAddress: ${v.address}\nStatus: ${v.status}\nSender: ${senderName} ${senderMobile}`;
-        window.open(`https://wa.me/${v.mobile}?text=${encodeURIComponent(msg)}`,'_blank');
-      };
-      div.querySelector(".printBtn").onclick = ()=>{
-        const w=window.open('','Print','width=600,height=400');
-        w.document.write(div.innerHTML);
-        w.document.close(); w.print();
-      };
+            // Buttons
+            div.querySelector(".approveBtn").onclick = ()=>{ set(dbRef(db,"voters/"+key), {...v,status:"approved"}); updateCardColor(div,"approved"); };
+            div.querySelector(".opponentBtn").onclick = ()=>{ set(dbRef(db,"voters/"+key), {...v,status:"opponent"}); updateCardColor(div,"opponent"); };
+            div.querySelector(".antiBtn").onclick = ()=>{ set(dbRef(db,"voters/"+key), {...v,status:"anti"}); updateCardColor(div,"anti"); };
+            div.querySelector(".deleteBtn").onclick = ()=>{ if(confirm(`Delete ${v.name}?`)) remove(dbRef(db,"voters/"+key)); };
+            div.querySelector(".sendBtn").onclick = ()=>{
+                const senderName = document.getElementById("senderName").value.trim();
+                const senderMobile = document.getElementById("senderMobile").value.trim();
+                if(!senderName || !senderMobile) return alert("Enter sender info!");
+                if(!v.mobile) return alert("Voter mobile missing!");
+                const msg = `Name: ${v.name}\nEPIC: ${v.voterID}\nState: ${v.state}\nDistrict: ${v.district}\nAC: ${v.acNo}\nPart: ${v.partNo}\nBooth: ${v.booth}\nAge: ${v.age}\nStatus: ${v.status}\nSender: ${senderName} ${senderMobile}`;
+                window.open(`https://wa.me/${v.mobile}?text=${encodeURIComponent(msg)}`,'_blank');
+            };
+            div.querySelector(".printBtn").onclick = ()=>{
+                const printContent = div.innerText;
+                const w = window.open();
+                w.document.write(`<pre>${printContent}</pre>`);
+                w.print();
+                w.close();
+            };
+        });
     });
-  });
 }
 
-// CSV Upload
+// ---------------- CSV Upload ----------------
 document.getElementById("uploadCSV").onclick = ()=>{
-  let link=document.getElementById("csvLink").value.trim();
-  if(!link) return alert("Enter CSV link!");
-  if(link.includes("docs.google.com/spreadsheets/d/")){
-    const id = link.match(/\/d\/([a-zA-Z0-9-_]+)/)[1];
-    link=`https://docs.google.com/spreadsheets/d/${id}/export?format=csv`;
-  }
-  fetch(link).then(r=>r.text()).then(csvText=>{
-    Papa.parse(csvText,{header:true,skipEmptyLines:true,complete:results=>{
-      results.data.forEach(row=>{
-        if(!row.EPIC) return;
-        const key=row.EPIC.replace(/\W/g,"_");
-        set(dbRef(db,"voters/"+key),{
-          name: row.Name||"",
-          voterID: row.EPIC,
-          state: row.State||"",
-          district: row.District||"",
-          acNo: row["AC No"]||"",
-          partNo: row["Part No"]||"",
-          address: row.Address||"",
-          mobile: row.Mobile||"",
-          age: row.Age||"",
-          booth: row.Booth||"",
-          status:"anti"
-        });
-      });
-      alert("CSV uploaded!");
-      renderVoters();
-    }});
-  }).catch(err=>{ console.error(err); alert("CSV fetch failed!"); });
+    let link = document.getElementById("csvLink").value.trim();
+    if(!link) return alert("Enter CSV link!");
+    if(link.includes("docs.google.com/spreadsheets/d/")){
+        const id = link.match(/\/d\/([a-zA-Z0-9-_]+)/)[1];
+        link = `https://docs.google.com/spreadsheets/d/${id}/export?format=csv`;
+    }
+    fetch(link).then(r=>r.text()).then(csvText=>{
+        Papa.parse(csvText,{header:true,skipEmptyLines:true,complete:results=>{
+            results.data.forEach(row=>{
+                if(!row.EPIC) return;
+                const key = row.EPIC.replace(/\W/g,"_");
+                set(dbRef(db,"voters/"+key),{
+                    name: row.Name || "",
+                    voterID: row.EPIC,
+                    state: row.State || "",
+                    district: row.District || "",
+                    acNo: row["AC No"] || "",
+                    partNo: row["Part No"] || "",
+                    mobile: row.Mobile || "",
+                    age: row.Age || "",
+                    booth: row.Booth || "",
+                    status:"anti"
+                });
+            });
+            alert("CSV uploaded!");
+            renderVoters();
+        }});
+    }).catch(err=>{ console.error(err); alert("CSV fetch failed!"); });
 };
 </script>
 </body>
