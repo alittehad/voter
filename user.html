@@ -26,6 +26,7 @@ body { background: #eef2ff; }
 .btn-green { background:#16a34a;color:white; }
 .btn-yellow { background:#facc15;color:black; }
 .btn-red { background:#dc2626;color:white; }
+.btn-gray { background:#6b7280;color:white; }
 @media(max-width:640px){
   .flex-wrap { flex-direction: column; }
   .grid-cols-3 { grid-template-columns: 1fr; }
@@ -61,7 +62,10 @@ body { background: #eef2ff; }
   <input type="text" id="senderMessage" placeholder="Message to send" class="border p-2 w-full mb-2">
   <p class="font-semibold mb-1">Upload Sender Photo:</p>
   <input type="file" id="senderImage" class="border p-2 w-full mb-2">
-  <button id="saveSender" class="btn btn-blue w-full">Save Sender Info</button>
+  <div class="flex gap-2">
+    <button id="saveSender" class="btn btn-blue flex-1">Save Sender Info</button>
+    <button id="deleteSender" class="btn btn-red flex-1">Delete Sender Info</button>
+  </div>
 </div>
 
 <!-- Voter List -->
@@ -69,7 +73,7 @@ body { background: #eef2ff; }
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref as dbRef, set, onValue, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref as dbRef, set, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
@@ -115,6 +119,19 @@ saveSender.onclick = async ()=>{
   }catch(err){ console.error(err); alert("Sender info save failed!") }
 };
 
+// Delete Sender
+deleteSender.onclick = async ()=>{
+  if(confirm("Delete sender info?")){
+    remove(dbRef(db,"senderInfo")).then(()=>{
+      senderCache={};
+      senderName.value="";
+      senderMessage.value="";
+      senderImage.value="";
+      alert("Sender info deleted!");
+    }).catch(err=>{console.error(err); alert("Delete failed!");});
+  }
+};
+
 // Load sender
 onValue(dbRef(db,"senderInfo"), snap => { if(snap.exists()) senderCache = snap.val(); });
 
@@ -139,6 +156,7 @@ onValue(dbRef(db,"voters"), snap=>{
         <button class="btn btn-yellow approveBtn">Approve</button>
         <button class="btn btn-yellow opponentBtn">Opponent</button>
         <button class="btn btn-red antiBtn">Anti</button>
+        <button class="btn btn-gray deleteBtn">Delete</button>
       </div>`;
     listDiv.appendChild(div);
 
@@ -170,6 +188,12 @@ onValue(dbRef(db,"voters"), snap=>{
         <p>Status: ${v.status}</p>`);
       win.print();
     };
+
+    div.querySelector(".deleteBtn").onclick=()=>{
+      if(confirm(`Delete voter ${v.name}?`)){
+        remove(dbRef(db,"voters/"+v.voterID.replace(/\W/g,"_")));
+      }
+    };
   });
   applyFilter();
 });
@@ -199,14 +223,12 @@ function applyFilter(){
     const mobile=i.dataset.mobile;
     const status=i.dataset.status;
 
-    // Multi-field search
     const matchSearch = name.includes(keyword) || epic.includes(keyword) || ward.includes(keyword) || mobile.includes(keyword);
     const matchFilter = (activeFilter=="all"||activeFilter==status);
 
     if(matchSearch && matchFilter){ i.classList.remove("hidden"); }
     else { i.classList.add("hidden"); }
 
-    // Count all statuses (total)
     if(status=="approved") approvedTotal++;
     else if(status=="opponent") opponentTotal++;
     else antiTotal++;
