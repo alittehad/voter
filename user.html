@@ -19,9 +19,9 @@ body { background:#eef2ff; }
 .btn-yellow { background:#facc15;color:black; }
 .btn-red { background:#dc2626;color:white; }
 .btn-gray { background:#9ca3af;color:white; }
+.img-sender { width:50px; height:50px; border-radius:50%; margin-right:8px; }
 .flex-wrap { display:flex; flex-wrap:wrap; gap:12px; }
 .hidden { display:none; }
-input, select, textarea { border:1px solid #ccc; padding:8px; border-radius:0.5rem; width:100%; margin-bottom:8px; }
 </style>
 </head>
 <body class="p-4">
@@ -34,40 +34,19 @@ input, select, textarea { border:1px solid #ccc; padding:8px; border-radius:0.5r
 
 <!-- Panel -->
 <div id="panelDiv" class="hidden">
-
   <h1 class="text-2xl font-bold text-blue-700 text-center mb-4">Voter Management Panel</h1>
 
   <!-- Sender Info -->
   <div class="bg-white p-4 rounded shadow mb-4">
     <h2 class="text-xl font-bold mb-2 text-blue-700">Sender Info</h2>
-    <textarea id="senderDesc" placeholder="Sender Description..." rows="3"></textarea>
+    <textarea id="senderDesc" placeholder="Enter sender description here..." class="border p-2 w-full mb-2"></textarea>
   </div>
 
   <!-- CSV Upload -->
   <div class="bg-white p-4 rounded shadow mb-4">
     <h2 class="text-xl font-bold mb-2 text-blue-700">Upload Voter CSV / Google Sheet</h2>
-    <input type="text" id="csvLink" placeholder="CSV / Google Sheet link">
+    <input type="text" id="csvLink" placeholder="CSV / Google Sheet link" class="border p-2 w-full mb-2">
     <button id="uploadCSV" class="btn btn-blue w-full">Upload CSV</button>
-  </div>
-
-  <!-- Manual Voter Form -->
-  <div class="bg-white p-4 rounded shadow mb-4">
-    <h2 class="text-xl font-bold mb-2 text-blue-700">Add Voter Manually</h2>
-    <input type="text" id="manualEPIC" placeholder="EPIC">
-    <input type="text" id="manualName" placeholder="Name">
-    <input type="text" id="manualState" placeholder="State">
-    <input type="text" id="manualDistrict" placeholder="District">
-    <input type="text" id="manualAC" placeholder="AC No">
-    <input type="text" id="manualPart" placeholder="Part No">
-    <input type="text" id="manualBooth" placeholder="Booth">
-    <input type="text" id="manualAge" placeholder="Age">
-    <select id="manualStatus">
-      <option value="approved">Approved</option>
-      <option value="opponent">Opponent</option>
-      <option value="anti">Anti</option>
-    </select>
-    <input type="text" id="manualMobile" placeholder="Mobile Number (WhatsApp)">
-    <button id="addManualVoter" class="btn btn-green w-full">Add Voter</button>
   </div>
 
   <!-- Voter List -->
@@ -78,7 +57,6 @@ input, select, textarea { border:1px solid #ccc; padding:8px; border-radius:0.5r
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getDatabase, ref as dbRef, set, onValue, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import Papa from "https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js";
 
 // Firebase config
 const firebaseConfig = {
@@ -95,20 +73,19 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
+let senderDesc = "";
 
+// Hardcoded admin & user emails
+const admins = ["ngogrant454@gmail.com"];
+const users = ["zarafix3@gmail.com"];
+
+// Login
 const loginDiv = document.getElementById("loginDiv");
 const panelDiv = document.getElementById("panelDiv");
-const voterListDiv = document.getElementById("voterList");
-
-// Hardcoded admin/user emails
-const admins = ["ngogrant454_gmail_com"];
-const users = ["zarafix3_gmail_com"];
-
-// ----------------- Google Login -----------------
-document.getElementById("googleLoginBtn").onclick = () => {
+document.getElementById("googleLoginBtn").onclick = ()=>{
     signInWithPopup(auth, provider).then(res=>{
-        const emailKey = res.user.email.replace(/\./g,"_").replace(/@/g,"_");
-        if(admins.includes(emailKey) || users.includes(emailKey)){
+        const email = res.user.email;
+        if(admins.includes(email) || users.includes(email)){
             loginDiv.classList.add("hidden");
             panelDiv.classList.remove("hidden");
             alert(`Welcome ${res.user.displayName}`);
@@ -120,21 +97,19 @@ document.getElementById("googleLoginBtn").onclick = () => {
     }).catch(err=>{ console.error(err); alert("Login failed!"); });
 };
 
-// ---------------- Helper ----------------
-function updateCardColor(cardDiv, status){
+// Render voter cards
+const voterListDiv = document.getElementById("voterList");
+function updateCardColor(cardDiv,status){
     cardDiv.classList.remove("card-approved","card-opponent","card-anti");
     if(status==="approved") cardDiv.classList.add("card-approved");
     else if(status==="opponent") cardDiv.classList.add("card-opponent");
     else cardDiv.classList.add("card-anti");
 }
-
-// ---------------- Render Voters ----------------
 function renderVoters(){
     onValue(dbRef(db,"voters"), snap=>{
         voterListDiv.innerHTML = '';
-        const senderDesc = document.getElementById("senderDesc").value.trim();
         snap.forEach(s=>{
-            const v = s.val(); const key=s.key;
+            const v = s.val(); const key = s.key;
             const div = document.createElement("div");
             div.className="card";
             updateCardColor(div,v.status);
@@ -161,18 +136,16 @@ function renderVoters(){
             div.querySelector(".opponentBtn").onclick = ()=>{ set(dbRef(db,"voters/"+key), {...v,status:"opponent"}); updateCardColor(div,"opponent"); };
             div.querySelector(".antiBtn").onclick = ()=>{ set(dbRef(db,"voters/"+key), {...v,status:"anti"}); updateCardColor(div,"anti"); };
             div.querySelector(".deleteBtn").onclick = ()=>{ if(confirm(`Delete ${v.name}?`)) remove(dbRef(db,"voters/"+key)); };
-
             div.querySelector(".sendBtn").onclick = ()=>{
+                senderDesc = document.getElementById("senderDesc").value.trim();
+                if(!senderDesc) return alert("Enter sender description!");
                 if(!v.mobile) return alert("Voter mobile missing!");
-                let msg = `Name: ${v.name}\nEPIC: ${v.voterID}\nState: ${v.state}\nDistrict: ${v.district}\nAC: ${v.acNo}\nPart: ${v.partNo}\nBooth: ${v.booth}\nAge: ${v.age}\nStatus: ${v.status}`;
-                if(senderDesc) msg += `\nSender Info: ${senderDesc}`;
+                const msg = `Name: ${v.name}\nEPIC: ${v.voterID}\nState: ${v.state}\nDistrict: ${v.district}\nAC: ${v.acNo}\nPart: ${v.partNo}\nBooth: ${v.booth}\nAge: ${v.age}\nStatus: ${v.status}\nSender: ${senderDesc}`;
                 window.open(`https://wa.me/${v.mobile}?text=${encodeURIComponent(msg)}`,'_blank');
             };
-
             div.querySelector(".printBtn").onclick = ()=>{
-                const printContent = div.innerText;
                 const w = window.open();
-                w.document.write(`<pre>${printContent}</pre>`);
+                w.document.write(`<pre>${div.innerText}</pre>`);
                 w.print();
                 w.close();
             };
@@ -180,7 +153,7 @@ function renderVoters(){
     });
 }
 
-// ---------------- CSV Upload ----------------
+// CSV upload
 document.getElementById("uploadCSV").onclick = ()=>{
     let link = document.getElementById("csvLink").value.trim();
     if(!link) return alert("Enter CSV link!");
@@ -200,9 +173,9 @@ document.getElementById("uploadCSV").onclick = ()=>{
                     district: row.District || "",
                     acNo: row["AC No"] || "",
                     partNo: row["Part No"] || "",
-                    booth: row.Booth || "",
-                    age: row.Age || "",
                     mobile: row.Mobile || "",
+                    age: row.Age || "",
+                    booth: row.Booth || "",
                     status:"anti"
                 });
             });
@@ -210,27 +183,6 @@ document.getElementById("uploadCSV").onclick = ()=>{
             renderVoters();
         }});
     }).catch(err=>{ console.error(err); alert("CSV fetch failed!"); });
-};
-
-// ---------------- Manual Voter Add ----------------
-document.getElementById("addManualVoter").onclick = ()=>{
-    const voter = {
-        name: document.getElementById("manualName").value.trim(),
-        voterID: document.getElementById("manualEPIC").value.trim(),
-        state: document.getElementById("manualState").value.trim(),
-        district: document.getElementById("manualDistrict").value.trim(),
-        acNo: document.getElementById("manualAC").value.trim(),
-        partNo: document.getElementById("manualPart").value.trim(),
-        booth: document.getElementById("manualBooth").value.trim(),
-        age: document.getElementById("manualAge").value.trim(),
-        status: document.getElementById("manualStatus").value,
-        mobile: document.getElementById("manualMobile").value.trim()
-    };
-    if(!voter.voterID || !voter.name) return alert("EPIC and Name required!");
-    const key = voter.voterID.replace(/\W/g,"_");
-    set(dbRef(db,"voters/"+key), voter);
-    alert("Voter added!");
-    renderVoters();
 };
 </script>
 </body>
