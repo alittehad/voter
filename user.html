@@ -37,8 +37,8 @@ body { background:#eef2ff; }
 
   <h1 class="text-2xl font-bold text-blue-700 text-center mb-4">Voter Management Panel</h1>
 
-  <!-- Sender Info -->
-  <div class="bg-white p-4 rounded shadow mb-4">
+  <!-- Sender Info (Admin Only) -->
+  <div id="senderSection" class="bg-white p-4 rounded shadow mb-4 hidden">
     <h2 class="text-xl font-bold mb-2 text-blue-700">Sender Info</h2>
     <textarea id="senderDesc" placeholder="Sender Description" class="border p-2 w-full mb-2"></textarea>
     <input type="file" id="senderImage" class="border p-2 w-full mb-2">
@@ -51,15 +51,15 @@ body { background:#eef2ff; }
     <input type="text" id="searchVoter" placeholder="Search by Name, EPIC, Address, Part No..." class="border p-2 w-full">
   </div>
 
-  <!-- CSV Upload -->
-  <div class="bg-white p-4 rounded shadow mb-4">
+  <!-- CSV Upload (Admin Only) -->
+  <div id="csvSection" class="bg-white p-4 rounded shadow mb-4 hidden">
     <h2 class="text-xl font-bold mb-2 text-blue-700">Upload Voter CSV / Google Sheet</h2>
     <input type="text" id="csvLink" placeholder="CSV / Google Sheet link" class="border p-2 w-full mb-2">
     <button id="uploadCSV" class="btn btn-blue w-full">Upload CSV</button>
   </div>
 
-  <!-- Manual Add -->
-  <div class="bg-white p-4 rounded shadow mb-4">
+  <!-- Manual Add (Admin Only) -->
+  <div id="manualAddSection" class="bg-white p-4 rounded shadow mb-4 hidden">
     <h2 class="text-xl font-bold mb-2 text-blue-700">Add Voter Manually</h2>
     <input type="text" id="voterName" placeholder="Name" class="border p-2 w-full mb-2">
     <input type="text" id="voterEPIC" placeholder="EPIC" class="border p-2 w-full mb-2">
@@ -74,10 +74,9 @@ body { background:#eef2ff; }
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref as dbRef, set, onValue, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getDatabase, ref as dbRef, set, onValue, remove, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
   authDomain: "voter-25c94.firebaseapp.com",
@@ -94,55 +93,73 @@ const provider = new GoogleAuthProvider();
 
 let senderImageURL = "";
 const voterListDiv = document.getElementById("voterList");
+let role = "";
 
-// Login button
 document.getElementById("googleLoginBtn").onclick = ()=>{
   signInWithPopup(auth, provider).then(res=>{
     const emailKey = res.user.email.replace(/\./g,"_");
     const admins = ["ngogrant454@gmail_com"];
     const users  = ["zarafix3@gmail_com"];
-    if(admins.includes(emailKey) || users.includes(emailKey)){
-      alert(`Welcome ${res.user.displayName}`);
-    } else {
-      alert("Access denied!");
-      auth.signOut();
-    }
+    if(admins.includes(emailKey)) role="admin";
+    else if(users.includes(emailKey)) role="user";
+    else { alert("Access denied!"); auth.signOut(); return; }
+    alert(`Welcome ${res.user.displayName} (${role})`);
   }).catch(err=>{ console.error(err); alert("Login failed!"); });
 };
 
-// Persist login using onAuthStateChanged
-auth.onAuthStateChanged(user => {
+// Persist login
+onAuthStateChanged(auth,user=>{
   if(user){
     const emailKey = user.email.replace(/\./g,"_");
     const admins = ["ngogrant454@gmail_com"];
     const users  = ["zarafix3@gmail_com"];
-    if(admins.includes(emailKey) || users.includes(emailKey)){
-      document.getElementById("loginDiv").classList.add("hidden");
-      document.getElementById("panelDiv").classList.remove("hidden");
-      renderVoters();
-    } else {
-      auth.signOut();
+    if(admins.includes(emailKey)) role="admin";
+    else if(users.includes(emailKey)) role="user";
+    else { auth.signOut(); return; }
+
+    document.getElementById("loginDiv").classList.add("hidden");
+    document.getElementById("panelDiv").classList.remove("hidden");
+
+    if(role==="admin"){
+      document.getElementById("senderSection").classList.remove("hidden");
+      document.getElementById("csvSection").classList.remove("hidden");
+      document.getElementById("manualAddSection").classList.remove("hidden");
     }
+
+    // Load sender
+    get(dbRef(db,"sender")).then(snap=>{
+      if(snap.exists()){
+        const data = snap.val();
+        senderImageURL = data.image || "";
+        document.getElementById("senderImgPreview").src = senderImageURL;
+        if(senderImageURL) document.getElementById("senderImgPreview").classList.remove("hidden");
+      }
+    });
+
+    renderVoters();
   } else {
     document.getElementById("loginDiv").classList.remove("hidden");
     document.getElementById("panelDiv").classList.add("hidden");
   }
 });
 
-// Upload Sender Image
+// Upload sender image
 document.getElementById("uploadSenderImage").onclick = ()=>{
   const file = document.getElementById("senderImage").files[0];
-  if(!file) return alert("Select image first!");
+  if(!file) return alert("Select image!");
   const reader = new FileReader();
   reader.onload = e=>{
     senderImageURL = e.target.result;
+    set(dbRef(db,"sender"),{ image: senderImageURL, desc: document.getElementById("senderDesc").value });
     document.getElementById("senderImgPreview").src = senderImageURL;
     document.getElementById("senderImgPreview").classList.remove("hidden");
+    alert("Sender info saved!");
+    renderVoters();
   };
   reader.readAsDataURL(file);
 };
 
-// Render voters
+// Update card color
 function updateCardColor(cardDiv,status){
   cardDiv.classList.remove("card-approved","card-opponent","card-anti");
   if(status==="approved") cardDiv.classList.add("card-approved");
@@ -150,14 +167,16 @@ function updateCardColor(cardDiv,status){
   else cardDiv.classList.add("card-anti");
 }
 
+// Render voters
 function renderVoters(){
   onValue(dbRef(db,"voters"), snap=>{
     const query = document.getElementById("searchVoter").value.trim().toLowerCase();
-    voterListDiv.innerHTML='';
+    voterListDiv.innerHTML="";
     snap.forEach(s=>{
       const v = s.val(); const key=s.key;
       const combined = `${v.name} ${v.voterID} ${v.address} ${v.partNo}`.toLowerCase();
       if(query && !combined.includes(query)) return;
+
       const div = document.createElement("div");
       div.className="card";
       updateCardColor(div,v.status);
@@ -175,18 +194,23 @@ function renderVoters(){
           <button class='btn btn-yellow approveBtn'>Approve</button>
           <button class='btn btn-yellow opponentBtn'>Opponent</button>
           <button class='btn btn-red antiBtn'>Anti</button>
-          <button class='btn btn-gray deleteBtn'>Delete</button>
+          ${role==="admin"? "<button class='btn btn-gray deleteBtn'>Delete</button>":""}
           <button class='btn btn-blue sendBtn'>Send WhatsApp</button>
           <button class='btn btn-green printBtn'>Print</button>
         </div>`;
       voterListDiv.appendChild(div);
 
+      // Buttons
       div.querySelector(".approveBtn").onclick = ()=>{ set(dbRef(db,"voters/"+key), {...v,status:"approved"}); updateCardColor(div,"approved"); };
       div.querySelector(".opponentBtn").onclick = ()=>{ set(dbRef(db,"voters/"+key), {...v,status:"opponent"}); updateCardColor(div,"opponent"); };
       div.querySelector(".antiBtn").onclick = ()=>{ set(dbRef(db,"voters/"+key), {...v,status:"anti"}); updateCardColor(div,"anti"); };
-      div.querySelector(".deleteBtn").onclick = ()=>{ if(confirm(`Delete ${v.name}?`)) remove(dbRef(db,"voters/"+key)); };
+      if(role==="admin") div.querySelector(".deleteBtn")?.addEventListener("click",()=>{ if(confirm(`Delete ${v.name}?`)) remove(dbRef(db,"voters/"+key)); });
       div.querySelector(".sendBtn").onclick = ()=>{/* WhatsApp */};
-      div.querySelector(".printBtn").onclick = ()=>{ const w=window.open(); w.document.write(`<pre>${div.innerText}</pre>`); w.print(); w.close(); };
+      div.querySelector(".printBtn").onclick = ()=>{
+        const w=window.open();
+        w.document.write(`<div>${senderImageURL? `<img src='${senderImageURL}' width='50'>`:""}<pre>${div.innerText}</pre></div>`);
+        w.print(); w.close();
+      };
     });
   });
 }
@@ -194,8 +218,9 @@ function renderVoters(){
 // Search
 document.getElementById("searchVoter").addEventListener("input", renderVoters);
 
-// Manual add
+// Manual Add (Admin)
 document.getElementById("addVoterManual").onclick = ()=>{
+  if(role!=="admin") return alert("Only admin can add voters!");
   const name = document.getElementById("voterName").value.trim();
   const epic = document.getElementById("voterEPIC").value.trim();
   const address = document.getElementById("voterAddress").value.trim();
@@ -207,8 +232,9 @@ document.getElementById("addVoterManual").onclick = ()=>{
   renderVoters();
 };
 
-// CSV upload
+// CSV upload (Admin)
 document.getElementById("uploadCSV").onclick = ()=>{
+  if(role!=="admin") return alert("Only admin can upload CSV!");
   let link = document.getElementById("csvLink").value.trim();
   if(!link) return alert("Enter CSV link!");
   if(link.includes("docs.google.com/spreadsheets/d/")){
