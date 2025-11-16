@@ -3,223 +3,223 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Voter List - Ward 20</title>
-
+<title>Ward Status Panel - Admin</title>
 <script src="https://cdn.tailwindcss.com"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-
 <style>
-.btn-3d { 
-  background: linear-gradient(145deg,#4f46e5,#6366f1);
-  color:white; font-weight:bold; padding:.5rem 1rem;
-  border-radius:.5rem; box-shadow:4px 4px 6px #333,-4px -4px 6px #777;
-  cursor:pointer; transition: all .2s; text-align:center;
-}
-.btn-3d:hover { box-shadow: inset 4px 4px 6px #333,inset -4px -4px 6px #777; }
-
-.card { border-radius:.7rem; padding:1rem; margin:1rem 0;
-  box-shadow:4px 4px 6px #aaa,-4px -4px 6px #fff; }
-
-.red { background:#fecaca; }      /* ANTI */
-.yellow { background:#fef9c3; }   /* OPPONENT */
-.green { background:#bbf7d0; }    /* APPROVED */
+body { background: #eef2ff; }
+.card { background:white; border-radius:1rem; box-shadow:0 4px 12px rgba(0,0,0,0.1); padding:16px; }
+.sticky-bar { position: sticky; top:0; z-index:50; backdrop-filter:blur(8px); background: rgba(255,255,255,0.9); padding:12px; border-bottom:1px solid #ddd; }
+.btn { cursor:pointer; padding:0.5rem 1rem; border-radius:0.5rem; font-weight:bold; transition:0.2s; }
+.btn-blue { background:#2563eb;color:white; }
+.btn-green { background:#16a34a;color:white; }
+.btn-yellow { background:#facc15;color:black; }
+.btn-red { background:#dc2626;color:white; }
+.btn:hover { opacity:0.8; }
 </style>
 </head>
+<body class="p-4">
 
-<body class="bg-gray-100 p-4">
-
-<!-- HEADER WITH LOGO -->
-<div class="flex items-center justify-center mb-4">
-  <img src="https://i.postimg.cc/htFMsTSZ/Numeral-20-with-Bold-Ward.png" class="w-24 h-24 mr-3">
-  <h1 class="text-3xl font-bold">Voter List - Ward 20</h1>
+<div class="text-center mb-4">
+  <h1 class="text-2xl font-bold text-blue-700">Ward Status Panel - Admin</h1>
 </div>
 
-<!-- SENDER INFO SECTION -->
+<!-- Sticky Bar -->
+<div class="sticky-bar mb-4">
+  <input id="searchBox" type="text" placeholder="नाम से खोजें…" class="w-full p-2 rounded-xl border mb-3 outline-none focus:ring-2 focus:ring-blue-500">
+  <div class="flex gap-2 mb-3">
+    <button class="filterBtn px-3 py-1 rounded-full bg-blue-600 text-white" data-filter="all">All</button>
+    <button class="filterBtn px-3 py-1 rounded-full bg-green-600 text-white" data-filter="approved">Approved</button>
+    <button class="filterBtn px-3 py-1 rounded-full bg-yellow-600 text-white" data-filter="opponent">Opponent</button>
+    <button class="filterBtn px-3 py-1 rounded-full bg-red-600 text-white" data-filter="anti">Anti</button>
+  </div>
+  <div class="grid grid-cols-3 gap-2 text-center">
+    <div class="p-2 rounded-lg bg-green-100 text-green-700 font-bold">Approved: <span id="countApproved">0</span></div>
+    <div class="p-2 rounded-lg bg-yellow-100 text-yellow-700 font-bold">Opponent: <span id="countOpponent">0</span></div>
+    <div class="p-2 rounded-lg bg-red-100 text-red-700 font-bold">Anti: <span id="countAnti">0</span></div>
+  </div>
+</div>
+
+<!-- Sender Info -->
 <div class="bg-white p-4 rounded shadow mb-4">
-  <h2 class="text-xl font-bold mb-2">Sender Information</h2>
-
+  <h2 class="text-xl font-bold mb-2 text-blue-700">Sender Information</h2>
   <input type="text" id="senderName" placeholder="Sender Name" class="border p-2 w-full mb-2">
-
   <input type="text" id="senderMessage" placeholder="Message to send" class="border p-2 w-full mb-2">
-
   <p class="font-semibold mb-1">Upload Sender Photo:</p>
   <input type="file" id="senderImage" class="border p-2 w-full mb-2">
-
-  <button id="saveSender" class="btn-3d w-full">Save Sender Info</button>
+  <button id="saveSender" class="bg-blue-600 text-white px-4 py-2 rounded font-bold w-full">Save Sender Info</button>
 </div>
 
-<!-- CSV LINK UPLOAD -->
+<!-- CSV Upload -->
 <div class="bg-white p-4 rounded shadow mb-4">
-  <h2 class="text-xl font-bold mb-2">Upload Voter CSV (URL Link)</h2>
-
-  <input type="text" id="csvLink" placeholder="Paste CSV Link Here" class="border p-2 w-full mb-2">
-
-  <button id="uploadBtn" class="btn-3d w-full">Upload CSV</button>
+  <h2 class="text-xl font-bold mb-2 text-blue-700">Upload Voter CSV</h2>
+  <input type="text" id="csvLink" placeholder="CSV Link" class="border p-2 w-full mb-2">
+  <button id="uploadCSV" class="btn btn-blue w-full">Upload CSV</button>
 </div>
 
-<!-- VOTER CARDS -->
-<div id="voterCards"></div>
+<!-- Manual Add Voter -->
+<div class="bg-white p-4 rounded shadow mb-4">
+  <h2 class="text-xl font-bold mb-2 text-blue-700">Add Voter Manually</h2>
+  <input type="text" id="vName" placeholder="Name" class="border p-2 w-full mb-2">
+  <input type="text" id="vEPIC" placeholder="EPIC" class="border p-2 w-full mb-2">
+  <input type="text" id="vWard" placeholder="Ward" class="border p-2 w-full mb-2">
+  <input type="text" id="vMobile" placeholder="Mobile" class="border p-2 w-full mb-2">
+  <select id="vStatus" class="border p-2 w-full mb-2">
+    <option value="anti">Anti</option>
+    <option value="opponent">Opponent</option>
+    <option value="approved">Approved</option>
+  </select>
+  <button id="addVoter" class="btn btn-green w-full">Add Voter</button>
+</div>
 
+<!-- Voter List -->
+<div id="list" class="mt-4"></div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref as dbRef, set, update, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref as dbRef, set, onValue, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import Papa from "https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
   authDomain: "voter-25c94.firebaseapp.com",
   databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
   projectId: "voter-25c94",
-  storageBucket: "voter-25c94.appspot.com",
+  storageBucket: "voter-25c94.firebasestorage.app",
   messagingSenderId: "297773534400",
   appId: "1:297773534400:web:3722c487b8c83e9b787125"
 };
-
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
+let senderCache = {};
 
-let senderPhoto64 = "";
+// ImgBB Upload (same as before)
+function toBase64(file){ return new Promise((res,rej)=>{const r=new FileReader(); r.readAsDataURL(file); r.onload=()=>res(r.result); r.onerror=err=>rej(err); }); }
+async function uploadToImgBB(file){
+  const b64 = (await toBase64(file)).split(",")[1];
+  const form = new FormData(); form.append("image", b64);
+  const API_KEY = "5735107daf1af173af2008a3899a2496";
+  const res = await fetch(`https://api.imgbb.com/1/upload?key=${API_KEY}`, { method:"POST", body:form });
+  return (await res.json()).data.url;
+}
 
-/* ---------------- SENDER IMAGE UPLOAD ---------------- */
-document.getElementById("senderImage").addEventListener("change", function(){
-  const file = this.files[0];
-  const reader = new FileReader();
-  reader.onload = e => senderPhoto64 = e.target.result;
-  reader.readAsDataURL(file);
-});
+// Save Sender
+saveSender.onclick = async ()=>{
+  const name = senderName.value;
+  const msg  = senderMessage.value;
+  const file = senderImage.files[0];
+  if(!name || !msg || !file) return alert("Fill all sender info!");
+  const imgURL = await uploadToImgBB(file);
+  await set(dbRef(db,"senderInfo"), { name, message: msg, photo: imgURL });
+  senderCache = {name,msg,photo:imgURL};
+  alert("Sender info saved!");
+};
 
-/* ---------------- SAVE SENDER INFO ---------------- */
-document.getElementById("saveSender").addEventListener("click", () => {
-  const name = document.getElementById("senderName").value;
-  const msg = document.getElementById("senderMessage").value;
+// Load sender
+onValue(dbRef(db,"senderInfo"), snap => { if(snap.exists()) senderCache = snap.val(); });
 
-  if(!name || !msg || !senderPhoto64)
-    return alert("Fill all sender info and upload photo!");
+// Add voter manually
+addVoter.onclick = ()=>{
+  const n=document.getElementById("vName").value;
+  const e=document.getElementById("vEPIC").value;
+  const w=document.getElementById("vWard").value||"20";
+  const m=document.getElementById("vMobile").value;
+  const s=document.getElementById("vStatus").value;
+  if(!n||!e) return alert("Fill name & EPIC!");
+  set(dbRef(db,"voters/"+e.replace(/\W/g,"_")), { name:n, voterID:e, ward:w, mobile:m, status:s });
+  alert("Voter added!");
+};
 
-  set(dbRef(db,"senderInfo"), {
-    name:name,
-    message:msg,
-    photo:senderPhoto64
-  });
-
-  alert("Sender info saved successfully!");
-});
-
-/* ---------------- CSV UPLOAD BY LINK ---------------- */
-document.getElementById("uploadBtn").addEventListener("click", () => {
+// Upload CSV
+uploadCSV.onclick = ()=>{
   const link = document.getElementById("csvLink").value;
   if(!link) return alert("Enter CSV link");
-
-  fetch(link)
-    .then(res => res.text())
-    .then(csvText => {
-      Papa.parse(csvText, { header:true, skipEmptyLines:true, complete: results => {
-        results.data.forEach(row => {
-          if(!row.EPIC) return;
-
-          const key = row.EPIC.replace(/\W/g,"_");
-          set(dbRef(db,"voters/"+key), {
-            name: row.Name || "",
-            voterID: row.EPIC,
-            ward: row.Ward || "20",
-            mobile: row.Mobile || "",
-            status: "anti"   // default = RED
-          });
+  fetch(link).then(r=>r.text()).then(csvText=>{
+    Papa.parse(csvText,{header:true,skipEmptyLines:true,complete: results=>{
+      results.data.forEach(row=>{
+        if(!row.EPIC) return;
+        const key = row.EPIC.replace(/\W/g,"_");
+        set(dbRef(db,"voters/"+key), {
+          name: row.Name||"",
+          voterID: row.EPIC,
+          ward: row.Ward||"20",
+          mobile: row.Mobile||"",
+          status: "anti"
         });
+      });
+      alert("CSV uploaded!");
+    }});
+  });
+};
 
-        alert("CSV Uploaded");
-      }});
-    });
-});
+// Render voters
+const listDiv = document.getElementById("list");
+onValue(dbRef(db,"voters"), snap=>{
+  listDiv.innerHTML="";
+  snap.forEach(s=>{
+    const v = s.val();
+    const div=document.createElement("div");
+    div.className="card item mt-3";
+    div.dataset.status=v.status; div.dataset.name=v.name.toLowerCase();
+    div.innerHTML=`<h2 class="font-bold">${v.name}</h2>
+      <p class="text-sm text-gray-600">EPIC: ${v.voterID} | Ward: ${v.ward} | Status: ${v.status}</p>
+      <div class="mt-2 flex gap-2 flex-wrap">
+        <button class="btn btn-blue sendBtn">Send WhatsApp</button>
+        <button class="btn btn-green printBtn">Print</button>
+        <button class="btn btn-yellow approveBtn">Approve</button>
+        <button class="btn btn-yellow opponentBtn">Opponent</button>
+        <button class="btn btn-red antiBtn">Anti</button>
+      </div>`;
+    listDiv.appendChild(div);
 
-/* ---------------- LOAD VOTERS ---------------- */
-const voterCardsDiv = document.getElementById("voterCards");
-
-onValue(dbRef(db,"voters"), snapshot => {
-  voterCardsDiv.innerHTML = "";
-
-  snapshot.forEach(snap => {
-    const v = snap.val();
-    const key = snap.key;
-
-    // COLOR FIX — EXACTLY AS YOU WANTED
-    let colorClass =
-      v.status==="approved" ? "green" :
-      v.status==="opponent" ? "yellow" :
-      "red";  // anti = red
-
-    const card = document.createElement("div");
-    card.className = `card ${colorClass}`;
-
-    card.innerHTML = `
-      <div class="font-bold text-lg">${v.name}</div>
-      <div>EPIC: ${v.voterID}</div>
-      <div>Ward: ${v.ward}</div>
-      <div>Mobile: ${v.mobile}</div>
-
-      <div class="mt-3 flex gap-2 flex-wrap">
-        <button class="btn-3d approve">Approve</button>
-        <button class="btn-3d opponent">Opponent</button>
-        <button class="btn-3d anti">Anti</button>
-        <button class="btn-3d send">Send WhatsApp</button>
-        <button class="btn-3d print">Print</button>
-      </div>
-    `;
-
-    voterCardsDiv.appendChild(card);
-
-
-    /* --- STATUS BUTTONS --- */
-    card.querySelector(".approve").onclick = () =>
-      update(dbRef(db,"voters/"+key),{status:"approved"});
-
-    card.querySelector(".opponent").onclick = () =>
-      update(dbRef(db,"voters/"+key),{status:"opponent"});
-
-    card.querySelector(".anti").onclick = () =>
-      update(dbRef(db,"voters/"+key),{status:"anti"});
-
-
-    /* --- SEND WHATSAPP --- */
-    card.querySelector(".send").onclick = () => {
-      onValue(dbRef(db,"senderInfo"), snapSender => {
-        const s = snapSender.val();
-
-        const text =
-`📣 *${s.name} का संदेश*  
-${s.message}
-
-🗳 *Voter Info:*  
-नाम: ${v.name}  
-EPIC: ${v.voterID}  
-Ward: ${v.ward}
-
-👇 Sender Photo:
-${s.photo}
-`;
-
-        window.open(`https://wa.me/${v.mobile}?text=${encodeURIComponent(text)}`,"_blank");
-      },{onlyOnce:true});
+    // WhatsApp
+    div.querySelector(".sendBtn").onclick=()=>{
+      const s=senderCache;
+      if(!s.name) return alert("Sender info missing!");
+      const msg=`📣 *${s.name} का संदेश*\n${s.message}\n\nVoter: ${v.name}\nEPIC: ${v.voterID}\nWard: ${v.ward}\n${s.photo}`;
+      window.open(`https://wa.me/${v.mobile}?text=${encodeURIComponent(msg)}`,"_blank");
     };
-
-
-    /* --- PRINT --- */
-    card.querySelector(".print").onclick = () => {
-      const win = window.open();
-      win.document.write(`
-        <h2>Voter Information</h2>
-        <p>Name: ${v.name}</p>
-        <p>EPIC: ${v.voterID}</p>
-        <p>Ward: ${v.ward}</p>
-        <p>Mobile: ${v.mobile}</p>
-      `);
+    // Print
+    div.querySelector(".printBtn").onclick=()=>{
+      const win=window.open();
+      win.document.write(`<h2>Voter Info</h2><p>Name: ${v.name}</p><p>EPIC: ${v.voterID}</p><p>Ward: ${v.ward}</p><p>Mobile: ${v.mobile}</p><p>Status: ${v.status}</p>`);
       win.print();
     };
+    // Status Update
+    div.querySelector(".approveBtn").onclick=()=>update(dbRef(db,"voters/"+v.voterID.replace(/\W/g,"_")),{status:"approved"});
+    div.querySelector(".opponentBtn").onclick=()=>update(dbRef(db,"voters/"+v.voterID.replace(/\W/g,"_")),{status:"opponent"});
+    div.querySelector(".antiBtn").onclick=()=>update(dbRef(db,"voters/"+v.voterID.replace(/\W/g,"_")),{status:"anti"});
+  });
+  applyFilter();
+});
+
+// Filter + Search
+let activeFilter="all";
+document.querySelectorAll(".filterBtn").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    activeFilter=btn.dataset.filter;
+    document.querySelectorAll(".filterBtn").forEach(b=>b.classList.remove("ring-2","ring-black"));
+    btn.classList.add("ring-2","ring-black");
+    applyFilter();
   });
 });
-</script>
+document.getElementById("searchBox").addEventListener("keyup", applyFilter);
 
+function applyFilter(){
+  const keyword=document.getElementById("searchBox").value.toLowerCase();
+  const items=document.querySelectorAll(".item");
+  let approved=0,opponent=0,anti=0;
+  items.forEach(i=>{
+    const name=i.dataset.name,status=i.dataset.status;
+    const matchSearch=name.includes(keyword);
+    const matchFilter=(activeFilter=="all"||activeFilter==status);
+    if(matchSearch&&matchFilter){ i.classList.remove("hidden"); if(status=="approved") approved++; else if(status=="opponent") opponent++; else anti++; }
+    else i.classList.add("hidden");
+  });
+  document.getElementById("countApproved").innerText=approved;
+  document.getElementById("countOpponent").innerText=opponent;
+  document.getElementById("countAnti").innerText=anti;
+}
+</script>
 </body>
 </html>
