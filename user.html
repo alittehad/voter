@@ -96,6 +96,29 @@ const provider = new GoogleAuthProvider();
 
 let senderImageURL = "";
 
+
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    const emailKey = user.email.replace(/\./g, "_");
+
+    // Hardcoded Admin/User
+    const admins = ["ngogrant454@gmail_com"];
+    const users  = ["zarafix3@gmail_com"];
+
+    if (admins.includes(emailKey) || users.includes(emailKey)) {
+      document.getElementById("loginDiv").classList.add("hidden");
+      document.getElementById("panelDiv").classList.remove("hidden");
+      renderVoters();
+    } else {
+      auth.signOut();
+    }
+  }
+});
+
+
+  
 // Login
 document.getElementById("googleLoginBtn").onclick = ()=>{
   signInWithPopup(auth, provider).then(res=>{
