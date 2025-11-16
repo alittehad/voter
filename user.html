@@ -92,6 +92,7 @@ const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 
 let senderImageURL = "";
+let senderDescText = "";
 const voterListDiv = document.getElementById("voterList");
 let role = "";
 
@@ -131,7 +132,9 @@ onAuthStateChanged(auth,user=>{
       if(snap.exists()){
         const data = snap.val();
         senderImageURL = data.image || "";
+        senderDescText = data.desc || "";
         document.getElementById("senderImgPreview").src = senderImageURL;
+        document.getElementById("senderDesc").value = senderDescText;
         if(senderImageURL) document.getElementById("senderImgPreview").classList.remove("hidden");
       }
     });
@@ -150,7 +153,8 @@ document.getElementById("uploadSenderImage").onclick = ()=>{
   const reader = new FileReader();
   reader.onload = e=>{
     senderImageURL = e.target.result;
-    set(dbRef(db,"sender"),{ image: senderImageURL, desc: document.getElementById("senderDesc").value });
+    senderDescText = document.getElementById("senderDesc").value;
+    set(dbRef(db,"sender"),{ image: senderImageURL, desc: senderDescText });
     document.getElementById("senderImgPreview").src = senderImageURL;
     document.getElementById("senderImgPreview").classList.remove("hidden");
     alert("Sender info saved!");
@@ -205,10 +209,23 @@ function renderVoters(){
       div.querySelector(".opponentBtn").onclick = ()=>{ set(dbRef(db,"voters/"+key), {...v,status:"opponent"}); updateCardColor(div,"opponent"); };
       div.querySelector(".antiBtn").onclick = ()=>{ set(dbRef(db,"voters/"+key), {...v,status:"anti"}); updateCardColor(div,"anti"); };
       if(role==="admin") div.querySelector(".deleteBtn")?.addEventListener("click",()=>{ if(confirm(`Delete ${v.name}?`)) remove(dbRef(db,"voters/"+key)); });
-      div.querySelector(".sendBtn").onclick = ()=>{/* WhatsApp */};
+
+      // WhatsApp send
+      div.querySelector(".sendBtn").onclick = ()=>{
+        let msg = `Sender: ${senderDescText || ""}\n`;
+        if(senderImageURL) msg+="(Image attached separately)\n";
+        msg += `Name: ${v.name}\nEPIC: ${v.voterID}\nAddress: ${v.address}\nPart: ${v.partNo}\nBooth: ${v.booth||''}\nAge: ${v.age||''}\nStatus: ${v.status}`;
+        const waURL = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+        window.open(waURL,'_blank');
+      };
+
+      // Print
       div.querySelector(".printBtn").onclick = ()=>{
         const w=window.open();
-        w.document.write(`<div>${senderImageURL? `<img src='${senderImageURL}' width='50'>`:""}<pre>${div.innerText}</pre></div>`);
+        w.document.write(`<div style="font-family:sans-serif;">`);
+        if(senderImageURL) w.document.write(`<img src="${senderImageURL}" width="50"><br>${senderDescText}<br><br>`);
+        w.document.write(`<pre>${v.name}\nEPIC: ${v.voterID}\nAddress: ${v.address}\nPart: ${v.partNo}\nBooth: ${v.booth||''}\nAge: ${v.age||''}\nStatus: ${v.status}</pre>`);
+        w.document.write(`</div>`);
         w.print(); w.close();
       };
     });
