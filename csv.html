@@ -73,7 +73,7 @@ document.getElementById("uploadBtn").addEventListener("click", () => {
           name: row.Name || row.name,
           voterID: keyRaw,
           ward: row.Ward || row.ward || "20",
-          status: "pending",
+          status: "anti",
           mobile: row.Mobile || row.mobile || "",
           senderPhoto: senderPhoto
         });
@@ -112,7 +112,7 @@ function loadVoters(){
           <button class="btn-3d printBtn">Print</button>
           <button class="btn-3d statusBtn" data-status="approved">Approve</button>
           <button class="btn-3d statusBtn" data-status="opponent">Opponent</button>
-          <button class="btn-3d statusBtn" data-status="pending">Pending</button>
+          <button class="btn-3d statusBtn" data-status="anti">anti</button>
         </div>
       `;
       voterCardsDiv.appendChild(card);
