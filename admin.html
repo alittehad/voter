@@ -1,46 +1,58 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="hi">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Admin Panel</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin - Ward 20</title>
 <script src="https://cdn.tailwindcss.com"></script>
-</head>
-
-<body class="bg-gray-200 p-6">
-
-<script>
-if (!localStorage.getItem("user")) window.location.href = "login.html";
-if (localStorage.getItem("role") !== "admin") {
-  alert("Admin access only!");
-  window.location.href = "index.html";
+<style>
+.btn-3d { 
+  background: linear-gradient(145deg,#4f46e5,#6366f1); 
+  color:white; font-weight:bold; padding:.7rem 1.5rem; 
+  border-radius:.5rem; box-shadow:4px 4px 6px #333,-4px -4px 6px #777; 
+  cursor:pointer; transition: all .2s; font-size:1rem;
 }
-</script>
+.btn-3d:hover{
+  box-shadow: inset 4px 4px 6px #333,inset -4px -4px 6px #777;
+}
+</style>
+</head>
+<body class="bg-gray-100 p-4">
 
-<h1 class="text-2xl font-bold mb-4">Admin Panel</h1>
+<h1 class="text-2xl font-bold mb-4">Admin Panel - Ward 20</h1>
+<button class="btn-3d mb-4 w-full" onclick="window.open('https://your-link.com','_blank')">Add Voter</button>
+<button class="btn-3d mb-4 w-full" onclick="window.open('https://your-link.com','_blank')">Reports</button>
 
-<label class="block mb-2 font-semibold">Index Page Image Upload</label>
-<input type="file" id="uploadImage" class="mb-4" />
-<button id="uploadBtn" class="bg-green-600 text-white py-2 px-4 rounded">Upload</button>
-
-<p id="status" class="mt-4 font-medium"></p>
+<div id="voterList" class="border p-2 rounded max-h-96 overflow-auto"></div>
 
 <script type="module">
-import { storage } from "./firebase.js";
-import { ref, uploadBytes } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getDatabase, ref as dbRef, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-const fileInput = document.getElementById("uploadImage");
-const btn = document.getElementById("uploadBtn");
-const status = document.getElementById("status");
+const firebaseConfig = {
+  apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
+  authDomain: "voter-25c94.firebaseapp.com",
+  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
+  projectId: "voter-25c94",
+  storageBucket: "voter-25c94.appspot.com",
+  messagingSenderId: "297773534400",
+  appId: "1:297773534400:web:3722c487b8c83e9b787125"
+};
 
-btn.addEventListener("click", async () => {
-  const file = fileInput.files[0];
-  if (!file) return alert("Select an image first");
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
 
-  const storageRef = ref(storage, "indexImage.jpg");
-  await uploadBytes(storageRef, file);
-
-  status.innerText = "Image uploaded successfully!";
+const voterDiv = document.getElementById("voterList");
+voterDiv.innerHTML="Loading voters...";
+onValue(dbRef(db,"voters"), snapshot=>{
+  voterDiv.innerHTML="";
+  snapshot.forEach(snap=>{
+    const v = snap.val();
+    const d=document.createElement("div");
+    d.className="border p-1 my-1";
+    d.innerText=`${v.name} | EPIC: ${v.voterID} | Ward: ${v.ward} | Status: ${v.status}`;
+    voterDiv.appendChild(d);
+  });
 });
 </script>
 
