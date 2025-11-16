@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Voter List & WhatsApp Share + Print</title>
+<title>Voter CSV Link Upload & WhatsApp Send</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js"></script>
@@ -14,31 +14,46 @@
   color:white; font-weight:bold; padding:.5rem 1rem; 
   border-radius:.5rem; box-shadow:4px 4px 6px #333,-4px -4px 6px #777; 
   cursor:pointer; transition: all .2s; width:100%;
+  text-align:center; margin-bottom:0.25rem;
 }
 .btn-3d:hover{
   box-shadow: inset 4px 4px 6px #333,inset -4px -4px 6px #777;
+}
+.card {
+  background:white; border-radius:0.5rem; box-shadow:0 4px 6px rgba(0,0,0,0.1);
+  padding:1rem; margin-bottom:1rem; display:flex; flex-direction:column; gap:0.5rem;
+}
+.status-buttons {
+  display:flex; gap:0.5rem; justify-content:space-between;
+}
+.status-btn { flex:1; color:white; font-weight:bold; padding:.5rem; border-radius:.5rem; cursor:pointer; text-align:center; }
+.status-green { background:green; }
+.status-yellow { background:gold; color:black; }
+.status-red { background:red; }
+@media(max-width:640px){
+  .card { font-size:14px; }
+  .btn-3d { padding:0.5rem; font-size:14px; }
 }
 </style>
 </head>
 <body class="bg-gray-100 p-4">
 
-<h1 class="text-2xl font-bold mb-4 text-center">Voter CSV Upload & Share + Print</h1>
+<h1 class="text-2xl font-bold mb-4 text-center">Voter CSV Link Upload & WhatsApp Send</h1>
 
-<!-- CSV Upload -->
+<!-- CSV Link Upload -->
 <div class="bg-white p-4 rounded shadow mb-4">
-  <input type="file" id="csvFile" class="border p-2 w-full mb-2">
+  <input type="text" id="csvLink" class="border p-2 w-full mb-2" placeholder="Paste CSV link here">
   <button id="uploadBtn" class="btn-3d">Upload CSV to Firebase</button>
 </div>
 
 <!-- Voter List -->
 <h2 class="text-xl font-bold mb-2">Voter List</h2>
-<div id="voterList" class="overflow-auto max-h-80 border p-2 bg-white rounded shadow"></div>
+<div id="voterList" class="overflow-auto max-h-screen"></div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref as dbRef, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref as dbRef, set, onValue, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-// Firebase Config
 const firebaseConfig = {
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
   authDomain: "voter-25c94.firebaseapp.com",
@@ -52,21 +67,14 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// Sender Info
-const sender = {
-    name: "Akash Sharma",
-    phone: "9876543210",
-    message: "मैं आपके क्षेत्र का उम्मीदवार हूँ, कृपया मुझे समर्थन दें।",
-    photo: "https://example.com/photo.jpg"
-};
-
-// Upload CSV
+// Upload CSV from Link
 document.getElementById("uploadBtn").addEventListener("click", () => {
-  const file = document.getElementById("csvFile").files[0];
-  if(!file) return alert("Select CSV file");
+  const url = document.getElementById("csvLink").value;
+  if(!url) return alert("Please enter CSV link");
 
-  Papa.parse(file, {
-    header: true, skipEmptyLines: true, complete: function(results) {
+  Papa.parse(url, {
+    download:true, header: true, skipEmptyLines: true,
+    complete: function(results) {
       results.data.forEach(row => {
         const keyRaw = row.EPIC || row.voterID;
         if(!keyRaw) return;
@@ -75,7 +83,6 @@ document.getElementById("uploadBtn").addEventListener("click", () => {
           name: row.Name || row.name,
           voterID: keyRaw,
           ward: row.Ward || row.ward || "20",
-          mobile: row.Mobile || row.mobile || "",
           status: "pending"
         });
       });
@@ -93,39 +100,73 @@ function loadVoters() {
     voterListDiv.innerHTML = "";
     snapshot.forEach(snap => {
       const voter = snap.val();
-      const div = document.createElement("div");
-      const bg = voter.status==="approved"?"bg-green-200":voter.status==="opponent"?"bg-red-200":"bg-yellow-200";
-      div.className = `border p-2 my-1 rounded ${bg} flex flex-col gap-2`;
+      let bg = voter.status==="approved"?"bg-green-100":voter.status==="opponent"?"bg-red-100":"bg-yellow-100";
 
-      div.innerHTML = `
+      const card = document.createElement("div");
+      card.className = `card ${bg}`;
+
+      card.innerHTML = `
         <div><b>${voter.name}</b> | EPIC: ${voter.voterID} | Ward: ${voter.ward} | Status: ${voter.status}</div>
-        <button class="btn-3d shareBtn">Share on WhatsApp</button>
+        <input type="text" class="senderName border p-1" placeholder="Your Name" />
+        <input type="text" class="senderMessage border p-1" placeholder="Your Message" />
+        <input type="text" class="senderPhoto border p-1" placeholder="Your Photo URL" />
+        <input type="text" class="senderMobile border p-1" placeholder="Enter WhatsApp Number" />
+        <div class="status-buttons">
+          <div class="status-btn status-green">Green</div>
+          <div class="status-btn status-yellow">Yellow</div>
+          <div class="status-btn status-red">Red</div>
+        </div>
+        <button class="btn-3d shareBtn">Send WhatsApp</button>
         <button class="btn-3d printBtn">Print</button>
       `;
 
+      // Status Buttons
+      const statusGreen = card.querySelector(".status-green");
+      const statusYellow = card.querySelector(".status-yellow");
+      const statusRed = card.querySelector(".status-red");
+
+      statusGreen.addEventListener("click", () => { 
+        card.style.background="lightgreen"; 
+        update(dbRef(db,"voters/"+voter.voterID.replace(/\W/g,"_")),{status:"approved"});
+      });
+      statusYellow.addEventListener("click", () => { 
+        card.style.background="gold"; 
+        update(dbRef(db,"voters/"+voter.voterID.replace(/\W/g,"_")),{status:"pending"});
+      });
+      statusRed.addEventListener("click", () => { 
+        card.style.background="lightcoral"; 
+        update(dbRef(db,"voters/"+voter.voterID.replace(/\W/g,"_")),{status:"opponent"});
+      });
+
       // WhatsApp Button
-      div.querySelector(".shareBtn").addEventListener("click", () => {
-        if(!voter.mobile){ alert("Mobile number missing for this voter!"); return; }
+      card.querySelector(".shareBtn").addEventListener("click", () => {
+        const name = card.querySelector(".senderName").value.trim();
+        const message = card.querySelector(".senderMessage").value.trim();
+        const photo = card.querySelector(".senderPhoto").value.trim();
+        const phoneInput = card.querySelector(".senderMobile").value.trim();
+        if(!phoneInput || !name || !message) { alert("Fill Name, Message & Mobile Number"); return; }
+        const phone = phoneInput.replace(/[^0-9]/g,"");
         const text = 
 `📌 *Voter Information*
 Name: ${voter.name}
 EPIC: ${voter.voterID}
 Ward: ${voter.ward}
 
-📣 *Message from Your Candidate*
-${sender.message}
+📣 *Message from Candidate*
+${message}
 
-👤 Candidate: ${sender.name}
-📞 Contact: ${sender.phone}
-🖼️ Photo: ${sender.photo}`;
-
-        const phone = voter.mobile.replace(/[^0-9]/g,"");
+👤 Candidate: ${name}
+🖼️ Photo: ${photo}`;
         const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
         window.open(url,"_blank");
       });
 
       // Print Button
-      div.querySelector(".printBtn").addEventListener("click", () => {
+      card.querySelector(".printBtn").addEventListener("click", () => {
+        const name = card.querySelector(".senderName").value.trim();
+        const message = card.querySelector(".senderMessage").value.trim();
+        const photo = card.querySelector(".senderPhoto").value.trim();
+
         const printContent = `
           <h2>Voter Information</h2>
           <p><b>Name:</b> ${voter.name}</p>
@@ -133,11 +174,10 @@ ${sender.message}
           <p><b>Ward:</b> ${voter.ward}</p>
           <p><b>Status:</b> ${voter.status}</p>
           <hr>
-          <h2>Candidate Information</h2>
-          <p><b>Name:</b> ${sender.name}</p>
-          <p><b>Phone:</b> ${sender.phone}</p>
-          <p><b>Message:</b> ${sender.message}</p>
-          <img src="${sender.photo}" style="max-width:200px;margin-top:10px;">
+          <h2>Sender Information</h2>
+          <p><b>Name:</b> ${name}</p>
+          <p><b>Message:</b> ${message}</p>
+          <img src="${photo}" style="max-width:200px;margin-top:10px;">
         `;
         const newWin = window.open();
         newWin.document.write(printContent);
@@ -145,14 +185,12 @@ ${sender.message}
         newWin.close();
       });
 
-      voterListDiv.appendChild(div);
+      voterListDiv.appendChild(card);
     });
   });
 }
 
-// Load voters on page load
 loadVoters();
 </script>
-
 </body>
 </html>
