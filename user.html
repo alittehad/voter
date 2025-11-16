@@ -6,15 +6,12 @@
 <title>Voter Management - Admin/User</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-<script type="module" src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
-<script type="module" src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"></script>
-<script type="module" src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js"></script>
 <style>
 body { background:#eef2ff; }
 .card { border-radius:1rem; box-shadow:6px 6px 12px rgba(0,0,0,0.1), -6px -6px 12px rgba(255,255,255,0.7); padding:16px; margin-bottom:12px; transition: all 0.2s; display:flex; flex-direction:column; }
-.card-approved { background-color: #dcfce7; }   /* Green */
-.card-opponent { background-color: #fef9c3; }   /* Yellow */
-.card-anti { background-color: #fee2e2; }       /* Red */
+.card-approved { background-color: #dcfce7; }
+.card-opponent { background-color: #fef9c3; }
+.card-anti { background-color: #fee2e2; }
 .btn { cursor:pointer; padding:0.5rem 1rem; border-radius:0.7rem; font-weight:bold; transition: all 0.2s; text-align:center; box-shadow:4px 4px 6px #bbb, -4px -4px 6px #fff; }
 .btn:hover { box-shadow: inset 4px 4px 6px #bbb, inset -4px -4px 6px #fff; }
 .btn-blue { background:#2563eb;color:white; }
@@ -29,15 +26,13 @@ body { background:#eef2ff; }
 </head>
 <body class="p-4">
 
-<div id="loginSection" class="text-center">
-  <h1 class="text-2xl font-bold text-blue-700 mb-4">Login with Google</h1>
-  <button id="googleLoginBtn" class="btn btn-blue">Login with Google</button>
+<div id="loginDiv" class="text-center mb-4">
+  <h1 class="text-2xl font-bold text-blue-700">Login to Access Voter Panel</h1>
+  <button id="googleLoginBtn" class="btn btn-blue mt-4">Login with Google</button>
 </div>
 
-<div id="mainContent" class="hidden">
-  <div class="text-center mb-4">
-    <h1 class="text-2xl font-bold text-blue-700">Voter Management Panel</h1>
-  </div>
+<div id="panelDiv" class="hidden">
+  <h1 class="text-2xl font-bold text-blue-700 text-center mb-4">Voter Management Panel</h1>
 
   <!-- Sender Info -->
   <div class="bg-white p-4 rounded shadow mb-4">
@@ -56,48 +51,16 @@ body { background:#eef2ff; }
     <button id="uploadCSV" class="btn btn-blue w-full">Upload CSV</button>
   </div>
 
-  <!-- Manual Add Voter -->
-  <div class="bg-white p-4 rounded shadow mb-4">
-    <h2 class="text-xl font-bold mb-2 text-blue-700">Add Voter Manually</h2>
-    <input type="text" id="vName" placeholder="Name" class="border p-2 w-full mb-2">
-    <input type="text" id="vEPIC" placeholder="EPIC" class="border p-2 w-full mb-2">
-    <input type="text" id="vWard" placeholder="Ward" class="border p-2 w-full mb-2">
-    <input type="text" id="vAddress" placeholder="Address" class="border p-2 w-full mb-2">
-    <input type="text" id="vMobile" placeholder="Mobile" class="border p-2 w-full mb-2">
-    <input type="text" id="vAge" placeholder="Age" class="border p-2 w-full mb-2">
-    <input type="text" id="vBooth" placeholder="Booth" class="border p-2 w-full mb-2">
-    <select id="vStatus" class="border p-2 w-full mb-2">
-      <option value="anti">Anti</option>
-      <option value="opponent">Opponent</option>
-      <option value="approved">Approved</option>
-    </select>
-    <button id="addVoter" class="btn btn-green w-full">Add Voter</button>
-  </div>
-
-  <!-- Search -->
-  <div class="bg-white p-4 rounded shadow mb-4">
-    <h2 class="text-xl font-bold mb-2 text-blue-700">Search Voter</h2>
-    <input type="text" id="searchInput" placeholder="Search by Name, EPIC, Ward, Address, Booth" class="border p-2 w-full mb-2">
-    <button id="searchBtn" class="btn btn-blue w-full mb-2">Search</button>
-    <button id="resetBtn" class="btn btn-gray w-full">Reset</button>
-  </div>
-
-  <!-- Status Counters -->
-  <div class="grid grid-cols-3 gap-2 text-center mb-4">
-    <div class="p-2 rounded-lg bg-green-100 text-green-700 font-bold">Approved: <span id="countApproved">0</span></div>
-    <div class="p-2 rounded-lg bg-yellow-100 text-yellow-700 font-bold">Opponent: <span id="countOpponent">0</span></div>
-    <div class="p-2 rounded-lg bg-red-100 text-red-700 font-bold">Anti: <span id="countAnti">0</span></div>
-  </div>
-
   <!-- Voter List -->
   <div id="voterList" class="flex-wrap"></div>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getDatabase, ref as dbRef, set, onValue, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref as dbRef, set, onValue, remove, get, child } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
+// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
   authDomain: "voter-25c94.firebaseapp.com",
@@ -107,38 +70,38 @@ const firebaseConfig = {
   messagingSenderId: "297773534400",
   appId: "1:297773534400:web:3722c487b8c83e9b787125"
 };
+
 const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
 const db = getDatabase(app);
+const auth = getAuth(app);
+const provider = new GoogleAuthProvider();
+let senderImageURL = "";
 
-const allowedAdmins = ["ngogrant454@gmail.com"];
-const allowedUsers = ["zarafix3@gmail.com"];
+// ----------------- Google Login -----------------
+const loginDiv = document.getElementById("loginDiv");
+const panelDiv = document.getElementById("panelDiv");
 
-const loginSection = document.getElementById("loginSection");
-const mainContent = document.getElementById("mainContent");
-
-// ---------------------- Google Login ----------------------
-document.getElementById("googleLoginBtn").onclick = async () => {
-  const provider = new GoogleAuthProvider();
-  const result = await signInWithPopup(auth, provider);
+document.getElementById("googleLoginBtn").onclick = ()=>{
+    signInWithPopup(auth, provider).then(res=>{
+        const user = res.user;
+        const email = user.email;
+        get(child(dbRef(db,"admins"))).then(adminSnap=>{
+            get(child(dbRef(db,"users"))).then(userSnap=>{
+                if(adminSnap.hasChild(email.replace(/\./g,"_")) || userSnap.hasChild(email.replace(/\./g,"_"))){
+                    loginDiv.classList.add("hidden");
+                    panelDiv.classList.remove("hidden");
+                    alert(`Welcome ${user.displayName}!`);
+                    renderVoters();
+                } else {
+                    alert("Access denied! Only admin/user allowed.");
+                    auth.signOut();
+                }
+            });
+        });
+    }).catch(err=>{ console.error(err); alert("Login failed!"); });
 };
 
-onAuthStateChanged(auth, user => {
-  if(user){
-    const email = user.email;
-    if(allowedAdmins.includes(email) || allowedUsers.includes(email)){
-      loginSection.classList.add("hidden");
-      mainContent.classList.remove("hidden");
-      renderVoters();
-    } else {
-      alert("Access denied. You are not allowed.");
-      auth.signOut();
-    }
-  }
-});
-
-// ---------------------- Sender Image Upload ----------------------
-let senderImageURL = "";
+// ---------------- Upload Sender Image ----------------
 document.getElementById("uploadSenderImage").onclick = ()=>{
     const file = document.getElementById("senderImage").files[0];
     if(!file) return alert("Select an image first!");
@@ -154,46 +117,30 @@ document.getElementById("uploadSenderImage").onclick = ()=>{
     }).catch(err=>{ console.error(err); alert("Upload failed!"); });
 };
 
-// ---------------------- Helper: Card Color ----------------------
+// ---------------- Helper ----------------
 function updateCardColor(cardDiv, status){
-    cardDiv.classList.remove("card-approved", "card-opponent", "card-anti");
-    if(status === "approved") cardDiv.classList.add("card-approved");
-    else if(status === "opponent") cardDiv.classList.add("card-opponent");
+    cardDiv.classList.remove("card-approved","card-opponent","card-anti");
+    if(status==="approved") cardDiv.classList.add("card-approved");
+    else if(status==="opponent") cardDiv.classList.add("card-opponent");
     else cardDiv.classList.add("card-anti");
 }
 
-// ---------------------- Render Voters ----------------------
+// ---------------- Render Voters ----------------
 const voterListDiv = document.getElementById("voterList");
-function renderVoters(filter=""){
-    onValue(dbRef(db, "voters"), snap=>{
-        voterListDiv.innerHTML="";
-        let approved=0, opponent=0, anti=0;
-        const q = filter.toLowerCase();
+function renderVoters(){
+    onValue(dbRef(db,"voters"), snap=>{
+        voterListDiv.innerHTML = '';
         snap.forEach(s=>{
-            const v = s.val();
-            const key = s.key;
-            const match = !q || 
-                (v.name && v.name.toLowerCase().includes(q)) ||
-                (v.voterID && v.voterID.toLowerCase().includes(q)) ||
-                (v.ward && v.ward.toLowerCase().includes(q)) ||
-                (v.address && v.address.toLowerCase().includes(q)) ||
-                (v.booth && v.booth.toLowerCase().includes(q));
-            if(!match) return;
-
-            if(v.status==="approved") approved++;
-            else if(v.status==="opponent") opponent++;
-            else anti++;
-
+            const v = s.val(); const key=s.key;
             const div = document.createElement("div");
             div.className="card";
             updateCardColor(div,v.status);
-
             div.innerHTML = `
-                <div style='display:flex; align-items:center;'>
+                <div style="display:flex; align-items:center;">
                     ${senderImageURL ? `<img src='${senderImageURL}' class='img-sender'>` : ''}
                     <div>
                         <h2 class='font-bold'>${v.name}</h2>
-                        <p class='text-sm text-gray-600'>EPIC: ${v.voterID} | Ward: ${v.ward} | Address: ${v.address} | Age: ${v.age} | Booth: ${v.booth} | Status: ${v.status}</p>
+                        <p class='text-sm text-gray-600'>EPIC: ${v.voterID} | State: ${v.state} | District: ${v.district} | AC: ${v.acNo} | Part: ${v.partNo} | Booth: ${v.booth} | Age: ${v.age} | Status: ${v.status}</p>
                     </div>
                 </div>
                 <div class='flex gap-2 flex-wrap mt-2'>
@@ -202,96 +149,56 @@ function renderVoters(filter=""){
                     <button class='btn btn-red antiBtn'>Anti</button>
                     <button class='btn btn-gray deleteBtn'>Delete</button>
                     <button class='btn btn-blue sendBtn'>Send WhatsApp</button>
-                </div>
-            `;
+                </div>`;
             voterListDiv.appendChild(div);
-
-            div.querySelector(".approveBtn").onclick = ()=>{ set(dbRef(db,"voters/"+key), {...v, status:"approved"}); updateCardColor(div,"approved"); renderVoters(); };
-            div.querySelector(".opponentBtn").onclick = ()=>{ set(dbRef(db,"voters/"+key), {...v, status:"opponent"}); updateCardColor(div,"opponent"); renderVoters(); };
-            div.querySelector(".antiBtn").onclick = ()=>{ set(dbRef(db,"voters/"+key), {...v, status:"anti"}); updateCardColor(div,"anti"); renderVoters(); };
-            div.querySelector(".deleteBtn").onclick = ()=>{ if(confirm(`Delete voter ${v.name}?`)) remove(dbRef(db,"voters/"+key)); renderVoters(); };
+            div.querySelector(".approveBtn").onclick = ()=>{ set(dbRef(db,"voters/"+key), {...v,status:"approved"}); updateCardColor(div,"approved"); };
+            div.querySelector(".opponentBtn").onclick = ()=>{ set(dbRef(db,"voters/"+key), {...v,status:"opponent"}); updateCardColor(div,"opponent"); };
+            div.querySelector(".antiBtn").onclick = ()=>{ set(dbRef(db,"voters/"+key), {...v,status:"anti"}); updateCardColor(div,"anti"); };
+            div.querySelector(".deleteBtn").onclick = ()=>{ if(confirm(`Delete ${v.name}?`)) remove(dbRef(db,"voters/"+key)); };
             div.querySelector(".sendBtn").onclick = ()=>{
                 const senderName = document.getElementById("senderName").value.trim();
                 const senderMobile = document.getElementById("senderMobile").value.trim();
-                if(!senderName || !senderMobile) return alert("Enter sender info first!");
-                const message = `Voting Info:\nName: ${v.name}\nEPIC: ${v.voterID}\nWard: ${v.ward}\nAddress: ${v.address}\nAge: ${v.age}\nBooth: ${v.booth}\nStatus: ${v.status}\nSender: ${senderName} (${senderMobile})`;
-                window.open(`https://wa.me/${v.mobile}?text=${encodeURIComponent(message)}`,'_blank');
+                if(!senderName || !senderMobile) return alert("Enter sender info!");
+                if(!v.mobile) return alert("Voter mobile missing!");
+                const msg = `Name: ${v.name}\nEPIC: ${v.voterID}\nState: ${v.state}\nDistrict: ${v.district}\nAC: ${v.acNo}\nPart: ${v.partNo}\nBooth: ${v.booth}\nAge: ${v.age}\nStatus: ${v.status}\nSender: ${senderName} ${senderMobile}`;
+                window.open(`https://wa.me/${v.mobile}?text=${encodeURIComponent(msg)}`,'_blank');
             };
         });
-
-        document.getElementById("countApproved").innerText=approved;
-        document.getElementById("countOpponent").innerText=opponent;
-        document.getElementById("countAnti").innerText=anti;
-    },{onlyOnce:true});
+    });
 }
 
-// ---------------------- Manual Add ----------------------
-document.getElementById("addVoter").onclick = ()=>{
-    const n=document.getElementById("vName").value.trim();
-    const e=document.getElementById("vEPIC").value.trim();
-    const w=document.getElementById("vWard").value.trim() || "20";
-    const a=document.getElementById("vAddress").value.trim();
-    const m=document.getElementById("vMobile").value.trim();
-    const age=document.getElementById("vAge").value.trim();
-    const booth=document.getElementById("vBooth").value.trim();
-    const s=document.getElementById("vStatus").value;
-    if(!n||!e) return alert("Name और EPIC जरूरी हैं!");
-    const key=e.replace(/\W/g,"_");
-    set(dbRef(db,"voters/"+key), { name:n, voterID:e, ward:w, address:a, mobile:m, age:age, booth:booth, status:s }).then(()=>{
-        alert("Voter added!");
-        document.getElementById("vName").value="";
-        document.getElementById("vEPIC").value="";
-        document.getElementById("vWard").value="";
-        document.getElementById("vAddress").value="";
-        document.getElementById("vMobile").value="";
-        document.getElementById("vAge").value="";
-        document.getElementById("vBooth").value="";
-        document.getElementById("vStatus").value="anti";
-        renderVoters();
-    }).catch(err=>{ console.error(err); alert("Add voter failed!"); });
-};
-
-// ---------------------- CSV Upload ----------------------
+// ---------------- CSV Upload ----------------
 document.getElementById("uploadCSV").onclick = ()=>{
     let link = document.getElementById("csvLink").value.trim();
-    if(!link) return alert("CSV / Google Sheet link डालें");
-    if(link.includes("docs.google.com/spreadsheets/d/")) {
-        const idMatch = link.match(/\/d\/([a-zA-Z0-9-_]+)/);
-        if(idMatch) link = `https://docs.google.com/spreadsheets/d/${idMatch[1]}/export?format=csv`;
+    if(!link) return alert("Enter CSV link!");
+    if(link.includes("docs.google.com/spreadsheets/d/")){
+        const id = link.match(/\/d\/([a-zA-Z0-9-_]+)/)[1];
+        link = `https://docs.google.com/spreadsheets/d/${id}/export?format=csv`;
     }
-    fetch(link)
-    .then(res=>res.text())
-    .then(csvText=>{
-        Papa.parse(csvText,{ header:true, skipEmptyLines:true, complete: results=>{
+    fetch(link).then(r=>r.text()).then(csvText=>{
+        Papa.parse(csvText,{header:true,skipEmptyLines:true,complete:results=>{
             results.data.forEach(row=>{
                 if(!row.EPIC) return;
-                const key=row.EPIC.replace(/\W/g,"_");
+                const key = row.EPIC.replace(/\W/g,"_");
                 set(dbRef(db,"voters/"+key),{
                     name: row.Name || "",
                     voterID: row.EPIC,
-                    ward: row.Ward || "20",
-                    address: row.Address || "",
+                    state: row.State || "",
+                    district: row.District || "",
+                    acNo: row["AC No"] || "",
+                    partNo: row["Part No"] || "",
                     mobile: row.Mobile || "",
                     age: row.Age || "",
                     booth: row.Booth || "",
-                    status: row.Status || "anti"
-                }).catch(err=>console.error("CSV upload failed:",row.EPIC,err));
+                    status:"anti"
+                });
             });
-            alert("CSV uploaded successfully!");
+            alert("CSV uploaded!");
             renderVoters();
         }});
     }).catch(err=>{ console.error(err); alert("CSV fetch failed!"); });
 };
 
-// ---------------------- Search ----------------------
-document.getElementById("searchBtn").onclick = ()=>{
-    const q=document.getElementById("searchInput").value.trim();
-    renderVoters(q);
-};
-document.getElementById("resetBtn").onclick = ()=>{
-    document.getElementById("searchInput").value="";
-    renderVoters();
-};
 </script>
 </body>
 </html>
