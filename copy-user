@@ -34,12 +34,21 @@ body { background:#eef2ff; }
 
 <!-- Panel -->
 <div id="panelDiv" class="hidden">
+
   <h1 class="text-2xl font-bold text-blue-700 text-center mb-4">Voter Management Panel</h1>
 
   <!-- Sender Info -->
   <div class="bg-white p-4 rounded shadow mb-4">
     <h2 class="text-xl font-bold mb-2 text-blue-700">Sender Info</h2>
-    <textarea id="senderDesc" placeholder="Enter sender description here..." class="border p-2 w-full mb-2"></textarea>
+    <textarea id="senderDesc" placeholder="Sender Description" class="border p-2 w-full mb-2"></textarea>
+    <input type="file" id="senderImage" class="border p-2 w-full mb-2">
+    <button id="uploadSenderImage" class="btn btn-blue w-full mb-2">Upload Sender Image</button>
+    <img id="senderImgPreview" src="" class="img-sender hidden">
+  </div>
+
+  <!-- Search -->
+  <div class="bg-white p-4 rounded shadow mb-4">
+    <input type="text" id="searchVoter" placeholder="Search by Name, EPIC, District..." class="border p-2 w-full">
   </div>
 
   <!-- CSV Upload -->
@@ -49,13 +58,25 @@ body { background:#eef2ff; }
     <button id="uploadCSV" class="btn btn-blue w-full">Upload CSV</button>
   </div>
 
+  <!-- Manual Add -->
+  <div class="bg-white p-4 rounded shadow mb-4">
+    <h2 class="text-xl font-bold mb-2 text-blue-700">Add Voter Manually</h2>
+    <input type="text" id="voterName" placeholder="Name" class="border p-2 w-full mb-2">
+    <input type="text" id="voterEPIC" placeholder="EPIC" class="border p-2 w-full mb-2">
+    <input type="text" id="voterState" placeholder="State" class="border p-2 w-full mb-2">
+    <input type="text" id="voterDistrict" placeholder="District" class="border p-2 w-full mb-2">
+    <input type="text" id="voterAC" placeholder="AC No" class="border p-2 w-full mb-2">
+    <input type="text" id="voterPart" placeholder="Part No" class="border p-2 w-full mb-2">
+    <button id="addVoterManual" class="btn btn-green w-full">Add Voter</button>
+  </div>
+
   <!-- Voter List -->
   <div id="voterList" class="flex-wrap"></div>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref as dbRef, set, onValue, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref as dbRef, set, onValue, remove, child, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 // Firebase config
@@ -68,121 +89,142 @@ const firebaseConfig = {
   messagingSenderId: "297773534400",
   appId: "1:297773534400:web:3722c487b8c83e9b787125"
 };
-
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
-let senderDesc = "";
 
-// Hardcoded admin & user emails
-const admins = ["ngogrant454@gmail.com"];
-const users = ["zarafix3@gmail.com"];
+let senderImageURL = "";
 
 // Login
-const loginDiv = document.getElementById("loginDiv");
-const panelDiv = document.getElementById("panelDiv");
 document.getElementById("googleLoginBtn").onclick = ()=>{
-    signInWithPopup(auth, provider).then(res=>{
-        const email = res.user.email;
-        if(admins.includes(email) || users.includes(email)){
-            loginDiv.classList.add("hidden");
-            panelDiv.classList.remove("hidden");
-            alert(`Welcome ${res.user.displayName}`);
-            renderVoters();
-        } else {
-            alert("Access denied! Only admin/user allowed.");
-            auth.signOut();
-        }
-    }).catch(err=>{ console.error(err); alert("Login failed!"); });
+  signInWithPopup(auth, provider).then(res=>{
+    const emailKey = res.user.email.replace(/\./g,"_");
+    // Hardcoded Admin/User
+    const admins = ["ngogrant454@gmail_com"];
+    const users  = ["zarafix3@gmail_com"];
+    if(admins.includes(emailKey) || users.includes(emailKey)){
+      document.getElementById("loginDiv").classList.add("hidden");
+      document.getElementById("panelDiv").classList.remove("hidden");
+      alert(`Welcome ${res.user.displayName}`);
+      renderVoters();
+    } else {
+      alert("Access denied!");
+      auth.signOut();
+    }
+  }).catch(err=>{ console.error(err); alert("Login failed!"); });
 };
 
-// Render voter cards
-const voterListDiv = document.getElementById("voterList");
-function updateCardColor(cardDiv,status){
-    cardDiv.classList.remove("card-approved","card-opponent","card-anti");
-    if(status==="approved") cardDiv.classList.add("card-approved");
-    else if(status==="opponent") cardDiv.classList.add("card-opponent");
-    else cardDiv.classList.add("card-anti");
-}
-function renderVoters(){
-    onValue(dbRef(db,"voters"), snap=>{
-        voterListDiv.innerHTML = '';
-        snap.forEach(s=>{
-            const v = s.val(); const key = s.key;
-            const div = document.createElement("div");
-            div.className="card";
-            updateCardColor(div,v.status);
-            div.innerHTML = `
-                <div>
-                    <h2 class='font-bold'>${v.name}</h2>
-                    <p class='text-sm text-gray-600'>
-                        EPIC: ${v.voterID} | State: ${v.state} | District: ${v.district} |
-                        AC: ${v.acNo} | Part: ${v.partNo} | Booth: ${v.booth} | Age: ${v.age} |
-                        Status: ${v.status}
-                    </p>
-                </div>
-                <div class='flex gap-2 flex-wrap mt-2'>
-                    <button class='btn btn-yellow approveBtn'>Approve</button>
-                    <button class='btn btn-yellow opponentBtn'>Opponent</button>
-                    <button class='btn btn-red antiBtn'>Anti</button>
-                    <button class='btn btn-gray deleteBtn'>Delete</button>
-                    <button class='btn btn-blue sendBtn'>Send WhatsApp</button>
-                    <button class='btn btn-green printBtn'>Print</button>
-                </div>`;
-            voterListDiv.appendChild(div);
+// Upload sender image
+document.getElementById("uploadSenderImage").onclick = ()=>{
+  const file = document.getElementById("senderImage").files[0];
+  if(!file) return alert("Select an image!");
+  const formData = new FormData();
+  formData.append('image', file);
+  fetch('https://api.imgbb.com/1/upload?key=8ece3c1f959f2426083eee1699086c71', {method:'POST', body: formData})
+    .then(res=>res.json())
+    .then(data=>{
+      senderImageURL = data.data.url;
+      document.getElementById("senderImgPreview").src = senderImageURL;
+      document.getElementById("senderImgPreview").classList.remove("hidden");
+      alert("Sender image uploaded!");
+    }).catch(err=>{ console.error(err); alert("Upload failed!"); });
+};
 
-            div.querySelector(".approveBtn").onclick = ()=>{ set(dbRef(db,"voters/"+key), {...v,status:"approved"}); updateCardColor(div,"approved"); };
-            div.querySelector(".opponentBtn").onclick = ()=>{ set(dbRef(db,"voters/"+key), {...v,status:"opponent"}); updateCardColor(div,"opponent"); };
-            div.querySelector(".antiBtn").onclick = ()=>{ set(dbRef(db,"voters/"+key), {...v,status:"anti"}); updateCardColor(div,"anti"); };
-            div.querySelector(".deleteBtn").onclick = ()=>{ if(confirm(`Delete ${v.name}?`)) remove(dbRef(db,"voters/"+key)); };
-            div.querySelector(".sendBtn").onclick = ()=>{
-                senderDesc = document.getElementById("senderDesc").value.trim();
-                if(!senderDesc) return alert("Enter sender description!");
-                if(!v.mobile) return alert("Voter mobile missing!");
-                const msg = `Name: ${v.name}\nEPIC: ${v.voterID}\nState: ${v.state}\nDistrict: ${v.district}\nAC: ${v.acNo}\nPart: ${v.partNo}\nBooth: ${v.booth}\nAge: ${v.age}\nStatus: ${v.status}\nSender: ${senderDesc}`;
-                window.open(`https://wa.me/${v.mobile}?text=${encodeURIComponent(msg)}`,'_blank');
-            };
-            div.querySelector(".printBtn").onclick = ()=>{
-                const w = window.open();
-                w.document.write(`<pre>${div.innerText}</pre>`);
-                w.print();
-                w.close();
-            };
-        });
-    });
+// Update card color
+function updateCardColor(cardDiv,status){
+  cardDiv.classList.remove("card-approved","card-opponent","card-anti");
+  if(status==="approved") cardDiv.classList.add("card-approved");
+  else if(status==="opponent") cardDiv.classList.add("card-opponent");
+  else cardDiv.classList.add("card-anti");
 }
+
+const voterListDiv = document.getElementById("voterList");
+
+// Render voters
+function renderVoters(){
+  onValue(dbRef(db,"voters"), snap=>{
+    const query = document.getElementById("searchVoter").value.trim().toLowerCase();
+    voterListDiv.innerHTML='';
+    snap.forEach(s=>{
+      const v = s.val(); const key=s.key;
+      const combined = `${v.name} ${v.voterID} ${v.district} ${v.acNo} ${v.partNo}`.toLowerCase();
+      if(query && !combined.includes(query)) return;
+      const div = document.createElement("div");
+      div.className="card";
+      updateCardColor(div,v.status);
+      div.innerHTML = `
+        <div style="display:flex;align-items:center;">
+          ${senderImageURL ? `<img src='${senderImageURL}' class='img-sender'>` : ''}
+          <div>
+            <h2 class='font-bold'>${v.name}</h2>
+            <p class='text-sm text-gray-600'>
+              EPIC: ${v.voterID} | State: ${v.state} | District: ${v.district} |
+              AC: ${v.acNo} | Part: ${v.partNo} | Booth: ${v.booth || ''} | Age: ${v.age || ''} | Status: ${v.status}
+            </p>
+          </div>
+        </div>
+        <div class='flex gap-2 flex-wrap mt-2'>
+          <button class='btn btn-yellow approveBtn'>Approve</button>
+          <button class='btn btn-yellow opponentBtn'>Opponent</button>
+          <button class='btn btn-red antiBtn'>Anti</button>
+          <button class='btn btn-gray deleteBtn'>Delete</button>
+          <button class='btn btn-blue sendBtn'>Send WhatsApp</button>
+          <button class='btn btn-green printBtn'>Print</button>
+        </div>`;
+      voterListDiv.appendChild(div);
+
+      div.querySelector(".approveBtn").onclick = ()=>{ set(dbRef(db,"voters/"+key), {...v,status:"approved"}); updateCardColor(div,"approved"); };
+      div.querySelector(".opponentBtn").onclick = ()=>{ set(dbRef(db,"voters/"+key), {...v,status:"opponent"}); updateCardColor(div,"opponent"); };
+      div.querySelector(".antiBtn").onclick = ()=>{ set(dbRef(db,"voters/"+key), {...v,status:"anti"}); updateCardColor(div,"anti"); };
+      div.querySelector(".deleteBtn").onclick = ()=>{ if(confirm(`Delete ${v.name}?`)) remove(dbRef(db,"voters/"+key)); };
+      div.querySelector(".sendBtn").onclick = ()=>{/* WhatsApp */};
+      div.querySelector(".printBtn").onclick = ()=>{ const w=window.open(); w.document.write(`<pre>${div.innerText}</pre>`); w.print(); w.close(); };
+    });
+  });
+}
+
+// Search
+document.getElementById("searchVoter").addEventListener("input", renderVoters);
+
+// Manual add
+document.getElementById("addVoterManual").onclick = ()=>{
+  const name = document.getElementById("voterName").value.trim();
+  const epic = document.getElementById("voterEPIC").value.trim();
+  const state = document.getElementById("voterState").value.trim();
+  const district = document.getElementById("voterDistrict").value.trim();
+  const acNo = document.getElementById("voterAC").value.trim();
+  const partNo = document.getElementById("voterPart").value.trim();
+  if(!name || !epic) return alert("Name & EPIC required!");
+  const key = epic.replace(/\W/g,"_");
+  set(dbRef(db,"voters/"+key), { name, voterID:epic, state, district, acNo, partNo, status:"anti" });
+  alert("Voter added!");
+  renderVoters();
+};
 
 // CSV upload
 document.getElementById("uploadCSV").onclick = ()=>{
-    let link = document.getElementById("csvLink").value.trim();
-    if(!link) return alert("Enter CSV link!");
-    if(link.includes("docs.google.com/spreadsheets/d/")){
-        const id = link.match(/\/d\/([a-zA-Z0-9-_]+)/)[1];
-        link = `https://docs.google.com/spreadsheets/d/${id}/export?format=csv`;
-    }
-    fetch(link).then(r=>r.text()).then(csvText=>{
-        Papa.parse(csvText,{header:true,skipEmptyLines:true,complete:results=>{
-            results.data.forEach(row=>{
-                if(!row.EPIC) return;
-                const key = row.EPIC.replace(/\W/g,"_");
-                set(dbRef(db,"voters/"+key),{
-                    name: row.Name || "",
-                    voterID: row.EPIC,
-                    state: row.State || "",
-                    district: row.District || "",
-                    acNo: row["AC No"] || "",
-                    partNo: row["Part No"] || "",
-                    mobile: row.Mobile || "",
-                    age: row.Age || "",
-                    booth: row.Booth || "",
-                    status:"anti"
-                });
-            });
-            alert("CSV uploaded!");
-            renderVoters();
-        }});
-    }).catch(err=>{ console.error(err); alert("CSV fetch failed!"); });
+  let link = document.getElementById("csvLink").value.trim();
+  if(!link) return alert("Enter CSV link!");
+  if(link.includes("docs.google.com/spreadsheets/d/")){
+    const id = link.match(/\/d\/([a-zA-Z0-9-_]+)/)[1];
+    link = `https://docs.google.com/spreadsheets/d/${id}/export?format=csv`;
+  }
+  fetch(link).then(r=>r.text()).then(csvText=>{
+    Papa.parse(csvText,{header:true,skipEmptyLines:true,complete:results=>{
+      results.data.forEach(row=>{
+        if(!row.EPIC) return;
+        const key=row.EPIC.replace(/\W/g,"_");
+        set(dbRef(db,"voters/"+key),{
+          name: row.Name || "", voterID: row.EPIC, state: row.State || "", district: row.District || "",
+          acNo: row["AC No"] || "", partNo: row["Part No"] || "", mobile: row.Mobile || "", age: row.Age || "",
+          booth: row.Booth || "", status:"anti"
+        });
+      });
+      alert("CSV uploaded!");
+      renderVoters();
+    }});
+  }).catch(err=>{ console.error(err); alert("CSV fetch failed!"); });
 };
 </script>
 </body>
