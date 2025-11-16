@@ -8,10 +8,11 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <style>
 body { background:#eef2ff; }
-.card { border-radius:1rem; box-shadow:6px 6px 12px rgba(0,0,0,0.1), -6px -6px 12px rgba(255,255,255,0.7); padding:16px; margin-bottom:12px; transition: all 0.2s; display:flex; justify-content:space-between; align-items:center; }
-.card-approved { background-color: #dcfce7; }   /* Green */
-.card-opponent { background-color: #fef9c3; }   /* Yellow */
-.card-anti { background-color: #fee2e2; }       /* Red */
+.card { border-radius:1rem; box-shadow:6px 6px 12px rgba(0,0,0,0.1), -6px -6px 12px rgba(255,255,255,0.7); padding:16px; margin-bottom:12px; transition: all 0.2s; display:flex; flex-direction:column; gap:8px; }
+.card:hover { transform: translateY(-3px); }
+.card-approved { background-color: #dcfce7; }
+.card-opponent { background-color: #fef9c3; }
+.card-anti { background-color: #fee2e2; }
 .btn { cursor:pointer; padding:0.5rem 1rem; border-radius:0.7rem; font-weight:bold; transition: all 0.2s; text-align:center; box-shadow:4px 4px 6px #bbb, -4px -4px 6px #fff; }
 .btn:hover { box-shadow: inset 4px 4px 6px #bbb, inset -4px -4px 6px #fff; }
 .btn-blue { background:#2563eb;color:white; }
@@ -37,6 +38,24 @@ body { background:#eef2ff; }
   <input type="file" id="senderImage" class="border p-2 w-full mb-2">
   <button id="uploadSenderImage" class="btn btn-blue w-full mb-2">Upload Sender Image</button>
   <img id="senderImgPreview" src="" class="img-sender hidden">
+</div>
+
+<!-- Manual Add Voter -->
+<div class="bg-white p-4 rounded shadow mb-4">
+  <h2 class="text-xl font-bold mb-2 text-blue-700">Add Voter Manually</h2>
+  <input type="text" id="vName" placeholder="Name" class="border p-2 w-full mb-2">
+  <input type="text" id="vEPIC" placeholder="EPIC" class="border p-2 w-full mb-2">
+  <input type="text" id="vWard" placeholder="Ward" class="border p-2 w-full mb-2">
+  <input type="text" id="vAddress" placeholder="Address" class="border p-2 w-full mb-2">
+  <input type="text" id="vMobile" placeholder="Mobile" class="border p-2 w-full mb-2">
+  <input type="text" id="vAge" placeholder="Age" class="border p-2 w-full mb-2">
+  <input type="text" id="vBooth" placeholder="Booth" class="border p-2 w-full mb-2">
+  <select id="vStatus" class="border p-2 w-full mb-2">
+    <option value="anti">Anti</option>
+    <option value="opponent">Opponent</option>
+    <option value="approved">Approved</option>
+  </select>
+  <button id="addVoter" class="btn btn-green w-full">Add Voter</button>
 </div>
 
 <!-- Voter List -->
@@ -79,31 +98,51 @@ document.getElementById("uploadSenderImage").onclick = ()=>{
 
 // Helper: Card Color
 function updateCardColor(cardDiv, status){
-    cardDiv.classList.remove("card-approved", "card-opponent", "card-anti");
-    if(status === "approved") cardDiv.classList.add("card-approved");
-    else if(status === "opponent") cardDiv.classList.add("card-opponent");
-    else cardDiv.classList.add("card-anti");
+    cardDiv.classList.remove("card-approved","card-opponent","card-anti");
+    if(status==="approved") cardDiv.classList.add("card-approved");
+    else if(status==="opponent") cardDiv.classList.add("card-opponent");
+    else if(status==="anti") cardDiv.classList.add("card-anti");
 }
 
-// Render Voters
+// Manual Add
+document.getElementById("addVoter").onclick = ()=>{
+    const n=document.getElementById("vName").value.trim();
+    const e=document.getElementById("vEPIC").value.trim();
+    const w=document.getElementById("vWard").value.trim();
+    const a=document.getElementById("vAddress").value.trim();
+    const m=document.getElementById("vMobile").value.trim();
+    const age=document.getElementById("vAge").value.trim();
+    const booth=document.getElementById("vBooth").value.trim();
+    const s=document.getElementById("vStatus").value;
+    if(!n||!e) return alert("Name और EPIC जरूरी हैं!");
+    const key=e.replace(/\W/g,"_");
+    set(dbRef(db,"voters/"+key), { name:n, voterID:e, ward:w, address:a, mobile:m, age:age, booth:booth, status:s })
+    .then(()=>{ alert("Voter added!"); document.getElementById("vName").value=""; document.getElementById("vEPIC").value=""; document.getElementById("vWard").value=""; document.getElementById("vAddress").value=""; document.getElementById("vMobile").value=""; document.getElementById("vAge").value=""; document.getElementById("vBooth").value=""; document.getElementById("vStatus").value="anti"; })
+    .catch(err=>{ console.error(err); alert("Add voter failed!"); });
+};
+
+// Render Voter Cards
 const voterListDiv = document.getElementById("voterList");
-onValue(dbRef(db, "voters"), snap => {
-    voterListDiv.innerHTML = '';
-    snap.forEach(s => {
+onValue(dbRef(db,"voters"), snap=>{
+    voterListDiv.innerHTML="";
+    snap.forEach(s=>{
         const v = s.val();
         const key = s.key;
-
         const div = document.createElement("div");
-        div.className = "card";
+        div.className="card";
         updateCardColor(div, v.status);
-        div.style.flexDirection = 'column';
-
-        div.innerHTML = `
-            <div style='display:flex; align-items:center;'>
-                ${senderImageURL ? `<img src='${senderImageURL}' class='img-sender'>` : ''}
+        div.innerHTML=`
+            <div style='display:flex; align-items:center; gap:8px;'>
+                ${senderImageURL? `<img src='${senderImageURL}' class='img-sender'>` : ''}
                 <div>
                     <h2 class='font-bold'>${v.name}</h2>
-                    <p class='text-sm text-gray-600'>EPIC: ${v.voterID} | Ward: ${v.ward} | Address: ${v.address || ''} | Status: ${v.status}</p>
+                    <p class='text-sm text-gray-600'>
+                        Age: ${v.age||'N/A'}<br>
+                        EPIC: ${v.voterID} | Ward: ${v.ward}<br>
+                        Address: ${v.address||''}<br>
+                        Booth: <b>${v.booth||'---'}</b><br>
+                        Status: ${v.status}
+                    </p>
                 </div>
             </div>
             <div class='flex gap-2 flex-wrap mt-2'>
@@ -113,23 +152,35 @@ onValue(dbRef(db, "voters"), snap => {
                 <button class='btn btn-gray deleteBtn'>Delete</button>
                 <button class='btn btn-blue sendBtn'>Send WhatsApp</button>
             </div>`;
-
         voterListDiv.appendChild(div);
 
-        div.querySelector(".approveBtn").onclick = ()=>{ set(dbRef(db,"voters/"+key), {...v, status:"approved"}); updateCardColor(div,"approved"); };
-        div.querySelector(".opponentBtn").onclick = ()=>{ set(dbRef(db,"voters/"+key), {...v, status:"opponent"}); updateCardColor(div,"opponent"); };
-        div.querySelector(".antiBtn").onclick = ()=>{ set(dbRef(db,"voters/"+key), {...v, status:"anti"}); updateCardColor(div,"anti"); };
+        div.querySelector(".approveBtn").onclick = ()=>{ set(dbRef(db,"voters/"+key), {...v,status:"approved"}); updateCardColor(div,"approved"); };
+        div.querySelector(".opponentBtn").onclick = ()=>{ set(dbRef(db,"voters/"+key), {...v,status:"opponent"}); updateCardColor(div,"opponent"); };
+        div.querySelector(".antiBtn").onclick = ()=>{ set(dbRef(db,"voters/"+key), {...v,status:"anti"}); updateCardColor(div,"anti"); };
         div.querySelector(".deleteBtn").onclick = ()=>{ if(confirm(`Delete voter ${v.name}?`)) remove(dbRef(db,"voters/"+key)); };
         div.querySelector(".sendBtn").onclick = ()=>{
-            const senderName = document.getElementById("senderName").value.trim();
-            const senderMobile = document.getElementById("senderMobile").value.trim();
-            if(!senderName || !senderMobile) return alert("Enter sender info first!");
-            const message = `Name: ${v.name}\nEPIC: ${v.voterID}\nWard: ${v.ward}\nAddress: ${v.address}\nStatus: ${v.status}\nSender: ${senderName} ${senderMobile}`;
-            window.open(`https://wa.me/${v.mobile}?text=${encodeURIComponent(message)}`, '_blank');
+            const senderName=document.getElementById("senderName").value.trim();
+            const senderMobile=document.getElementById("senderMobile").value.trim();
+            if(!senderName||!senderMobile) return alert("Enter sender info!");
+            const message=`Name: ${v.name}
+Age: ${v.age||'N/A'}
+EPIC: ${v.voterID}
+Ward: ${v.ward}
+Address: ${v.address||'---'}
+Booth: ${v.booth||'---'}
+
+संदेश भेजने वाला:
+${senderName} (${senderMobile})
+${senderImageURL? "Sender Image: "+senderImageURL : ""}
+
+📢 मतदान अवश्य करें!
+✔ आपका मतदान केंद्र: ${v.booth||'---'}
+✔ सही पहचान पत्र साथ लाएं
+✔ लोकतंत्र को मजबूत बनाने में अपना योगदान दें`;
+            window.open(`https://wa.me/${v.mobile}?text=${encodeURIComponent(message)}`,"_blank");
         };
     });
 });
-
 </script>
 </body>
 </html>
