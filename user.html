@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Voter Management - Admin/User</title>
+<title>Voter Management Panel</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <style>
@@ -86,11 +86,11 @@ const panelDiv = document.getElementById("panelDiv");
 
 document.getElementById("googleLoginBtn").onclick = ()=>{
     signInWithPopup(auth, provider).then(res=>{
-        const email = res.user.email.replace(/\./g,"_");
+        const emailKey = res.user.email.replace(/\./g,"_");
         get(child(dbRef(db,"admins"))).then(adminSnap=>{
             get(child(dbRef(db,"users"))).then(userSnap=>{
-                const isAdmin = adminSnap.exists() && adminSnap.hasChild(email);
-                const isUser  = userSnap.exists() && userSnap.hasChild(email);
+                const isAdmin = adminSnap.exists() && adminSnap.hasChild(emailKey);
+                const isUser  = userSnap.exists() && userSnap.hasChild(emailKey);
                 if(isAdmin || isUser){
                     loginDiv.classList.add("hidden");
                     panelDiv.classList.remove("hidden");
@@ -144,7 +144,11 @@ function renderVoters(){
                     ${senderImageURL ? `<img src='${senderImageURL}' class='img-sender'>` : ''}
                     <div>
                         <h2 class='font-bold'>${v.name}</h2>
-                        <p class='text-sm text-gray-600'>EPIC: ${v.voterID} | State: ${v.state} | District: ${v.district} | AC: ${v.acNo} | Part: ${v.partNo} | Booth: ${v.booth} | Age: ${v.age} | Status: ${v.status}</p>
+                        <p class='text-sm text-gray-600'>
+                            EPIC: ${v.voterID} | State: ${v.state} | District: ${v.district} |
+                            AC: ${v.acNo} | Part: ${v.partNo} | Booth: ${v.booth} | Age: ${v.age} |
+                            Status: ${v.status}
+                        </p>
                     </div>
                 </div>
                 <div class='flex gap-2 flex-wrap mt-2'>
