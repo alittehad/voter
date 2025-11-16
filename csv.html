@@ -8,13 +8,19 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <style>
 body { background:#eef2ff; }
-.card { background:white; border-radius:1rem; box-shadow:0 4px 12px rgba(0,0,0,0.1); padding:16px; margin-bottom:12px; }
-.btn { cursor:pointer; padding:0.5rem 1rem; border-radius:0.5rem; font-weight:bold; transition:0.2s; }
+.card { background:white; border-radius:1rem; box-shadow:6px 6px 12px rgba(0,0,0,0.1), -6px -6px 12px rgba(255,255,255,0.7); padding:16px; margin-bottom:12px; transition: all 0.2s; }
+.card:hover { transform: translateY(-3px); }
+.btn { cursor:pointer; padding:0.5rem 1rem; border-radius:0.7rem; font-weight:bold; transition: all 0.2s; text-align:center; box-shadow:4px 4px 6px #bbb, -4px -4px 6px #fff; }
+.btn:hover { box-shadow: inset 4px 4px 6px #bbb, inset -4px -4px 6px #fff; }
 .btn-blue { background:#2563eb;color:white; }
 .btn-green { background:#16a34a;color:white; }
 .btn-yellow { background:#facc15;color:black; }
 .btn-red { background:#dc2626;color:white; }
-.btn:hover { opacity:0.8; }
+.btn-gray { background:#9ca3af;color:white; }
+@media(max-width:640px){
+  .flex-wrap { flex-direction: column; }
+  .grid-cols-3 { grid-template-columns: 1fr; }
+}
 </style>
 </head>
 <body class="p-4">
@@ -45,9 +51,19 @@ body { background:#eef2ff; }
   <button id="addVoter" class="btn btn-green w-full">Add Voter</button>
 </div>
 
+<!-- Status Counters -->
+<div class="grid grid-cols-3 gap-2 text-center mb-4">
+  <div class="p-2 rounded-lg bg-green-100 text-green-700 font-bold">Approved: <span id="countApproved">0</span></div>
+  <div class="p-2 rounded-lg bg-yellow-100 text-yellow-700 font-bold">Opponent: <span id="countOpponent">0</span></div>
+  <div class="p-2 rounded-lg bg-red-100 text-red-700 font-bold">Anti: <span id="countAnti">0</span></div>
+</div>
+
+<!-- Voter List -->
+<div id="voterList"></div>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref as dbRef, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref as dbRef, set, onValue, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 import Papa from "https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js";
 
 // Firebase Config
@@ -63,8 +79,8 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// Manual Add Voter
-document.getElementById("addVoter").onclick = ()=>{
+// Add Voter Manually
+document.getElementById("addVoter").onclick = () => {
   const n=document.getElementById("vName").value.trim();
   const e=document.getElementById("vEPIC").value.trim();
   const w=document.getElementById("vWard").value.trim() || "20";
@@ -73,12 +89,20 @@ document.getElementById("addVoter").onclick = ()=>{
   if(!n||!e) return alert("Name और EPIC जरूरी हैं!");
   const key = e.replace(/\W/g,"_");
   set(dbRef(db,"voters/"+key), { name:n, voterID:e, ward:w, mobile:m, status:s })
-    .then(()=>alert("Voter added!"))
+    .then(()=>{
+      alert("Voter added!");
+      // Reset fields
+      document.getElementById("vName").value="";
+      document.getElementById("vEPIC").value="";
+      document.getElementById("vWard").value="";
+      document.getElementById("vMobile").value="";
+      document.getElementById("vStatus").value="anti";
+    })
     .catch(err=>{ console.error(err); alert("Add voter failed!"); });
 };
 
 // CSV Upload
-document.getElementById("uploadCSV").onclick = ()=>{
+document.getElementById("uploadCSV").onclick = () => {
   const link = document.getElementById("csvLink").value.trim();
   if(!link) return alert("CSV link डालें");
   fetch(link)
@@ -101,6 +125,48 @@ document.getElementById("uploadCSV").onclick = ()=>{
     })
     .catch(err=>{ console.error(err); alert("CSV fetch failed!") });
 };
+
+// Render Voter List
+const voterListDiv = document.getElementById("voterList");
+onValue(dbRef(db,"voters"), snap => {
+  voterListDiv.innerHTML="";
+  let approved=0, opponent=0, anti=0;
+  snap.forEach(s => {
+    const v = s.val();
+    const key = s.key;
+    if(v.status=="approved") approved++;
+    else if(v.status=="opponent") opponent++;
+    else anti++;
+
+    const div = document.createElement("div");
+    div.className="card flex flex-wrap justify-between items-center";
+    div.innerHTML=`<div>
+      <h2 class="font-bold">${v.name}</h2>
+      <p class="text-sm text-gray-600">EPIC: ${v.voterID} | Ward: ${v.ward} | Status: ${v.status}</p>
+    </div>
+    <div class="flex gap-2 flex-wrap">
+      <button class="btn btn-yellow approveBtn">Approve</button>
+      <button class="btn btn-yellow opponentBtn">Opponent</button>
+      <button class="btn btn-red antiBtn">Anti</button>
+      <button class="btn btn-gray deleteBtn">Delete</button>
+    </div>`;
+    voterListDiv.appendChild(div);
+
+    // Button events
+    div.querySelector(".approveBtn").onclick = ()=>set(dbRef(db,"voters/"+key), {...v, status:"approved"});
+    div.querySelector(".opponentBtn").onclick = ()=>set(dbRef(db,"voters/"+key), {...v, status:"opponent"});
+    div.querySelector(".antiBtn").onclick = ()=>set(dbRef(db,"voters/"+key), {...v, status:"anti"});
+    div.querySelector(".deleteBtn").onclick = ()=>{
+      if(confirm(`Delete voter ${v.name}?`)){
+        remove(dbRef(db,"voters/"+key));
+      }
+    };
+  });
+  // Update counters
+  document.getElementById("countApproved").innerText = approved;
+  document.getElementById("countOpponent").innerText = opponent;
+  document.getElementById("countAnti").innerText = anti;
+});
 </script>
 </body>
 </html>
