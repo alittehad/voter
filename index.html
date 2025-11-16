@@ -10,39 +10,40 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
 <style>
-.btn-3d { background: linear-gradient(145deg, #4f46e5, #6366f1); color: white; font-weight: bold; padding: 0.5rem 1rem; border-radius: 0.5rem; box-shadow: 4px 4px 6px #333, -4px -4px 6px #777; cursor: pointer; transition: all 0.2s; }
-.btn-3d:hover { box-shadow: inset 4px 4px 6px #333, inset -4px -4px 6px #777; }
-#fullscreenImg { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); justify-content:center; align-items:center; z-index:9999; }
-#fullscreenImg img { max-width:90%; max-height:90%; border-radius:0.5rem; }
+.btn-3d { background: linear-gradient(145deg,#4f46e5,#6366f1); color:white; font-weight:bold; padding:.5rem 1rem; border-radius:.5rem; box-shadow:4px 4px 6px #333,-4px -4px 6px #777; cursor:pointer; transition: all .2s;}
+.btn-3d:hover{box-shadow: inset 4px 4px 6px #333,inset -4px -4px 6px #777;}
+#fullscreenImg{display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,.8); justify-content:center; align-items:center; z-index:9999;}
+#fullscreenImg img{max-width:90%; max-height:90%; border-radius:.5rem;}
 </style>
 </head>
 <body class="bg-gray-100">
 
 <!-- Login -->
 <div id="loginDiv" class="flex justify-center items-center h-screen">
-  <button class="btn-3d" id="loginBtn">Login with Google</button>
+  <button id="loginBtn" class="btn-3d">Login with Google</button>
 </div>
 
 <!-- Main App -->
 <div id="mainDiv" class="hidden p-4">
 
-  <!-- Top Bar -->
+  <!-- Top Logo + Admin Upload -->
   <div class="flex items-center justify-between bg-white p-2 shadow-md mb-4 sticky top-0 z-50">
     <div class="flex items-center">
-      <img src="logo.png" alt="Logo" class="h-12 w-12 mr-2 rounded-full shadow-lg cursor-pointer" onclick="alert('Logo Clicked!')">
+      <img id="logoImg" src="logo.png" alt="Logo" class="h-12 w-12 mr-2 rounded-full shadow-lg cursor-pointer">
       <h1 class="text-xl font-bold">Ward 20</h1>
     </div>
     <div id="adminImageUploadDiv" class="hidden flex items-center">
       <input type="file" id="adminScreenImage" class="border p-1 mr-2 rounded">
       <button class="btn-3d" onclick="setAdminScreenImage()">Set Screen Image</button>
     </div>
-    <button class="btn-3d" onclick="logout()">Logout</button>
   </div>
 
   <!-- Admin Panel -->
   <div id="adminPanel" class="hidden mb-4 border p-2 rounded bg-white shadow">
     <h1 class="text-xl font-bold">Admin Panel</h1>
+
     <h2 class="mt-2 font-semibold">Add User / Member</h2>
     <form id="addUserForm" class="flex flex-col">
       <input type="text" id="newUserName" placeholder="Name" class="border p-1 my-1" required>
@@ -60,6 +61,9 @@
 
     <h2 class="mt-4 font-semibold">Voter List (Admin)</h2>
     <div id="voterListAdmin" class="overflow-auto max-h-64 mt-2 border p-2"></div>
+
+    <h2 class="mt-4 font-semibold">Member Surveys</h2>
+    <div id="memberSurveysAdmin" class="overflow-auto max-h-64 mt-2 border p-2"></div>
   </div>
 
   <!-- User Panel -->
@@ -92,49 +96,43 @@
 </div>
 
 <script type="module">
+// ---------------- Firebase ----------------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getDatabase, ref as dbRef, set, get, child, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref as dbRef, set, get, child, onValue, push, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
-// --- Firebase Config ---
 const firebaseConfig = {
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
   authDomain: "voter-25c94.firebaseapp.com",
   databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
   projectId: "voter-25c94",
-  storageBucket: "voter-25c94.firebasestorage.app",
+  storageBucket: "voter-25c94.appspot.com",
   messagingSenderId: "297773534400",
   appId: "1:297773534400:web:3722c487b8c83e9b787125"
 };
-
 const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
 const db = getDatabase(app);
-const storage = getStorage(app);
+const auth = getAuth();
 const provider = new GoogleAuthProvider();
+const storage = getStorage(app);
 
-// --- Login / Logout ---
+// ---------------- Login ----------------
+const loginDiv = document.getElementById("loginDiv");
+const mainDiv = document.getElementById("mainDiv");
 document.getElementById("loginBtn").addEventListener("click", () => {
-  signInWithPopup(auth, provider).catch(console.error);
+  signInWithPopup(auth, provider)
+    .then(result => { localStorage.setItem("user", JSON.stringify(result.user)); location.reload(); })
+    .catch(console.error);
 });
 
-function logout() {
-  signOut(auth).then(() => localStorage.clear()).catch(console.error);
-}
+auth.onAuthStateChanged(user => {
+  if(!user){ loginDiv.style.display="flex"; mainDiv.style.display="none"; return; }
+  loginDiv.style.display="none"; mainDiv.style.display="block";
 
-// --- Panels ---
-function showAdminPanel(){ document.getElementById("adminPanel").style.display="block"; document.getElementById("userPanel").style.display="block"; document.getElementById("memberPanel").style.display="block"; document.getElementById("adminImageUploadDiv").style.display="flex"; }
-function showMemberPanel(){ document.getElementById("adminPanel").style.display="none"; document.getElementById("userPanel").style.display="block"; document.getElementById("memberPanel").style.display="block"; document.getElementById("adminImageUploadDiv").style.display="none"; }
-function showUserPanel(){ document.getElementById("adminPanel").style.display="none"; document.getElementById("memberPanel").style.display="none"; document.getElementById("userPanel").style.display="block"; document.getElementById("adminImageUploadDiv").style.display="none"; }
-
-// --- Auth State ---
-onAuthStateChanged(auth, user => {
-  if(!user){ document.getElementById("loginDiv").style.display="flex"; document.getElementById("mainDiv").style.display="none"; return; }
-  document.getElementById("loginDiv").style.display="none"; document.getElementById("mainDiv").style.display="block";
   const emailKey = user.email.replace(/\./g,"_");
-  get(child(dbRef(db),"users/"+emailKey)).then(snapshot=>{
-    if(!snapshot.exists()){ alert("Not Authorized!"); signOut(auth); return; }
+  get(child(dbRef(db), "users/"+emailKey)).then(snapshot => {
+    if(!snapshot.exists()){ alert("Not Authorized"); signOut(auth); return; }
     const role = snapshot.val().role;
     if(role==="admin") showAdminPanel();
     else if(role==="member") showMemberPanel();
@@ -142,123 +140,143 @@ onAuthStateChanged(auth, user => {
   });
 });
 
-// --- Admin Screen Image ---
+// ---------------- Panels ----------------
+const adminPanel = document.getElementById("adminPanel");
+const memberPanel = document.getElementById("memberPanel");
+const userPanel = document.getElementById("userPanel");
+const adminImageUploadDiv = document.getElementById("adminImageUploadDiv");
+
+function showAdminPanel(){ adminPanel.style.display="block"; memberPanel.style.display="block"; userPanel.style.display="block"; adminImageUploadDiv.style.display="flex"; loadVoters(); loadMemberCounts(); loadMembersAdmin(); }
+function showMemberPanel(){ adminPanel.style.display="none"; memberPanel.style.display="block"; userPanel.style.display="block"; adminImageUploadDiv.style.display="none"; loadVoters(); loadMemberCounts(); }
+function showUserPanel(){ adminPanel.style.display="none"; memberPanel.style.display="none"; userPanel.style.display="block"; adminImageUploadDiv.style.display="none"; loadVoters(); loadMemberCounts(); }
+
+// ---------------- Admin Logo / Screen ----------------
 function setAdminScreenImage(){
-  const file = document.getElementById("adminScreenImage").files[0];
-  if(!file) return alert("Select an image first!");
-  const reader = new FileReader();
-  reader.onload = e=>{
-    document.getElementById("fullImg").src=e.target.result;
-    document.getElementById("fullscreenImg").style.display="flex";
-    alert("Admin image set!");
-  };
-  reader.readAsDataURL(file);
+  const file=document.getElementById("adminScreenImage").files[0];
+  if(!file){alert("Select image"); return;}
+  const refStorage=storageRef(storage,"screenImage.jpg");
+  uploadBytes(refStorage,file).then(()=>{
+    getDownloadURL(refStorage).then(url=>{
+      document.getElementById("fullImg").src=url;
+      alert("Screen Image set!");
+    });
+  });
 }
 
-// --- Add User / Member ---
-document.getElementById("addUserForm").addEventListener("submit",e=>{
+// ---------------- Add User / Member ----------------
+document.getElementById("addUserForm").addEventListener("submit", e=>{
   e.preventDefault();
   const name=document.getElementById("newUserName").value;
   const email=document.getElementById("newUserEmail").value;
   const role=document.getElementById("newUserRole").value;
   const safeEmail=email.replace(/\./g,"_");
-  set(dbRef(db,"users/"+safeEmail),{name,email,role}).then(()=>alert(name+" added as "+role)).catch(alert);
+  set(dbRef(db,"users/"+safeEmail),{name,email,role}).then(()=>alert(name+" added as "+role));
   e.target.reset();
 });
 
-// --- Import Voters ---
+// ---------------- Import CSV Voters ----------------
 function importVotersFromSheet(){
   const url=document.getElementById("sheetCSV").value;
-  if(!url) return alert("Enter CSV URL");
-  Papa.parse(url,{download:true,header:true,complete:function(results){
+  if(!url){alert("Enter CSV URL"); return;}
+  Papa.parse(url,{download:true,header:true,complete:results=>{
     results.data.forEach(row=>{
-      const keyRaw=row.EPIC||row.voterID||row["EPIC"];
+      const keyRaw=row.EPIC||row.voterID;
       if(!keyRaw) return;
-      const safeKey=keyRaw.replace(/\./g,"_").replace(/\$/g,"_").replace(/#/g,"_").replace(/\[/g,"_").replace(/\]/g,"_").replace(/\//g,"_");
-      set(dbRef(db,"voters/"+safeKey),{name:row.Name||row.name,voterID:keyRaw,ward:row.Ward||row.ward,status:"pending"});
+      const safeKey=keyRaw.replace(/\W/g,"_");
+      set(dbRef(db,"voters/"+safeKey),{
+        name:row.Name||row.name,
+        voterID:keyRaw,
+        ward:row.Ward||row.ward,
+        status:"pending"
+      });
     });
-    alert("Voters imported successfully!");
-    loadVoters();
+    alert("Voters imported!");
   }});
 }
 
-// --- Load Voters ---
+// ---------------- Load Voters ----------------
 function loadVoters(){
-  const ref=dbRef(db,"voters");
   const userList=document.getElementById("voterListUser");
   const adminList=document.getElementById("voterListAdmin");
   userList.innerHTML=""; adminList.innerHTML="";
-  onValue(ref,snapshot=>{
+  onValue(dbRef(db,"voters"),snapshot=>{
     snapshot.forEach(snap=>{
       const voter=snap.val();
-      let bg="";
-      if(voter.status==="approved") bg="bg-green-200";
-      else if(voter.status==="pending") bg="bg-yellow-200";
-      else if(voter.status==="opponent") bg="bg-red-200";
+      let bg=""; if(voter.status==="approved") bg="bg-green-200"; else if(voter.status==="pending") bg="bg-yellow-200"; else if(voter.status==="opponent") bg="bg-red-200";
       const div=document.createElement("div");
       div.className=`border p-1 my-1 flex justify-between items-center ${bg}`;
       div.innerHTML=`<span><b>${voter.name}</b> | EPIC: ${voter.voterID} | Ward: ${voter.ward} | Status: ${voter.status}</span>`;
       const waBtn=document.createElement("button");
-      waBtn.innerText="Share WhatsApp";
-      waBtn.className="btn-3d ml-2";
-      waBtn.onclick=()=>window.open(`https://wa.me/?text=${encodeURIComponent(`Voter: ${voter.name}\nEPIC: ${voter.voterID}\nWard: ${voter.ward}\nStatus: ${voter.status}`)}`,'_blank');
+      waBtn.innerText="Share WhatsApp"; waBtn.className="btn-3d ml-2";
+      waBtn.onclick=()=>window.open(`https://wa.me/?text=${encodeURIComponent(`${voter.name}\nEPIC: ${voter.voterID}\nWard: ${voter.ward}\nStatus: ${voter.status}`)}`,'_blank');
       div.appendChild(waBtn);
-      userList.appendChild(div);
-      adminList.appendChild(div.cloneNode(true));
+
+      // Admin Tick Buttons
+      if(adminPanel.style.display==="block"){
+        const approveBtn=document.createElement("button");
+        approveBtn.innerText="✓"; approveBtn.className="btn-3d ml-2"; approveBtn.onclick=()=>update(dbRef(db,"voters/"+snap.key),{status:"approved"});
+        const opponentBtn=document.createElement("button");
+        opponentBtn.innerText="X"; opponentBtn.className="btn-3d ml-2"; opponentBtn.onclick=()=>update(dbRef(db,"voters/"+snap.key),{status:"opponent"});
+        div.appendChild(approveBtn); div.appendChild(opponentBtn);
+      }
+
+      userList.appendChild(div); adminList.appendChild(div.cloneNode(true));
     });
   });
 }
 
-// --- Search ---
-document.getElementById("searchInput").addEventListener("input",function(){
-  const val=this.value.toLowerCase();
-  Array.from(document.getElementById("voterListUser").children).forEach(div=>{
-    div.style.display=div.textContent.toLowerCase().includes(val)?"flex":"none";
-  });
-});
-
-// --- Member Survey ---
-document.getElementById("surveyForm").addEventListener("submit",function(e){
+// ---------------- Member Survey ----------------
+document.getElementById("surveyForm").addEventListener("submit", e=>{
   e.preventDefault();
   const name=document.getElementById("memberName").value;
   const mobile=document.getElementById("memberMobile").value;
   const ward=document.getElementById("memberWard").value;
   const poster=document.getElementById("memberPoster").files[0];
   if(!poster) return alert("Upload poster");
+
   const formData=new FormData(); formData.append("image",poster);
   const imgbbKey="8ece3c1f959f2426083eee1699086c71";
   fetch(`https://api.imgbb.com/1/upload?key=${imgbbKey}`,{method:"POST",body:formData})
     .then(res=>res.json())
     .then(data=>{
-      const posterURL=data.data.display_url;
-      const surveysRef=dbRef(db,"memberSurveys");
-      const newSurveyRef=child(surveysRef,Date.now().toString());
-      set(newSurveyRef,{name,mobile,ward,poster:posterURL,timestamp:Date.now()}).then(()=>{alert("Survey submitted!"); e.target.reset(); loadMemberCounts();}).catch(alert);
-    }).catch(err=>{console.error(err); alert("Poster upload failed");});
+      push(dbRef(db,"memberSurveys"),{name,mobile,ward,poster:data.data.display_url,timestamp:Date.now()});
+      alert("Survey submitted!"); e.target.reset(); loadMemberCounts(); loadMembersAdmin();
+    }).catch(err=>console.error(err));
 });
 
-// --- Member Counts ---
+// ---------------- Member Counts ----------------
 function loadMemberCounts(){
-  const ref=dbRef(db,"memberSurveys");
   const countDiv=document.getElementById("memberCount");
   countDiv.innerHTML="";
-  get(ref).then(snapshot=>{
+  get(dbRef(db,"memberSurveys")).then(snapshot=>{
     const counts={};
-    snapshot.forEach(snap=>{
-      const mem=snap.val().name;
-      counts[mem]=(counts[mem]||0)+1;
-    });
-    for(let mem in counts){
-      const d=document.createElement("div");
-      d.innerText=mem+" -> "+counts[mem]+" surveys";
-      countDiv.appendChild(d);
+    snapshot.forEach(snap=>{const m=snap.val().name; counts[m]=(counts[m]||0)+1;});
+    for(let m in counts){
+      const d=document.createElement("div"); d.innerText=m+" -> "+counts[m]+" surveys"; countDiv.appendChild(d);
     }
   });
 }
 
-// --- Initial Load ---
-loadVoters();
-loadMemberCounts();
+// ---------------- Admin sees all members ----------------
+function loadMembersAdmin(){
+  const div=document.getElementById("memberSurveysAdmin");
+  div.innerHTML="";
+  onValue(dbRef(db,"memberSurveys"),snapshot=>{
+    snapshot.forEach(snap=>{
+      const m=snap.val();
+      const d=document.createElement("div");
+      d.className="border p-1 my-1"; d.innerHTML=`${m.name} | ${m.mobile} | Ward ${m.ward} | <a href="${m.poster}" target="_blank">Poster</a>`;
+      div.appendChild(d);
+    });
+  });
+}
+
+// ---------------- Search ----------------
+document.getElementById("searchInput").addEventListener("input",function(){
+  const val=this.value.toLowerCase();
+  Array.from(document.getElementById("voterListUser").children).forEach(div=>{div.style.display=div.innerText.toLowerCase().includes(val)? "flex":"none";});
+});
+
 </script>
 
 </body>
