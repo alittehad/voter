@@ -1,150 +1,92 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hi">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Auto Mapping CSV → Firebase</title>
-<script src="https://cdn.tailwindcss.com"></script>
-
-<style>
-body{background:#f3f4f6;padding:20px;font-family:sans-serif;}
-.box{background:white;padding:20px;border-radius:10px;max-width:500px;margin:auto;
-box-shadow:0 4px 10px rgba(0,0,0,0.1);}
-</style>
-</head>
-
-<body>
-
-<div class="box">
-  <h2 class="text-xl font-bold mb-2 text-center">📥 Import Google Sheet CSV → Firebase</h2>
-
-  <input id="csvLink" type="text"
-    placeholder="Paste Google Sheet CSV Link"
-    class="border p-2 w-full rounded mb-3">
-
-  <button onclick="importCSV()"
-    class="bg-blue-600 text-white p-2 w-full rounded font-bold">
-    Import Now
-  </button>
-
-  <p id="msg" class="mt-4 text-center font-bold"></p>
-</div>
-
-
-<!-- Firebase -->
+<title>Upload Google Sheet to Firebase</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
+  // 🔑 Firebase Config
+  const firebaseConfig = {
+    apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
+    authDomain: "voter-25c94.firebaseapp.com",
+    databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
+    projectId: "voter-25c94",
+    storageBucket: "voter-25c94.firebasestorage.app",
+    messagingSenderId: "297773534400",
+    appId: "1:297773534400:web:3722c487b8c83e9b787125"
+  };
 
-// ⭐ Your Firebase Config
-const firebaseConfig = {
-  apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
-  authDomain: "voter-25c94.firebaseapp.com",
-  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
-  projectId: "voter-25c94",
-  storageBucket: "voter-25c94.firebasestorage.app",
-  messagingSenderId: "297773534400",
-  appId: "1:297773534400:web:3722c487b8c83e9b787125"
-};
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
 
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-
-
-// ⭐ Safe Firebase Key
-function cleanKey(k){
-  return k.trim()
-    .replace(/[.#$/\[\]\s]/g, "_");
-}
-
-
-// ⭐ AUTO MAPPING FUNCTION
-function mapColumns(headerRow){
-  let map = {};
-
-  headerRow.forEach((col, i) => {
-    let c = col.toLowerCase().trim();
-
-    if(c.includes("name")) map.name = i;
-    if(c.includes("voter") || c.includes("epic") || c.includes("id")) map.voterID = i;
-    if(c.includes("state")) map.state = i;
-    if(c.includes("district")) map.district = i;
-    if(c.includes("ac")) map.acNo = i;
-    if(c.includes("part")) map.partNo = i;
-    if(c.includes("booth")) map.booth = i;
-    if(c.includes("age")) map.age = i;
-    if(c.includes("mobile") || c.includes("phone")) map.mobile = i;
-    if(c.includes("status")) map.status = i;
-  });
-
-  return map;
-}
-
-
-// ⭐ MAIN IMPORT FUNCTION
-window.importCSV = async function () {
-  
-  let link = document.getElementById("csvLink").value;
-  let msg = document.getElementById("msg");
-
-  if(!link){
-    msg.innerHTML = "❌ Paste Google Sheet CSV Link";
-    msg.style.color = "red";
-    return;
+  // 🔹 Clean key for Firebase (replace invalid chars)
+  function cleanKey(key){
+    return key.trim().replace(/\./g,"_").replace(/#/g,"_")
+              .replace(/\$/g,"_").replace(/\//g,"_")
+              .replace(/\[/g,"_").replace(/\]/g,"_")
+              .replace(/\s+/g,"_");
   }
 
-  try {
-    let res = await fetch(link);
-    let text = await res.text();
+  window.uploadSheet = function(){
+    // Google Sheet CSV Link
+    let sheetId = "1ShY4bizpMAkm4NATq-jQoxWvz4WUS2atEKdig9njq_k";
+    let csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv`;
 
-    let lines = text.split("\n").map(l => l.trim()).filter(l => l);
-    let header = lines[0].split(",");
-
-    let map = mapColumns(header);
-    console.log("Column Mapping:", map);
-
-    let count = 0;
-
-    for(let i=1; i<lines.length; i++){
-      let row = lines[i].split(",");
-
-      // Auto Mapping
-      let voterID = cleanKey(row[map.voterID]);
-      if(!voterID) continue;
-
-      // AUTO STATUS (If blank)
-      let age = Number(row[map.age]);
-      let status = row[map.status] || 
-                  (age >= 30 ? "approved" : "pending");
-
-      let data = {
-        name: row[map.name] || "",
-        voterID,
-        state: row[map.state] || "",
-        district: row[map.district] || "",
-        acNo: row[map.acNo] || "",
-        partNo: row[map.partNo] || "",
-        booth: row[map.booth] || "",
-        age: row[map.age] || "",
-        mobile: row[map.mobile] || "",
-        status: status
-      };
-
-      await set(ref(db, "voters/" + voterID), data);
-      count++;
-    }
-
-    msg.innerHTML = `✔ Successfully Imported ${count} Voters 🎉`;
-    msg.style.color = "green";
-
-  } catch (err){
-    msg.innerHTML = "❌ ERROR: " + err;
-    msg.style.color = "red";
+    fetch(csvUrl)
+      .then(res => res.text())
+      .then(csvText => {
+        Papa.parse(csvText, {
+          header: true,
+          skipEmptyLines: true,
+          complete: results => {
+            let count = 0;
+            results.data.forEach(row => {
+              if(!row.EPIC) return; // skip if EPIC missing
+              const key = cleanKey(row.EPIC);
+              const data = {
+                name: row.Name || "",
+                voterID: row.EPIC,
+                state: row.State || "",
+                district: row.District || "",
+                acNo: row["AC No"] || "",
+                partNo: row["Part No"] || "",
+                booth: row.Booth || "",
+                age: row.Age || "",
+                mobile: row.Mobile || "",
+                status: row.Status || "anti"
+              };
+              set(ref(db, "voters/" + key), data)
+                .then(() => {
+                  count++;
+                  document.getElementById("msg").innerText = `✔ Uploaded ${count} records`;
+                  document.getElementById("msg").style.color = "green";
+                })
+                .catch(err => {
+                  document.getElementById("msg").innerText = "❌ Firebase Error: " + err;
+                  document.getElementById("msg").style.color = "red";
+                });
+            });
+          }
+        });
+      })
+      .catch(err => {
+        document.getElementById("msg").innerText = "❌ Fetch Error: " + err;
+        document.getElementById("msg").style.color = "red";
+      });
   }
-}
-
 </script>
-
+</head>
+<body style="font-family:sans-serif; padding:20px; background:#eef2ff;">
+  <div style="max-width:450px; margin:auto; background:white; padding:20px; border-radius:10px; box-shadow:0 4px 10px rgba(0,0,0,0.1); text-align:center;">
+    <h2 style="font-size:20px; font-weight:bold; margin-bottom:15px;">📤 Upload Google Sheet to Firebase</h2>
+    <button onclick="uploadSheet()" style="padding:10px 20px; font-weight:bold; background:#2563eb; color:white; border:none; border-radius:8px; cursor:pointer;">
+      Upload Sheet
+    </button>
+    <p id="msg" style="margin-top:15px; font-weight:bold;"></p>
+  </div>
 </body>
 </html>
