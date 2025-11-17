@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voter Panel - Ward 20</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+/* Full height, center everything */
+body, html {
+  margin:0; padding:0; height:100%; width:100%;
+  display:flex; flex-direction:column; justify-content:center; align-items:center;
+  background: linear-gradient(to bottom right, #4f46e5, #ec4899, #facc15);
+  font-family: sans-serif;
+}
+
+#content {
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  width:100%;
+  max-width:500px; /* maximum width for large screens */
+  padding:1rem;
+  box-sizing:border-box;
+}
+
+.panel-img {
+  width:100%;
+  max-width:400px;
+  height:auto;
+  border-radius:1rem;
+  box-shadow:0 8px 20px rgba(0,0,0,0.3);
+  margin-bottom:2rem;
+}
+
+.button-container {
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center;
+  gap:1rem;
+  width:100%;
+}
+
+.btn-3d {
+  flex:1 1 45%; /* responsive buttons, 2 per row on mobile */
+  min-width:120px;
+  max-width:180px;
+  padding:0.75rem 1rem;
+  border:none;
+  border-radius:0.75rem;
+  font-weight:bold;
+  color:white;
+  cursor:pointer;
+  transition:0.1s;
+  box-shadow:0 5px 0 rgba(0,0,0,0.25);
+  text-align:center;
+}
+
+.btn-3d:hover { transform:translateY(-2px); }
+.btn-3d:active { transform:translateY(3px); box-shadow:0 2px 0 rgba(0,0,0,0.25); }
+
+.btn1{background-color:#3b82f6;}
+.btn2{background-color:#ef4444;}
+.btn3{background-color:#f59e0b;}
+.btn4{background-color:#10b981;}
+</style>
+</head>
+<body>
+
+<div id="content">
+  <!-- Panel Image -->
+  <img src="https://i.postimg.cc/qRYkB8VT/khatik-imase.jpg" class="panel-img" />
+
+  <!-- Buttons -->
+  <div class="button-container">
+    <button class="btn-3d btn1">Button 1</button>
+    <button class="btn-3d btn2">Button 2</button>
+    <button class="btn-3d btn3">Button 3</button>
+    <button class="btn-3d btn4">Button 4</button>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
+  authDomain: "voter-25c94.firebaseapp.com",
+  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
+  projectId: "voter-25c94",
+  storageBucket: "voter-25c94.firebasestorage.app",
+  messagingSenderId: "297773534400",
+  appId: "1:297773534400:web:3722c487b8c83e9b787125"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth();
+
+// Firebase Auth check
+onAuthStateChanged(auth, user => {
+  if(!user){
+    window.location.replace('index.html'); // redirect if not logged in
+  } else {
+    document.getElementById('content').style.display = 'flex'; // show panel
+  }
+});
+</script>
+
+</body>
+</html>
