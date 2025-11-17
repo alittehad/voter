@@ -6,87 +6,112 @@
 <title>Upload Google Sheet to Firebase</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-  import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getDatabase, ref, set, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-  // 🔑 Firebase Config
-  const firebaseConfig = {
-    apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
-    authDomain: "voter-25c94.firebaseapp.com",
-    databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
-    projectId: "voter-25c94",
-    storageBucket: "voter-25c94.firebasestorage.app",
-    messagingSenderId: "297773534400",
-    appId: "1:297773534400:web:3722c487b8c83e9b787125"
-  };
+// 🔑 Firebase Config
+const firebaseConfig = {
+  apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
+  authDomain: "voter-25c94.firebaseapp.com",
+  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
+  projectId: "voter-25c94",
+  storageBucket: "voter-25c94.firebasestorage.app",
+  messagingSenderId: "297773534400",
+  appId: "1:297773534400:web:3722c487b8c83e9b787125"
+};
 
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
 
-  // 🔹 Clean key for Firebase (replace invalid chars)
-  function cleanKey(key){
-    return key.trim().replace(/\./g,"_").replace(/#/g,"_")
-              .replace(/\$/g,"_").replace(/\//g,"_")
-              .replace(/\[/g,"_").replace(/\]/g,"_")
-              .replace(/\s+/g,"_");
-  }
+// 🔹 Clean key for Firebase
+function cleanKey(key){
+  return key.trim().replace(/\./g,"_").replace(/#/g,"_")
+            .replace(/\$/g,"_").replace(/\//g,"_")
+            .replace(/\[/g,"_").replace(/\]/g,"_")
+            .replace(/\s+/g,"_");
+}
 
-  window.uploadSheet = function(){
-    // Google Sheet CSV Link
-    let sheetId = "1ShY4bizpMAkm4NATq-jQoxWvz4WUS2atEKdig9njq_k";
-    let csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv`;
+// 🔹 Upload Sheet Function
+window.uploadSheet = function(){
+  const sheetId = "1ShY4bizpMAkm4NATq-jQoxWvz4WUS2atEKdig9njq_k"; // Change to your Sheet ID
+  const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv`;
 
-    fetch(csvUrl)
-      .then(res => res.text())
-      .then(csvText => {
-        Papa.parse(csvText, {
-          header: true,
-          skipEmptyLines: true,
-          complete: results => {
-            let count = 0;
-            results.data.forEach(row => {
-              if(!row.EPIC) return; // skip if EPIC missing
-              const key = cleanKey(row.EPIC);
-              const data = {
-                name: row.Name || "",
-                voterID: row.EPIC,
-                state: row.State || "",
-                district: row.District || "",
-                acNo: row["AC No"] || "",
-                partNo: row["Part No"] || "",
-                booth: row.Booth || "",
-                age: row.Age || "",
-                mobile: row.Mobile || "",
-                status: row.Status || "anti"
-              };
-              set(ref(db, "voters/" + key), data)
-                .then(() => {
-                  count++;
-                  document.getElementById("msg").innerText = `✔ Uploaded ${count} records`;
-                  document.getElementById("msg").style.color = "green";
-                })
-                .catch(err => {
-                  document.getElementById("msg").innerText = "❌ Firebase Error: " + err;
-                  document.getElementById("msg").style.color = "red";
-                });
+  fetch(csvUrl)
+    .then(res => res.text())
+    .then(csvText => {
+      Papa.parse(csvText, {
+        header: true,
+        skipEmptyLines: true,
+        complete: results => {
+
+          let votersData = {};
+          let msgCounter = 0;
+
+          results.data.forEach(row => {
+            if(!row.EPIC) return; // skip if EPIC missing
+            const key = cleanKey(row.EPIC);
+
+            // Auto mapping columns
+            const data = {
+              name: row.Name || "",
+              voterID: row.EPIC,
+              state: row.State || "",
+              district: row.District || "",
+              acNo: row["AC No"] || "",
+              partNo: row["Part No"] || "",
+              booth: row.Booth || "",
+              age: row.Age || "",
+              mobile: row.Mobile || "",
+              status: row.Status || "anti"
+            };
+
+            votersData[key] = data;
+            msgCounter++;
+          });
+
+          // ✅ Full JSON structure
+          const fullData = {
+            voters: votersData,
+            admin: {
+              "ngogrant454@gmail_dot_com": { role:"admin", name:"Admin User" }
+            },
+            users: {
+              "zarafix3@gmail_dot_com": { role:"user", name:"Zara Fix" }
+            },
+            sender: {
+              description: "This is sender description",
+              image: ""
+            }
+          };
+
+          // Upload to Firebase (replace full root)
+          set(ref(db, "/"), fullData)
+            .then(()=>{
+              document.getElementById("msg").innerText = `✔ Uploaded ${msgCounter} voters and full JSON structure`;
+              document.getElementById("msg").style.color = "green";
+            })
+            .catch(err=>{
+              document.getElementById("msg").innerText = "❌ Firebase Error: " + err;
+              document.getElementById("msg").style.color = "red";
             });
-          }
-        });
-      })
-      .catch(err => {
-        document.getElementById("msg").innerText = "❌ Fetch Error: " + err;
-        document.getElementById("msg").style.color = "red";
+
+        }
       });
-  }
+    })
+    .catch(err=>{
+      document.getElementById("msg").innerText = "❌ Fetch Error: " + err;
+      document.getElementById("msg").style.color = "red";
+    });
+}
 </script>
 </head>
 <body style="font-family:sans-serif; padding:20px; background:#eef2ff;">
-  <div style="max-width:450px; margin:auto; background:white; padding:20px; border-radius:10px; box-shadow:0 4px 10px rgba(0,0,0,0.1); text-align:center;">
-    <h2 style="font-size:20px; font-weight:bold; margin-bottom:15px;">📤 Upload Google Sheet to Firebase</h2>
-    <button onclick="uploadSheet()" style="padding:10px 20px; font-weight:bold; background:#2563eb; color:white; border:none; border-radius:8px; cursor:pointer;">
-      Upload Sheet
-    </button>
-    <p id="msg" style="margin-top:15px; font-weight:bold;"></p>
-  </div>
+<div style="max-width:500px; margin:auto; background:white; padding:20px; border-radius:10px; box-shadow:0 4px 10px rgba(0,0,0,0.1); text-align:center;">
+  <h2 style="font-size:20px; font-weight:bold; margin-bottom:15px;">📤 Upload Google Sheet to Firebase</h2>
+  <button onclick="uploadSheet()" style="padding:10px 20px; font-weight:bold; background:#2563eb; color:white; border:none; border-radius:8px; cursor:pointer;">
+    Upload Sheet
+  </button>
+  <p id="msg" style="margin-top:15px; font-weight:bold;"></p>
+</div>
 </body>
 </html>
