@@ -2,246 +2,118 @@
 <html lang="hi">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Voter Management Panel</title>
-
+<title>CSV Upload — Voter Panel</title>
 <script src="https://cdn.tailwindcss.com"></script>
+
+<!-- Papa Parse -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
-<style>
-body { background:#eef2ff; }
-.card { border-radius:1rem; box-shadow:6px 6px 12px rgba(0,0,0,0.1), -6px -6px 12px rgba(255,255,255,0.7); padding:16px; margin-bottom:12px; transition: all 0.2s; display:flex; flex-direction:column; }
-.card-approved { background-color: #dcfce7; }
-.card-opponent { background-color: #fef9c3; }
-.card-anti { background-color: #fee2e2; }
-.btn { cursor:pointer; padding:0.5rem 1rem; border-radius:0.7rem; font-weight:bold; transition: all 0.2s; text-align:center; box-shadow:4px 4px 6px #bbb, -4px -4px 6px #fff; }
-.btn:hover { box-shadow: inset 4px 4px 6px #bbb, inset -4px -4px 6px #fff; }
-.btn-blue { background:#2563eb;color:white; }
-.btn-green { background:#16a34a;color:white; }
-.btn-yellow { background:#facc15;color:black; }
-.btn-red { background:#dc2626;color:white; }
-.btn-gray { background:#9ca3af;color:white; }
-.img-sender { width:50px; height:50px; border-radius:50%; margin-right:8px; }
-.flex-wrap { display:flex; flex-wrap:wrap; gap:12px; }
-.hidden { display:none; }
-</style>
 </head>
+<body class="bg-gray-100 p-8">
 
-<body class="p-4">
+<div class="max-w-xl mx-auto bg-white p-6 rounded shadow">
 
-<!-- Login -->
-<div id="loginDiv" class="text-center mb-4">
-  <h1 class="text-2xl font-bold text-blue-700">Login to Access Voter Panel</h1>
-  <button id="googleLoginBtn" class="btn btn-blue mt-4">Login with Google</button>
-</div>
+  <h1 class="text-2xl font-bold mb-4">CSV Upload</h1>
 
-<!-- Panel -->
-<div id="panelDiv" class="hidden">
+  <input id="csvLink" type="text" placeholder="Paste CSV Link"
+    class="w-full p-2 border rounded mb-3">
 
-  <h1 class="text-2xl font-bold text-blue-700 text-center mb-4">Voter Management Panel</h1>
+  <button id="uploadCSV" class="bg-blue-600 text-white px-4 py-2 rounded">
+    Upload CSV
+  </button>
 
-  <!-- Sender Info -->
-  <div class="bg-white p-4 rounded shadow mb-4">
-    <h2 class="text-xl font-bold mb-2 text-blue-700">Sender Info</h2>
-    <textarea id="senderDesc" placeholder="Sender Description" class="border p-2 w-full mb-2"></textarea>
-  </div>
+  <p id="status" class="mt-4 text-green-700 font-bold"></p>
 
-  <!-- Search -->
-  <div class="bg-white p-4 rounded shadow mb-4">
-    <input type="text" id="searchVoter" placeholder="Search by Name, EPIC, Address..." class="border p-2 w-full">
-  </div>
-
-  <!-- CSV Upload -->
-  <div class="bg-white p-4 rounded shadow mb-4">
-    <h2 class="text-xl font-bold text-blue-700 mb-2">Upload Voter CSV / Google Sheet</h2>
-    <input type="text" id="csvLink" placeholder="CSV / Google Sheet Link" class="border p-2 w-full mb-2">
-    <button id="uploadCSV" class="btn btn-blue w-full">Upload CSV</button>
-  </div>
-
-  <!-- Manual Add -->
-  <div class="bg-white p-4 rounded shadow mb-4">
-    <input type="text" id="voterName" placeholder="Name" class="border p-2 w-full mb-2">
-    <input type="text" id="voterEPIC" placeholder="EPIC" class="border p-2 w-full mb-2">
-    <input type="text" id="voterAddress" placeholder="Address" class="border p-2 w-full mb-2">
-    <input type="text" id="voterPart" placeholder="Part No" class="border p-2 w-full mb-2">
-    <button id="addVoterManual" class="btn btn-green w-full">Add Voter</button>
-  </div>
-
-  <!-- Voter List -->
-  <div id="voterList" class="flex-wrap"></div>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref as dbRef, set, onValue, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-// Firebase Config
+// --------------------------------------------------------
+//  👉 YOUR FIREBASE CONFIG
+// --------------------------------------------------------
 const firebaseConfig = {
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
   authDomain: "voter-25c94.firebaseapp.com",
   databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
   projectId: "voter-25c94",
-  storageBucket: "voter-25c94.appspot.com",
+  storageBucket: "voter-25c94.firebasestorage.app",
   messagingSenderId: "297773534400",
   appId: "1:297773534400:web:3722c487b8c83e9b787125"
 };
 
+
+// INIT
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-const auth = getAuth(app);
-const provider = new GoogleAuthProvider();
 
-const admins = ["ngogrant454@gmail_com"];
-const users  = ["zarafix3@gmail_com"];
-
-let senderImageURL = "";
-const voterListDiv = document.getElementById("voterList");
-
-// Login handler
-document.getElementById("googleLoginBtn").onclick = () => {
-  signInWithPopup(auth, provider)
-  .then(res => {
-    const emailKey = res.user.email.replace(/\./g, "_");
-    if (!admins.includes(emailKey) && !users.includes(emailKey)) {
-      alert("Access Denied!");
-      return auth.signOut();
-    }
-    alert("Welcome " + res.user.displayName);
-  })
-  .catch(() => alert("Login Failed!"));
-};
-
-// Auth check
-auth.onAuthStateChanged(user => {
-  if (user) {
-    const emailKey = user.email.replace(/\./g, "_");
-    if (admins.includes(emailKey) || users.includes(emailKey)) {
-      loginDiv.classList.add("hidden");
-      panelDiv.classList.remove("hidden");
-      renderVoters();
-    }
-  } else {
-    panelDiv.classList.add("hidden");
-    loginDiv.classList.remove("hidden");
-  }
-});
-
-// CSV Upload (JSON STRUCTURE MATCHING)
 document.getElementById("uploadCSV").onclick = () => {
 
   let link = document.getElementById("csvLink").value.trim();
-  if (!link) return alert("Enter CSV link!");
+  const status = document.getElementById("status");
 
+  if (!link) {
+    alert("Enter CSV Link!");
+    return;
+  }
+
+  // Google Sheet → CSV
   if (link.includes("docs.google.com/spreadsheets/d/")) {
     const id = link.match(/\/d\/([a-zA-Z0-9-_]+)/)[1];
     link = `https://docs.google.com/spreadsheets/d/${id}/export?format=csv`;
   }
 
-  fetch(link).then(r => r.text()).then(csvText => {
+  status.innerText = "Fetching CSV...";
 
-    Papa.parse(csvText, {
-      header: true,
-      skipEmptyLines: true,
-      complete: results => {
+  fetch(link)
+    .then(r => r.text())
+    .then(csvText => {
 
-        results.data.forEach(row => {
+      // PARSE CSV
+      Papa.parse(csvText, {
+        header: true,
+        skipEmptyLines: true,
 
-          if (!row.EPIC) return;
-          const key = row.EPIC.replace(/\W/g, "_");
+        complete: (results) => {
 
-          set(dbRef(db, "voters/" + key), {
-            name: row.Name || "",
-            voterID: row.EPIC,
-            state: row.State || "",
-            district: row.District || "",
-            acNo: row["AC No"] || "",
-            partNo: row["Part No"] || "",
-            booth: row.Booth || "",
-            age: row.Age || "",
-            mobile: row.Mobile || "",
-            status: "anti"
+          let uploadedCount = 0;
+
+          results.data.forEach(row => {
+
+            if (!row.EPIC || row.EPIC.trim() === "") return;
+
+            const key = row.EPIC.replace(/\W/g, "_");
+
+            set(ref(db, "voters/" + key), {
+              name: row.Name || "",
+              voterID: row.EPIC || "",
+              state: row.State || "",
+              district: row.District || "",
+              acNo: row["AC No"] || "",
+              partNo: row["Part No"] || "",
+              booth: row.Booth || "",
+              age: row.Age || "",
+              mobile: row.Mobile || "",
+              status: "anti"
+            });
+
+            uploadedCount++;
           });
 
-        });
+          status.innerText = `Uploaded Successfully: ${uploadedCount} voters`;
 
-        alert("CSV Uploaded Successfully!");
-        renderVoters();
-      }
-    });
-
-  }).catch(() => alert("CSV Fetch Failed!"));
-};
-
-// Manual Add Voter
-document.getElementById("addVoterManual").onclick = () => {
-  const name = voterName.value.trim();
-  const epic = voterEPIC.value.trim();
-
-  if (!name || !epic) return alert("Name & EPIC required!");
-
-  const key = epic.replace(/\W/g, "_");
-
-  set(dbRef(db, "voters/" + key), {
-    name,
-    voterID: epic,
-    state: "",
-    district: "",
-    acNo: "",
-    partNo: voterPart.value.trim(),
-    booth: "",
-    age: "",
-    mobile: "",
-    status: "anti"
-  });
-
-  alert("Voter Added!");
-  renderVoters();
-};
-
-// Render Voters
-function renderVoters() {
-  onValue(dbRef(db, "voters"), snap => {
-
-    const query = searchVoter.value.trim().toLowerCase();
-    voterListDiv.innerHTML = "";
-
-    snap.forEach(s => {
-      const v = s.val();
-      const key = s.key;
-
-      const combined = `${v.name} ${v.voterID} ${v.address} ${v.partNo} ${v.mobile}`.toLowerCase();
-      if (query && !combined.includes(query)) return;
-
-      const div = document.createElement("div");
-      div.className = "card";
-      voterListDiv.appendChild(div);
-
-      div.innerHTML = `
-        <h2 class='font-bold text-lg'>${v.name}</h2>
-        <p class='text-gray-700 text-sm'>EPIC: ${v.voterID}</p>
-        <p class='text-gray-700 text-sm'>State: ${v.state}, District: ${v.district}</p>
-        <p class='text-gray-700 text-sm'>AC: ${v.acNo}, Part: ${v.partNo}, Booth: ${v.booth}</p>
-        <p class='text-gray-700 text-sm'>Age: ${v.age}, Mobile: ${v.mobile}</p>
-
-        <div class='flex gap-2 mt-2'>
-          <button class='btn btn-red deleteBtn'>Delete</button>
-        </div>
-      `;
-
-      div.querySelector(".deleteBtn").onclick = () => {
-        if (confirm(`Delete ${v.name}?`)) {
-          remove(dbRef(db, "voters/" + key));
         }
-      };
+      });
+
+    })
+    .catch(err => {
+      console.error(err);
+      alert("CSV Fetch Failed!");
     });
-
-  });
-}
-
-// Search listener
-searchVoter.addEventListener("input", renderVoters);
+};
 
 </script>
+
 </body>
 </html>
