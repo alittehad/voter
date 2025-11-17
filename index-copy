@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ward 20 — Login</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+body {
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  margin:0;
+  background: linear-gradient(to bottom right, #4f46e5, #ec4899, #facc15);
+  padding:1rem;
+}
+img.center-img {
+  max-width:90%;
+  height:auto;
+  margin-bottom:2rem;
+  border-radius:1rem;
+  box-shadow:0 8px 20px rgba(0,0,0,0.3);
+}
+.login-btn {
+  display:flex;
+  align-items:center;
+  gap:0.5rem;
+  padding:0.75rem 1.5rem;
+  background:white;
+  color:#1f2937;
+  font-weight:bold;
+  border-radius:0.75rem;
+  cursor:pointer;
+  box-shadow:0 5px 0 rgba(0,0,0,0.25);
+  transition:0.1s;
+}
+.login-btn:hover {transform:translateY(-2px);}
+.login-btn:active {transform:translateY(3px); box-shadow:0 2px 0 rgba(0,0,0,0.25);}
+</style>
+</head>
+<body>
+
+<!-- Center Image -->
+<img src="https://i.postimg.cc/8kysF6DQ/Numeral-20-with-Bold-Ward.png" class="center-img">
+
+<!-- Login Button -->
+<button id="loginBtn" class="login-btn">
+  <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" style="width:20px;height:20px;">
+  Login with Google
+</button>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
+  authDomain: "voter-25c94.firebaseapp.com",
+  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
+  projectId: "voter-25c94",
+  storageBucket: "voter-25c94.firebasestorage.app",
+  messagingSenderId: "297773534400",
+  appId: "1:297773534400:web:3722c487b8c83e9b787125"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth();
+const provider = new GoogleAuthProvider();
+
+// If already logged in → redirect to panel
+onAuthStateChanged(auth, user => {
+  if(user){
+    window.location.replace('panel.html');
+  }
+});
+
+// Login button click
+document.getElementById('loginBtn').addEventListener('click', async ()=>{
+  try{
+    await signInWithPopup(auth, provider);
+    window.location.replace('panel.html');
+  }catch(e){
+    alert("Login failed");
+    console.error(e);
+  }
+});
+</script>
+
+</body>
+</html>
