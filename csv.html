@@ -7,7 +7,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, set, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 // 🔑 Firebase Config
 const firebaseConfig = {
@@ -25,10 +25,7 @@ const db = getDatabase(app);
 
 // 🔹 Clean key for Firebase
 function cleanKey(key){
-  return key.trim().replace(/\./g,"_").replace(/#/g,"_")
-            .replace(/\$/g,"_").replace(/\//g,"_")
-            .replace(/\[/g,"_").replace(/\]/g,"_")
-            .replace(/\s+/g,"_");
+  return key.trim().replace(/[.#$/\[\]\s]/g,"_");
 }
 
 // 🔹 Upload Sheet Function
@@ -48,28 +45,30 @@ window.uploadSheet = function(){
           let msgCounter = 0;
 
           results.data.forEach(row => {
-            if(!row.EPIC) return; // skip if EPIC missing
-            const key = cleanKey(row.EPIC);
+            // Auto-mapping for EPIC / voterID column
+            const epic = row['EPIC'] || row['EpicID'] || row['VoterID'];
+            if(!epic) return; // skip if no EPIC
 
-            // Auto mapping columns
+            const key = cleanKey(epic);
+
             const data = {
-              name: row.Name || "",
-              voterID: row.EPIC,
-              state: row.State || "",
-              district: row.District || "",
-              acNo: row["AC No"] || "",
-              partNo: row["Part No"] || "",
-              booth: row.Booth || "",
-              age: row.Age || "",
-              mobile: row.Mobile || "",
-              status: row.Status || "anti"
+              name: row['Name'] || row['Full Name'] || "",
+              voterID: epic,
+              state: row['State'] || "",
+              district: row['District'] || "",
+              acNo: row['AC No'] || row['AC'] || "",
+              partNo: row['Part No'] || row['Part'] || "",
+              booth: row['Booth'] || "",
+              age: row['Age'] || "",
+              mobile: row['Mobile'] || "",
+              status: row['Status'] || "anti"
             };
 
             votersData[key] = data;
             msgCounter++;
           });
 
-          // ✅ Full JSON structure
+          // Full JSON structure
           const fullData = {
             voters: votersData,
             admin: {
@@ -84,7 +83,7 @@ window.uploadSheet = function(){
             }
           };
 
-          // Upload to Firebase (replace full root)
+          // Upload to Firebase (replace root)
           set(ref(db, "/"), fullData)
             .then(()=>{
               document.getElementById("msg").innerText = `✔ Uploaded ${msgCounter} voters and full JSON structure`;
@@ -94,7 +93,6 @@ window.uploadSheet = function(){
               document.getElementById("msg").innerText = "❌ Firebase Error: " + err;
               document.getElementById("msg").style.color = "red";
             });
-
         }
       });
     })
