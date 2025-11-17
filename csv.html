@@ -20,10 +20,18 @@ body { background:#eef2ff; }
 .btn-gray { background:#9ca3af;color:white; }
 .img-sender { width:50px; height:50px; border-radius:50%; margin-right:8px; }
 .hidden { display:none; }
+.table-container { overflow-x:auto; }
 table, th, td { border:1px solid #ddd; }
-table { border-collapse: collapse; width: 100%; }
-th, td { padding: 8px; text-align: left; }
+table { border-collapse: collapse; width: 100%; min-width: 600px; }
+th, td { padding: 8px; text-align: left; white-space: nowrap; }
 tr:hover { background-color: #f1f1f1; cursor:pointer; }
+/* Responsive */
+@media (max-width:768px){
+  table { min-width:100%; }
+  .flex-wrap { flex-direction: column; }
+  .btn { width:100%; }
+  .img-sender { width:40px; height:40px; }
+}
 </style>
 </head>
 <body class="p-4">
@@ -39,13 +47,13 @@ tr:hover { background-color: #f1f1f1; cursor:pointer; }
 
   <h1 class="text-2xl font-bold text-blue-700 text-center mb-4">Voter Management Panel</h1>
 
-  <!-- Search box (सबसे ऊपर) -->
+  <!-- Search -->
   <div class="bg-white p-4 rounded shadow mb-4">
     <input type="text" id="searchVoter" placeholder="Search by Name, EPIC, Address, Part No..." class="border p-2 w-full">
   </div>
 
-  <!-- Voter List (scrollable table) -->
-  <div id="voterList" class="mt-4" style="max-height:400px; overflow-y:auto;"></div>
+  <!-- Voter List -->
+  <div id="voterList" class="mt-4 table-container"></div>
 
   <!-- Sender Info -->
   <div class="bg-white p-4 rounded shadow mb-4">
@@ -56,7 +64,7 @@ tr:hover { background-color: #f1f1f1; cursor:pointer; }
     <img id="senderImgPreview" src="" class="img-sender hidden">
   </div>
 
-  <!-- Manual Add (सबसे नीचे) -->
+  <!-- Manual Add -->
   <div class="bg-white p-4 rounded shadow mb-4">
     <h2 class="text-xl font-bold mb-2 text-blue-700">Add Voter Manually</h2>
     <input type="text" id="voterName" placeholder="Name" class="border p-2 w-full mb-2">
@@ -69,20 +77,12 @@ tr:hover { background-color: #f1f1f1; cursor:pointer; }
 </div>
 
 <script type="module">
+// Firebase code same as pehle
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getDatabase, ref as dbRef, set, onValue, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-// Firebase config
-const firebaseConfig = {
-  apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
-  authDomain: "voter-25c94.firebaseapp.com",
-  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
-  projectId: "voter-25c94",
-  storageBucket: "voter-25c94.appspot.com",
-  messagingSenderId: "297773534400",
-  appId: "1:297773534400:web:3722c487b8c83e9b787125"
-};
+const firebaseConfig = { apiKey:"AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw", authDomain:"voter-25c94.firebaseapp.com", databaseURL:"https://voter-25c94-default-rtdb.firebaseio.com", projectId:"voter-25c94", storageBucket:"voter-25c94.appspot.com", messagingSenderId:"297773534400", appId:"1:297773534400:web:3722c487b8c83e9b787125"};
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const auth = getAuth(app);
@@ -91,69 +91,20 @@ const provider = new GoogleAuthProvider();
 let senderImageURL = "";
 const voterListDiv = document.getElementById("voterList");
 
-// Login
-document.getElementById("googleLoginBtn").onclick = ()=>{
-  signInWithPopup(auth, provider).then(res=>{
-    const emailKey = res.user.email.replace(/\./g,"_");
-    const admins = ["ngogrant454@gmail_com"];
-    const users  = ["zarafix3@gmail_com"];
-    if(admins.includes(emailKey) || users.includes(emailKey)){
-      alert(`Welcome ${res.user.displayName}`);
-    } else {
-      alert("Access denied!");
-      auth.signOut();
-    }
-  }).catch(err=>{ console.error(err); alert("Login failed!"); });
-};
+// Login code
+document.getElementById("googleLoginBtn").onclick = ()=>{ signInWithPopup(auth, provider).then(res=>{ const emailKey = res.user.email.replace(/\./g,"_"); const admins = ["ngogrant454@gmail_com"]; const users  = ["zarafix3@gmail_com"]; if(admins.includes(emailKey) || users.includes(emailKey)){ alert(`Welcome ${res.user.displayName}`); } else { alert("Access denied!"); auth.signOut(); } }).catch(err=>{ console.error(err); alert("Login failed!"); }); };
+auth.onAuthStateChanged(user => { if(user){ const emailKey = user.email.replace(/\./g,"_"); const admins = ["ngogrant454@gmail_com"]; const users  = ["zarafix3@gmail_com"]; if(admins.includes(emailKey) || users.includes(emailKey)){ document.getElementById("loginDiv").classList.add("hidden"); document.getElementById("panelDiv").classList.remove("hidden"); renderVoters(); } else { auth.signOut(); } } else { document.getElementById("loginDiv").classList.remove("hidden"); document.getElementById("panelDiv").classList.add("hidden"); } });
 
-auth.onAuthStateChanged(user => {
-  if(user){
-    const emailKey = user.email.replace(/\./g,"_");
-    const admins = ["ngogrant454@gmail_com"];
-    const users  = ["zarafix3@gmail_com"];
-    if(admins.includes(emailKey) || users.includes(emailKey)){
-      document.getElementById("loginDiv").classList.add("hidden");
-      document.getElementById("panelDiv").classList.remove("hidden");
-      renderVoters();
-    } else { auth.signOut(); }
-  } else {
-    document.getElementById("loginDiv").classList.remove("hidden");
-    document.getElementById("panelDiv").classList.add("hidden");
-  }
-});
+// Sender Image
+document.getElementById("uploadSenderImage").onclick = ()=>{ const file = document.getElementById("senderImage").files[0]; if(!file) return alert("Select image first!"); const reader = new FileReader(); reader.onload = e=>{ senderImageURL = e.target.result; document.getElementById("senderImgPreview").src = senderImageURL; document.getElementById("senderImgPreview").classList.remove("hidden"); }; reader.readAsDataURL(file); };
 
-// Upload Sender Image
-document.getElementById("uploadSenderImage").onclick = ()=>{
-  const file = document.getElementById("senderImage").files[0];
-  if(!file) return alert("Select image first!");
-  const reader = new FileReader();
-  reader.onload = e=>{
-    senderImageURL = e.target.result;
-    document.getElementById("senderImgPreview").src = senderImageURL;
-    document.getElementById("senderImgPreview").classList.remove("hidden");
-  };
-  reader.readAsDataURL(file);
-};
-
-// Render voters as scrollable table
+// Render voters
 function renderVoters(){
   onValue(dbRef(db,"voters"), snap=>{
     const query = document.getElementById("searchVoter").value.trim().toLowerCase();
     voterListDiv.innerHTML='';
-
     const table = document.createElement("table");
-    table.innerHTML = `
-      <thead>
-        <tr class="bg-blue-100">
-          <th>नाम</th>
-          <th>EPIC</th>
-          <th>पता</th>
-          <th>पार्ट नंबर</th>
-          <th>स्टेटस</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    `;
+    table.innerHTML = `<thead><tr class="bg-blue-100"><th>नाम</th><th>EPIC</th><th>पता</th><th>पार्ट नंबर</th><th>स्टेटस</th></tr></thead><tbody></tbody>`;
     const tbody = table.querySelector("tbody");
     voterListDiv.appendChild(table);
 
@@ -161,83 +112,48 @@ function renderVoters(){
       const v = s.val(); const key=s.key;
       const combined = `${v.name} ${v.voterID} ${v.address} ${v.partNo}`.toLowerCase();
       if(query && !combined.includes(query)) return;
-
       const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${v.name}</td>
-        <td>${v.voterID}</td>
-        <td>${v.address}</td>
-        <td>${v.partNo}</td>
-        <td>${v.status}</td>
-      `;
+      tr.innerHTML = `<td>${v.name}</td><td>${v.voterID}</td><td>${v.address}</td><td>${v.partNo}</td><td>${v.status}</td>`;
+      setRowColor(tr,v.status);
       tbody.appendChild(tr);
-
-      tr.onclick = ()=>{ showVoterDetail(v,key); };
+      tr.onclick = ()=>{ showVoterDetail(v,key,tr); };
     });
   });
 }
 
-// Show detailed card
-function showVoterDetail(v, key){
+// Card functions
+function showVoterDetail(v,key,tr){
   let existing = document.getElementById("voterDetailCard");
   if(existing) existing.remove();
-
   const div = document.createElement("div");
-  div.id = "voterDetailCard";
-  div.className = "card mt-4";
-  div.innerHTML = `
-    <div style="display:flex;align-items:center;margin-bottom:8px;">
-      ${senderImageURL ? `<img src='${senderImageURL}' class='img-sender'>` : ''}
-      <div>
-        <h2 class='font-bold text-xl'>${v.name}</h2>
-        <p class='text-sm text-gray-600'>
-          EPIC: ${v.voterID} | Address: ${v.address} | Part: ${v.partNo} | Booth: ${v.booth || ''} | Age: ${v.age || ''} | Status: ${v.status}
-        </p>
-      </div>
-    </div>
-    <div class='flex gap-2 flex-wrap mt-2'>
-      <button class='btn btn-yellow approveBtn'>Approve</button>
-      <button class='btn btn-yellow opponentBtn'>Opponent</button>
-      <button class='btn btn-red antiBtn'>Anti</button>
-      <button class='btn btn-gray deleteBtn'>Delete</button>
-      <button class='btn btn-blue sendBtn'>Send WhatsApp</button>
-      <button class='btn btn-green printBtn'>Print</button>
-    </div>
-  `;
+  div.id="voterDetailCard"; div.className="card mt-4"; setCardColor(div,v.status);
+  div.innerHTML = `<div style="display:flex;align-items:center;margin-bottom:8px;">${senderImageURL?`<img src='${senderImageURL}' class='img-sender'>`:''}<div><h2 class='font-bold text-xl'>${v.name}</h2><p class='text-sm text-gray-600'>EPIC: ${v.voterID} | Address: ${v.address} | Part: ${v.partNo} | Booth: ${v.booth||''} | Age: ${v.age||''} | Status: ${v.status}</p></div></div>
+  <div class='flex gap-2 flex-wrap mt-2'><button class='btn btn-yellow approveBtn'>Approve</button><button class='btn btn-yellow opponentBtn'>Opponent</button><button class='btn btn-red antiBtn'>Anti</button><button class='btn btn-gray deleteBtn'>Delete</button><button class='btn btn-blue sendBtn'>Send WhatsApp</button><button class='btn btn-green printBtn'>Print</button></div>`;
   voterListDiv.appendChild(div);
 
-  div.querySelector(".approveBtn").onclick = ()=>{ set(dbRef(db,"voters/"+key), {...v,status:"approved"}); div.remove(); renderVoters(); };
-  div.querySelector(".opponentBtn").onclick = ()=>{ set(dbRef(db,"voters/"+key), {...v,status:"opponent"}); div.remove(); renderVoters(); };
-  div.querySelector(".antiBtn").onclick = ()=>{ set(dbRef(db,"voters/"+key), {...v,status:"anti"}); div.remove(); renderVoters(); };
-  div.querySelector(".deleteBtn").onclick = ()=>{ if(confirm(`Delete ${v.name}?`)) remove(dbRef(db,"voters/"+key)); div.remove(); renderVoters(); };
-  div.querySelector(".sendBtn").onclick = ()=>{
-    let msg = document.getElementById("senderDesc").value + "\n\n";
-    if(senderImageURL) msg += "[Sender Image Attached]\n";
-    msg += `${v.name} | EPIC:${v.voterID} | Address:${v.address} | Part:${v.partNo} | Status:${v.status}`;
-    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
-  };
-  div.querySelector(".printBtn").onclick = ()=>{
-    let html = `<h2>Sender Info</h2>`;
-    if(senderImageURL) html += `<img src="${senderImageURL}" style="width:50px;height:50px;border-radius:50%;"><br>`;
-    html += `<pre>${document.getElementById("senderDesc").value}</pre><hr>`;
-    html += `<p>${v.name} | EPIC:${v.voterID} | Address:${v.address} | Part:${v.partNo} | Status:${v.status}</p>`;
-    const w = window.open();
-    w.document.write(html);
-    w.print();
-    w.close();
-  };
+  const updateStatus = (newStatus)=>{ set(dbRef(db,"voters/"+key),{...v,status:newStatus}); setCardColor(div,newStatus); setRowColor(tr,newStatus); };
+  div.querySelector(".approveBtn").onclick=()=>{updateStatus("approved");};
+  div.querySelector(".opponentBtn").onclick=()=>{updateStatus("opponent");};
+  div.querySelector(".antiBtn").onclick=()=>{updateStatus("anti");};
+  div.querySelector(".deleteBtn").onclick=()=>{if(confirm(`Delete ${v.name}?`)){remove(dbRef(db,"voters/"+key));div.remove();tr.remove();}};
+  div.querySelector(".sendBtn").onclick=()=>{ let msg=document.getElementById("senderDesc").value+"\n\n"; if(senderImageURL) msg+="[Sender Image Attached]\n"; msg+=`${v.name} | EPIC:${v.voterID} | Address:${v.address} | Part:${v.partNo} | Status:${v.status}`; window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,"_blank");};
+  div.querySelector(".printBtn").onclick=()=>{ let html=`<h2>Sender Info</h2>`; if(senderImageURL) html+=`<img src="${senderImageURL}" style="width:50px;height:50px;border-radius:50%;"><br>`; html+=`<pre>${document.getElementById("senderDesc").value}</pre><hr>`; html+=`<p>${v.name} | EPIC:${v.voterID} | Address:${v.address} | Part:${v.partNo} | Status:${v.status}</p>`; const w=window.open(); w.document.write(html); w.print(); w.close();};
 }
 
+function setCardColor(cardDiv,status){ cardDiv.classList.remove("card-approved","card-opponent","card-anti"); if(status==="approved") cardDiv.classList.add("card-approved"); else if(status==="opponent") cardDiv.classList.add("card-opponent"); else cardDiv.classList.add("card-anti");}
+function setRowColor(tr,status){ tr.style.backgroundColor=""; if(status==="approved") tr.style.backgroundColor="#dcfce7"; else if(status==="opponent") tr.style.backgroundColor="#fef9c3"; else if(status==="anti") tr.style.backgroundColor="#fee2e2";}
+
 // Search & Manual Add
-document.getElementById("searchVoter").addEventListener("input", renderVoters);
-document.getElementById("addVoterManual").onclick = ()=>{
-  const name = document.getElementById("voterName").value.trim();
-  const epic = document.getElementById("voterEPIC").value.trim();
-  const address = document.getElementById("voterAddress").value.trim();
-  const partNo = document.getElementById("voterPart").value.trim();
-  if(!name || !epic) return alert("Name & EPIC required!");
-  const key = epic.replace(/\W/g,"_");
-  set(dbRef(db,"voters/"+key), { name, voterID:epic, address, partNo, status:"anti" });
+document.getElementById("searchVoter").addEventListener("input",renderVoters);
+document.getElementById("addVoterManual").onclick=()=>{
+  const name=document.getElementById("voterName").value.trim();
+  const epic=document.getElementById("voterEPIC").value.trim();
+  const address=document.getElementById("voterAddress").value.trim();
+  const partNo=document.getElementById("voterPart").value.trim();
+  if(!name||!epic) return alert("Name & EPIC required!");
+  const key=epic.replace(/\W/g,"_");
+  set(dbRef(db,"voters/"+key),{name,voterID:epic,address,partNo,status:"anti"});
+  document.getElementById("voterName").value=""; document.getElementById("voterEPIC").value=""; document.getElementById("voterAddress").value=""; document.getElementById("voterPart").value="";
   alert("Voter added!");
   renderVoters();
 };
