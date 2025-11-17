@@ -3,42 +3,32 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Upload CSV to Firebase</title>
+<title>Auto Mapping CSV → Firebase</title>
 <script src="https://cdn.tailwindcss.com"></script>
 
 <style>
-body {
-  background: #f3f4f6;
-  padding: 20px;
-  font-family: sans-serif;
-}
-.box {
-  background:white;
-  padding:20px;
-  border-radius:10px;
-  max-width:450px;
-  margin:auto;
-  box-shadow:0 4px 10px rgba(0,0,0,0.1);
-}
+body{background:#f3f4f6;padding:20px;font-family:sans-serif;}
+.box{background:white;padding:20px;border-radius:10px;max-width:500px;margin:auto;
+box-shadow:0 4px 10px rgba(0,0,0,0.1);}
 </style>
 </head>
 
 <body>
 
 <div class="box">
-  <h2 class="text-xl font-bold mb-4 text-center">📤 Upload CSV to Firebase</h2>
+  <h2 class="text-xl font-bold mb-2 text-center">📥 Import Google Sheet CSV → Firebase</h2>
 
-  <input id="csvFile" type="file" accept=".csv"
+  <input id="csvLink" type="text"
+    placeholder="Paste Google Sheet CSV Link"
     class="border p-2 w-full rounded mb-3">
 
-  <button onclick="uploadCSV()"
+  <button onclick="importCSV()"
     class="bg-blue-600 text-white p-2 w-full rounded font-bold">
-    Upload CSV
+    Import Now
   </button>
 
   <p id="msg" class="mt-4 text-center font-bold"></p>
 </div>
-
 
 
 <!-- Firebase -->
@@ -46,7 +36,8 @@ body {
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-// Your Firebase Config
+
+// ⭐ Your Firebase Config
 const firebaseConfig = {
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
   authDomain: "voter-25c94.firebaseapp.com",
@@ -61,78 +52,98 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
 
-// 🔥 Clean Key Function — Firebase Safe Key
-function cleanKey(key){
-  return key
-    .trim()
-    .replace(/\./g, "_")
-    .replace(/#/g, "_")
-    .replace(/\$/g, "_")
-    .replace(/\//g, "_")
-    .replace(/\[/g, "_")
-    .replace(/\]/g, "_")
-    .replace(/\s+/g, "_"); // space → underscore
+// ⭐ Safe Firebase Key
+function cleanKey(k){
+  return k.trim()
+    .replace(/[.#$/\[\]\s]/g, "_");
 }
 
 
-// 🔥 MAIN Upload Function
-window.uploadCSV = function () {
-  let file = document.getElementById("csvFile").files[0];
+// ⭐ AUTO MAPPING FUNCTION
+function mapColumns(headerRow){
+  let map = {};
+
+  headerRow.forEach((col, i) => {
+    let c = col.toLowerCase().trim();
+
+    if(c.includes("name")) map.name = i;
+    if(c.includes("voter") || c.includes("epic") || c.includes("id")) map.voterID = i;
+    if(c.includes("state")) map.state = i;
+    if(c.includes("district")) map.district = i;
+    if(c.includes("ac")) map.acNo = i;
+    if(c.includes("part")) map.partNo = i;
+    if(c.includes("booth")) map.booth = i;
+    if(c.includes("age")) map.age = i;
+    if(c.includes("mobile") || c.includes("phone")) map.mobile = i;
+    if(c.includes("status")) map.status = i;
+  });
+
+  return map;
+}
+
+
+// ⭐ MAIN IMPORT FUNCTION
+window.importCSV = async function () {
+  
+  let link = document.getElementById("csvLink").value;
   let msg = document.getElementById("msg");
 
-  if(!file){
-    msg.innerHTML = "❌ Please select a CSV file";
+  if(!link){
+    msg.innerHTML = "❌ Paste Google Sheet CSV Link";
     msg.style.color = "red";
     return;
   }
 
-  let reader = new FileReader();
-  reader.onload = function(event){
-    let lines = event.target.result.split("\n");
+  try {
+    let res = await fetch(link);
+    let text = await res.text();
+
+    let lines = text.split("\n").map(l => l.trim()).filter(l => l);
+    let header = lines[0].split(",");
+
+    let map = mapColumns(header);
+    console.log("Column Mapping:", map);
 
     let count = 0;
 
-    lines.forEach((line, index) => {
-      if(index === 0) return; // skip header row
-      if(!line.trim()) return; // skip blank line
+    for(let i=1; i<lines.length; i++){
+      let row = lines[i].split(",");
 
-      let row = line.split(",");
+      // Auto Mapping
+      let voterID = cleanKey(row[map.voterID]);
+      if(!voterID) continue;
 
-      // CSV Columns → modify according to your sheet:
-      let name   = row[0];
-      let voterID = cleanKey(row[1]);
-      let state  = row[2];
-      let district = row[3];
-      let acNo   = row[4];
-      let partNo = row[5];
-      let booth  = row[6];
-      let age    = row[7];
-      let mobile = row[8];
-      let status = row[9];
-
-      if(!voterID) return;  // skip empty keys
+      // AUTO STATUS (If blank)
+      let age = Number(row[map.age]);
+      let status = row[map.status] || 
+                  (age >= 30 ? "approved" : "pending");
 
       let data = {
-        name, voterID, state, district, acNo, partNo, booth, age, mobile, status
+        name: row[map.name] || "",
+        voterID,
+        state: row[map.state] || "",
+        district: row[map.district] || "",
+        acNo: row[map.acNo] || "",
+        partNo: row[map.partNo] || "",
+        booth: row[map.booth] || "",
+        age: row[map.age] || "",
+        mobile: row[map.mobile] || "",
+        status: status
       };
 
-      // Upload to Firebase
-      set(ref(db, "voters/" + voterID), data)
-      .then(() => {
-        count++;
-        msg.innerHTML = `✔ Uploaded: ${count} records`;
-        msg.style.color = "green";
-      })
-      .catch(err => {
-        msg.innerHTML = "❌ Firebase Error: " + err;
-        msg.style.color = "red";
-      });
+      await set(ref(db, "voters/" + voterID), data);
+      count++;
+    }
 
-    });
-  };
+    msg.innerHTML = `✔ Successfully Imported ${count} Voters 🎉`;
+    msg.style.color = "green";
 
-  reader.readAsText(file);
+  } catch (err){
+    msg.innerHTML = "❌ ERROR: " + err;
+    msg.style.color = "red";
+  }
 }
+
 </script>
 
 </body>
