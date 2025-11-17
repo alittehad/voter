@@ -1,139 +1,271 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hi">
 <head>
+
+
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="0" />
+
+
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Upload CSV to Firebase</title>
+<title>Voter Management Panel</title>
 <script src="https://cdn.tailwindcss.com"></script>
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <style>
-body {
-  background: #f3f4f6;
-  padding: 20px;
-  font-family: sans-serif;
-}
-.box {
-  background:white;
-  padding:20px;
-  border-radius:10px;
-  max-width:450px;
-  margin:auto;
-  box-shadow:0 4px 10px rgba(0,0,0,0.1);
-}
+body { background:#eef2ff; }
+.card { border-radius:1rem; box-shadow:6px 6px 12px rgba(0,0,0,0.1), -6px -6px 12px rgba(255,255,255,0.7); padding:16px; margin-bottom:12px; transition: all 0.2s; display:flex; flex-direction:column; }
+.card-approved { background-color: #dcfce7; }
+.card-opponent { background-color: #fef9c3; }
+.card-anti { background-color: #fee2e2; }
+.btn { cursor:pointer; padding:0.5rem 1rem; border-radius:0.7rem; font-weight:bold; transition: all 0.2s; text-align:center; box-shadow:4px 4px 6px #bbb, -4px -4px 6px #fff; }
+.btn:hover { box-shadow: inset 4px 4px 6px #bbb, inset -4px -4px 6px #fff; }
+.btn-blue { background:#2563eb;color:white; }
+.btn-green { background:#16a34a;color:white; }
+.btn-yellow { background:#facc15;color:black; }
+.btn-red { background:#dc2626;color:white; }
+.btn-gray { background:#9ca3af;color:white; }
+.img-sender { width:50px; height:50px; border-radius:50%; margin-right:8px; }
+.flex-wrap { display:flex; flex-wrap:wrap; gap:12px; }
+.hidden { display:none; }
 </style>
 </head>
+<body class="p-4">
 
-<body>
-
-<div class="box">
-  <h2 class="text-xl font-bold mb-4 text-center">📤 Upload CSV to Firebase</h2>
-
-  <input id="csvFile" type="file" accept=".csv"
-    class="border p-2 w-full rounded mb-3">
-
-  <button onclick="uploadCSV()"
-    class="bg-blue-600 text-white p-2 w-full rounded font-bold">
-    Upload CSV
-  </button>
-
-  <p id="msg" class="mt-4 text-center font-bold"></p>
+<!-- Login -->
+<div id="loginDiv" class="text-center mb-4">
+  <h1 class="text-2xl font-bold text-blue-700">Login to Access Voter Panel</h1>
+  <button id="googleLoginBtn" class="btn btn-blue mt-4">Login with Google</button>
 </div>
 
+<!-- Panel -->
+<div id="panelDiv" class="hidden">
 
+  <h1 class="text-2xl font-bold text-blue-700 text-center mb-4">Voter Management Panel</h1>
 
-<!-- Firebase -->
+  <!-- Sender Info -->
+  <div class="bg-white p-4 rounded shadow mb-4">
+    <h2 class="text-xl font-bold mb-2 text-blue-700">Sender Info</h2>
+    <textarea id="senderDesc" placeholder="Sender Description" class="border p-2 w-full mb-2"></textarea>
+    <input type="file" id="senderImage" class="border p-2 w-full mb-2">
+    <button id="uploadSenderImage" class="btn btn-blue w-full mb-2">Upload Sender Image</button>
+    <img id="senderImgPreview" src="" class="img-sender hidden">
+  </div>
+
+  <!-- Search -->
+  <div class="bg-white p-4 rounded shadow mb-4">
+    <input type="text" id="searchVoter" placeholder="Search by Name, EPIC, Address, Part No..." class="border p-2 w-full">
+  </div>
+
+  <!-- CSV Upload -->
+  <div class="bg-white p-4 rounded shadow mb-4">
+    <h2 class="text-xl font-bold mb-2 text-blue-700">Upload Voter CSV / Google Sheet</h2>
+    <input type="text" id="csvLink" placeholder="CSV / Google Sheet link" class="border p-2 w-full mb-2">
+    <button id="uploadCSV" class="btn btn-blue w-full">Upload CSV</button>
+  </div>
+
+  <!-- Manual Add -->
+  <div class="bg-white p-4 rounded shadow mb-4">
+    <h2 class="text-xl font-bold mb-2 text-blue-700">Add Voter Manually</h2>
+    <input type="text" id="voterName" placeholder="Name" class="border p-2 w-full mb-2">
+    <input type="text" id="voterEPIC" placeholder="EPIC" class="border p-2 w-full mb-2">
+    <input type="text" id="voterAddress" placeholder="Address" class="border p-2 w-full mb-2">
+    <input type="text" id="voterPart" placeholder="Part No" class="border p-2 w-full mb-2">
+    <button id="addVoterManual" class="btn btn-green w-full">Add Voter</button>
+  </div>
+
+  <!-- Voter List -->
+  <div id="voterList" class="flex-wrap"></div>
+</div>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref as dbRef, set, onValue, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-// Your Firebase Config
+// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
   authDomain: "voter-25c94.firebaseapp.com",
   databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
   projectId: "voter-25c94",
-  storageBucket: "voter-25c94.firebasestorage.app",
+  storageBucket: "voter-25c94.appspot.com",
   messagingSenderId: "297773534400",
   appId: "1:297773534400:web:3722c487b8c83e9b787125"
 };
-
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
+const auth = getAuth(app);
+const provider = new GoogleAuthProvider();
 
+let senderImageURL = "";
+const voterListDiv = document.getElementById("voterList");
 
-// 🔥 Clean Key Function — Firebase Safe Key
-function cleanKey(key){
-  return key
-    .trim()
-    .replace(/\./g, "_")
-    .replace(/#/g, "_")
-    .replace(/\$/g, "_")
-    .replace(/\//g, "_")
-    .replace(/\[/g, "_")
-    .replace(/\]/g, "_")
-    .replace(/\s+/g, "_"); // space → underscore
+// Login button
+document.getElementById("googleLoginBtn").onclick = ()=>{
+  signInWithPopup(auth, provider).then(res=>{
+    const emailKey = res.user.email.replace(/\./g,"_");
+    const admins = ["ngogrant454@gmail_com"];
+    const users  = ["zarafix3@gmail_com"];
+    if(admins.includes(emailKey) || users.includes(emailKey)){
+      alert(`Welcome ${res.user.displayName}`);
+    } else {
+      alert("Access denied!");
+      auth.signOut();
+    }
+  }).catch(err=>{ console.error(err); alert("Login failed!"); });
+};
+
+// Persist login
+auth.onAuthStateChanged(user => {
+  if(user){
+    const emailKey = user.email.replace(/\./g,"_");
+    const admins = ["ngogrant454@gmail_com"];
+    const users  = ["zarafix3@gmail_com"];
+    if(admins.includes(emailKey) || users.includes(emailKey)){
+      document.getElementById("loginDiv").classList.add("hidden");
+      document.getElementById("panelDiv").classList.remove("hidden");
+      renderVoters();
+    } else {
+      auth.signOut();
+    }
+  } else {
+    document.getElementById("loginDiv").classList.remove("hidden");
+    document.getElementById("panelDiv").classList.add("hidden");
+  }
+});
+
+// Upload Sender Image
+document.getElementById("uploadSenderImage").onclick = ()=>{
+  const file = document.getElementById("senderImage").files[0];
+  if(!file) return alert("Select image first!");
+  const reader = new FileReader();
+  reader.onload = e=>{
+    senderImageURL = e.target.result;
+    document.getElementById("senderImgPreview").src = senderImageURL;
+    document.getElementById("senderImgPreview").classList.remove("hidden");
+  };
+  reader.readAsDataURL(file);
+};
+
+// Update card color
+function updateCardColor(cardDiv,status){
+  cardDiv.classList.remove("card-approved","card-opponent","card-anti");
+  if(status==="approved") cardDiv.classList.add("card-approved");
+  else if(status==="opponent") cardDiv.classList.add("card-opponent");
+  else cardDiv.classList.add("card-anti");
 }
 
+// Render voters
+function renderVoters(){
+  onValue(dbRef(db,"voters"), snap=>{
+    const query = document.getElementById("searchVoter").value.trim().toLowerCase();
+    voterListDiv.innerHTML='';
+    snap.forEach(s=>{
+      const v = s.val(); const key=s.key;
+      const combined = `${v.name} ${v.voterID} ${v.address} ${v.partNo}`.toLowerCase();
+      if(query && !combined.includes(query)) return;
 
-// 🔥 MAIN Upload Function
-window.uploadCSV = function () {
-  let file = document.getElementById("csvFile").files[0];
-  let msg = document.getElementById("msg");
+      const div = document.createElement("div");
+      div.className="card";
+      updateCardColor(div,v.status);
+      div.innerHTML = `
+        <div style="display:flex;align-items:center;">
+          ${senderImageURL ? `<img src='${senderImageURL}' class='img-sender'>` : ''}
+          <div>
+            <h2 class='font-bold'>${v.name}</h2>
+            <p class='text-sm text-gray-600'>
+              EPIC: ${v.voterID} | Address: ${v.address} | Part: ${v.partNo} | Booth: ${v.booth || ''} | Age: ${v.age || ''} | Status: ${v.status}
+            </p>
+          </div>
+        </div>
+        <div class='flex gap-2 flex-wrap mt-2'>
+          <button class='btn btn-yellow approveBtn'>Approve</button>
+          <button class='btn btn-yellow opponentBtn'>Opponent</button>
+          <button class='btn btn-red antiBtn'>Anti</button>
+          <button class='btn btn-gray deleteBtn'>Delete</button>
+          <button class='btn btn-blue sendBtn'>Send WhatsApp</button>
+          <button class='btn btn-green printBtn'>Print</button>
+        </div>`;
+      voterListDiv.appendChild(div);
 
-  if(!file){
-    msg.innerHTML = "❌ Please select a CSV file";
-    msg.style.color = "red";
-    return;
-  }
+      // Actions
+      div.querySelector(".approveBtn").onclick = ()=>{ set(dbRef(db,"voters/"+key), {...v,status:"approved"}); updateCardColor(div,"approved"); };
+      div.querySelector(".opponentBtn").onclick = ()=>{ set(dbRef(db,"voters/"+key), {...v,status:"opponent"}); updateCardColor(div,"opponent"); };
+      div.querySelector(".antiBtn").onclick = ()=>{ set(dbRef(db,"voters/"+key), {...v,status:"anti"}); updateCardColor(div,"anti"); };
+      div.querySelector(".deleteBtn").onclick = ()=>{ if(confirm(`Delete ${v.name}?`)) remove(dbRef(db,"voters/"+key)); };
 
-  let reader = new FileReader();
-  reader.onload = function(event){
-    let lines = event.target.result.split("\n");
-
-    let count = 0;
-
-    lines.forEach((line, index) => {
-      if(index === 0) return; // skip header row
-      if(!line.trim()) return; // skip blank line
-
-      let row = line.split(",");
-
-      // CSV Columns → modify according to your sheet:
-      let name   = row[0];
-      let voterID = cleanKey(row[1]);
-      let state  = row[2];
-      let district = row[3];
-      let acNo   = row[4];
-      let partNo = row[5];
-      let booth  = row[6];
-      let age    = row[7];
-      let mobile = row[8];
-      let status = row[9];
-
-      if(!voterID) return;  // skip empty keys
-
-      let data = {
-        name, voterID, state, district, acNo, partNo, booth, age, mobile, status
+      // WhatsApp for individual voter
+      div.querySelector(".sendBtn").onclick = ()=>{
+        let msg = document.getElementById("senderDesc").value + "\n\n";
+        if(senderImageURL) msg += "[Sender Image Attached]\n";
+        msg += `${v.name} | EPIC:${v.voterID} | Address:${v.address} | Part:${v.partNo} | Status:${v.status}`;
+        const url = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+        window.open(url,"_blank");
       };
 
-      // Upload to Firebase
-      set(ref(db, "voters/" + voterID), data)
-      .then(() => {
-        count++;
-        msg.innerHTML = `✔ Uploaded: ${count} records`;
-        msg.style.color = "green";
-      })
-      .catch(err => {
-        msg.innerHTML = "❌ Firebase Error: " + err;
-        msg.style.color = "red";
-      });
-
+      // Print individual voter
+      div.querySelector(".printBtn").onclick = ()=>{
+        let html = `<h2>Sender Info</h2>`;
+        if(senderImageURL) html += `<img src="${senderImageURL}" style="width:50px;height:50px;border-radius:50%;"><br>`;
+        html += `<pre>${document.getElementById("senderDesc").value}</pre><hr>`;
+        html += `<p>${v.name} | EPIC:${v.voterID} | Address:${v.address} | Part:${v.partNo} | Status:${v.status}</p>`;
+        const w = window.open();
+        w.document.write(html);
+        w.print();
+        w.close();
+      };
     });
-  };
-
-  reader.readAsText(file);
+  });
 }
-</script>
 
+// Search
+document.getElementById("searchVoter").addEventListener("input", renderVoters);
+
+// Manual add
+document.getElementById("addVoterManual").onclick = ()=>{
+  const name = document.getElementById("voterName").value.trim();
+  const epic = document.getElementById("voterEPIC").value.trim();
+  const address = document.getElementById("voterAddress").value.trim();
+  const partNo = document.getElementById("voterPart").value.trim();
+  if(!name || !epic) return alert("Name & EPIC required!");
+  const key = epic.replace(/\W/g,"_");
+  set(dbRef(db,"voters/"+key), { name, voterID:epic, address, partNo, status:"anti" });
+  alert("Voter added!");
+  renderVoters();
+};
+
+// CSV upload
+document.getElementById("uploadCSV").onclick = ()=>{
+  let link = document.getElementById("csvLink").value.trim();
+  if(!link) return alert("Enter CSV link!");
+  if(link.includes("docs.google.com/spreadsheets/d/")){
+    const id = link.match(/\/d\/([a-zA-Z0-9-_]+)/)[1];
+    link = `https://docs.google.com/spreadsheets/d/${id}/export?format=csv`;
+  }
+  fetch(link).then(r=>r.text()).then(csvText=>{
+    Papa.parse(csvText,{header:true,skipEmptyLines:true,complete:results=>{
+      results.data.forEach(row=>{
+        if(!row.EPIC) return;
+        const key=row.EPIC.replace(/\W/g,"_");
+        set(dbRef(db,"voters/"+key),{
+          name: row.Name || "",
+          voterID: row.EPIC,
+          address: row.Address || "",
+          partNo: row["Part No"] || "",
+          mobile: row.Mobile || "",
+          age: row.Age || "",
+          booth: row.Booth || "",
+          status:"anti"
+        });
+      });
+      alert("CSV uploaded!");
+      renderVoters();
+    }});
+  }).catch(err=>{ console.error(err); alert("CSV fetch failed!"); });
+};
+</script>
 </body>
 </html>
