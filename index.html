@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="hi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ward 20 — Login</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .btn-3d {
+      box-shadow:0 5px 0 rgba(0,0,0,0.25);
+      transition:0.1s;
+    }
+    .btn-3d:hover {
+      transform:translateY(-2px);
+    }
+    .btn-3d:active {
+      transform:translateY(3px);
+      box-shadow:0 2px 0 rgba(0,0,0,0.25);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-400 via-pink-400 to-yellow-300 relative p-4">
+
+  <!-- Google Login Button Top Right -->
+  <button id="loginBtn" class="absolute top-5 right-5 bg-white text-gray-900 px-4 py-2 rounded-xl font-semibold btn-3d flex items-center gap-2 hover:scale-105 transition-transform">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" class="w-5 h-5" />
+    Login
+  </button>
+
+  <!-- Center Image + Text -->
+  <div class="flex flex-col items-center">
+    <img src="https://i.postimg.cc/8kysF6DQ/Numeral-20-with-Bold-Ward.png" class="w-56 drop-shadow-2xl mb-4" />
+    <p class="text-white text-lg font-semibold drop-shadow-md">Ward No. 20 — Voter Portal</p>
+  </div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getAuth, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+  // Firebase config
+  const firebaseConfig = {
+    apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
+    authDomain: "voter-25c94.firebaseapp.com",
+    databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
+    projectId: "voter-25c94",
+    storageBucket: "voter-25c94.firebasestorage.app",
+    messagingSenderId: "297773534400",
+    appId: "1:297773534400:web:3722c487b8c83e9b787125"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const provider = new GoogleAuthProvider();
+
+  // Login Button click
+  const loginBtn = document.getElementById('loginBtn');
+  loginBtn.addEventListener('click', async () => {
+    try {
+      await signInWithPopup(auth, provider);
+      // Redirect to panel.html after login
+      window.location.href = './panel.html';
+    } catch (e) {
+      alert('Login failed');
+      console.error(e);
+    }
+  });
+</script>
+
+</body>
+</html>
