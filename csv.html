@@ -39,6 +39,14 @@ tr:hover { background-color: #f1f1f1; cursor:pointer; }
 
   <h1 class="text-2xl font-bold text-blue-700 text-center mb-4">Voter Management Panel</h1>
 
+  <!-- Search box (सबसे ऊपर) -->
+  <div class="bg-white p-4 rounded shadow mb-4">
+    <input type="text" id="searchVoter" placeholder="Search by Name, EPIC, Address, Part No..." class="border p-2 w-full">
+  </div>
+
+  <!-- Voter List (scrollable table) -->
+  <div id="voterList" class="mt-4" style="max-height:400px; overflow-y:auto;"></div>
+
   <!-- Sender Info -->
   <div class="bg-white p-4 rounded shadow mb-4">
     <h2 class="text-xl font-bold mb-2 text-blue-700">Sender Info</h2>
@@ -48,12 +56,7 @@ tr:hover { background-color: #f1f1f1; cursor:pointer; }
     <img id="senderImgPreview" src="" class="img-sender hidden">
   </div>
 
-  <!-- Search -->
-  <div class="bg-white p-4 rounded shadow mb-4">
-    <input type="text" id="searchVoter" placeholder="Search by Name, EPIC, Address, Part No..." class="border p-2 w-full">
-  </div>
-
-  <!-- Manual Add -->
+  <!-- Manual Add (सबसे नीचे) -->
   <div class="bg-white p-4 rounded shadow mb-4">
     <h2 class="text-xl font-bold mb-2 text-blue-700">Add Voter Manually</h2>
     <input type="text" id="voterName" placeholder="Name" class="border p-2 w-full mb-2">
@@ -62,9 +65,6 @@ tr:hover { background-color: #f1f1f1; cursor:pointer; }
     <input type="text" id="voterPart" placeholder="Part No" class="border p-2 w-full mb-2">
     <button id="addVoterManual" class="btn btn-green w-full">Add Voter</button>
   </div>
-
-  <!-- Voter List -->
-  <div id="voterList" class="mt-4"></div>
 
 </div>
 
@@ -106,7 +106,6 @@ document.getElementById("googleLoginBtn").onclick = ()=>{
   }).catch(err=>{ console.error(err); alert("Login failed!"); });
 };
 
-// Persist login
 auth.onAuthStateChanged(user => {
   if(user){
     const emailKey = user.email.replace(/\./g,"_");
@@ -116,9 +115,7 @@ auth.onAuthStateChanged(user => {
       document.getElementById("loginDiv").classList.add("hidden");
       document.getElementById("panelDiv").classList.remove("hidden");
       renderVoters();
-    } else {
-      auth.signOut();
-    }
+    } else { auth.signOut(); }
   } else {
     document.getElementById("loginDiv").classList.remove("hidden");
     document.getElementById("panelDiv").classList.add("hidden");
@@ -138,13 +135,12 @@ document.getElementById("uploadSenderImage").onclick = ()=>{
   reader.readAsDataURL(file);
 };
 
-// Render voters as table
+// Render voters as scrollable table
 function renderVoters(){
   onValue(dbRef(db,"voters"), snap=>{
     const query = document.getElementById("searchVoter").value.trim().toLowerCase();
     voterListDiv.innerHTML='';
 
-    // Table Header
     const table = document.createElement("table");
     table.innerHTML = `
       <thead>
