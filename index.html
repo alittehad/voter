@@ -3,91 +3,126 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Ward No. 20 — Login</title>
+  <title>Ward 20 — Login</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    .btn-3d {
-      box-shadow: 0 6px 0 rgba(0,0,0,0.3);
-      transition: all 0.1s;
-    }
-    .btn-3d:active {
-      transform: translateY(4px);
-      box-shadow: 0 2px 0 rgba(0,0,0,0.3);
-    }
+    /* small 3D button effect */
+    .btn-3d{box-shadow:0 6px 0 rgba(0,0,0,0.25);transition:transform .08s,box-shadow .08s}
+    .btn-3d:active{transform:translateY(4px);box-shadow:0 2px 0 rgba(0,0,0,0.25)}
   </style>
 </head>
-<body class="bg-gray-900 min-h-screen flex items-center justify-center relative">
-  <!-- LOGIN BUTTON TOP RIGHT -->
-  <button id="loginBtn" class="absolute top-5 right-5 bg-blue-500 text-white px-5 py-2 rounded-xl btn-3d text-lg font-bold">
-    Google Login
-  </button>
+<body class="bg-gradient-to-br from-pink-400 via-yellow-300 to-indigo-500 min-h-screen flex items-center justify-center">
+  <!-- INDEX PAGE CONTENT (this file: index.html) -->
+  <main id="indexPage" class="w-full max-w-md mx-4 bg-white/30 backdrop-blur-md rounded-2xl p-6 shadow-xl text-center">
+    <!-- Top bar with Google login -->
+    <div class="flex justify-end">
+      <button id="loginBtn" class="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white/90 text-gray-800 font-semibold btn-3d">
+        <!-- simple Google icon (svg) -->
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 533.5 544.3" class="w-5 h-5" aria-hidden>
+          <path fill="#4285F4" d="M533.5 278.4c0-18.5-1.5-36.3-4.3-53.6H272v101.5h147.1c-6.4 34.6-25.8 64-55.1 83.6v69.3h88.9c52-47.9 82.6-118.6 82.6-200.8z"/>
+        </svg>
+        Google Login
+      </button>
+    </div>
 
-  <!-- CENTER IMAGE -->
-  <img src="https://i.postimg.cc/8kysF6DQ/Numeral-20-with-Bold-Ward.png" class="w-72 mx-auto" />
+    <!-- Center image -->
+    <div class="my-6 flex justify-center">
+      <img src="https://i.postimg.cc/8kysF6DQ/Numeral-20-with-Bold-Ward.png" alt="Ward 20" class="w-48 max-w-full h-auto object-contain" />
+    </div>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    <p class="text-sm text-gray-900/80">Ward No. 20 — Voter Portal</p>
+  </main>
 
-const firebaseConfig = {
-  apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
-  authDomain: "voter-25c94.firebaseapp.com",
-  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
-  projectId: "voter-25c94",
-  storageBucket: "voter-25c94.firebasestorage.app",
-  messagingSenderId: "297773534400",
-  appId: "1:297773534400:web:3722c487b8c83e9b787125"
-};
+  <!-- Firebase + Auth script and redirect logic -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const provider = new GoogleAuthProvider();
+    const firebaseConfig = {
+      apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
+      authDomain: "voter-25c94.firebaseapp.com",
+      databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
+      projectId: "voter-25c94",
+      storageBucket: "voter-25c94.firebasestorage.app",
+      messagingSenderId: "297773534400",
+      appId: "1:297773534400:web:3722c487b8c83e9b787125"
+    };
 
-// LOGIN ACTION
-loginBtn.addEventListener('click', () => {
-  signInWithPopup(auth, provider)
-    .then(() => {
-      window.location.href = "panel.html";
-    })
-    .catch((error) => console.error(error));
-});
-</script>
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const provider = new GoogleAuthProvider();
+
+    const loginBtn = document.getElementById('loginBtn');
+    loginBtn.addEventListener('click', async () => {
+      try {
+        await signInWithPopup(auth, provider);
+        // successful login -> redirect to panel page
+        window.location.href = 'panel.html';
+      } catch (err) {
+        console.error('Login failed', err);
+        alert('Login failed. Check console for details.');
+      }
+    });
+  </script>
+
 </body>
 </html>
 
 
-<!-- ========================= PANEL PAGE ========================= -->
-<!-- Save this as panel.html -->
+<!-- ======================= panel.html (save as a separate file) ======================= -->
 <!doctype html>
 <html lang="hi">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Voter Panel — Ward No. 20</title>
+  <title>Voter Panel — Ward 20</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    .btn-3d {
-      box-shadow: 0 6px 0 rgba(0,0,0,0.3);
-      transition: transform 0.1s, box-shadow 0.1s;
-    }
-    .btn-3d:active {
-      transform: translateY(4px);
-      box-shadow: 0 2px 0 rgba(0,0,0,0.3);
-    }
+    .btn-3d{box-shadow:0 6px 0 rgba(0,0,0,0.25);transition:transform .08s,box-shadow .08s}
+    .btn-3d:active{transform:translateY(4px);box-shadow:0 2px 0 rgba(0,0,0,0.25)}
   </style>
 </head>
-<body class="bg-gray-800 text-white min-h-screen flex flex-col items-center pt-10">
-  <h1 class="text-3xl font-bold mb-6">Voter Panel — Ward No. 20</h1>
+<body class="bg-gray-50 min-h-screen flex flex-col items-center p-4">
+  <header class="w-full max-w-md rounded-2xl bg-white shadow p-4 text-center">
+    <h1 class="text-lg font-bold">Voter Panel — Ward No. 20</h1>
+  </header>
 
-  <!-- CENTER IMAGE -->
-  <img src="https://i.postimg.cc/qRYkB8VT/khatik-imase.jpg" class="w-64 rounded-xl shadow-xl mb-10" />
+  <main class="w-full max-w-md mt-6 bg-white rounded-2xl shadow p-4 text-center">
+    <!-- top image -->
+    <div class="flex justify-center">
+      <img src="https://i.postimg.cc/qRYkB8VT/khatik-imase.jpg" alt="voter" class="w-36 h-36 object-cover rounded-full shadow-lg" />
+    </div>
 
-  <!-- 4 BUTTONS -->
-  <div class="grid grid-cols-1 gap-5 w-72 text-center">
-    <button class="btn-3d bg-red-500 text-white py-3 rounded-2xl text-xl font-bold">Button 1</button>
-    <button class="btn-3d bg-green-500 text-white py-3 rounded-2xl text-xl font-bold">Button 2</button>
-    <button class="btn-3d bg-blue-500 text-white py-3 rounded-2xl text-xl font-bold">Button 3</button>
-    <button class="btn-3d bg-yellow-500 text-white py-3 rounded-2xl text-xl font-bold">Button 4</button>
-  </div>
+    <!-- four small 3D buttons below image -->
+    <div class="mt-6 grid grid-cols-2 gap-4">
+      <button class="btn-3d px-4 py-2 rounded-xl text-sm font-semibold bg-red-500 text-white" onclick="handleClick(1)">Register</button>
+      <button class="btn-3d px-4 py-2 rounded-xl text-sm font-semibold bg-green-500 text-white" onclick="handleClick(2)">Voter List</button>
+      <button class="btn-3d px-4 py-2 rounded-xl text-sm font-semibold bg-blue-500 text-white" onclick="handleClick(3)">Report</button>
+      <button class="btn-3d px-4 py-2 rounded-xl text-sm font-semibold bg-yellow-500 text-white" onclick="handleClick(4)">Contact</button>
+    </div>
+
+  </main>
+
+  <script>
+    // placeholder click handler - replace URLs later
+    function handleClick(n){
+      // do the action you want; currently navigates to placeholder
+      const placeholders = {
+        1: '#register',
+        2: '#voter-list',
+        3: '#report',
+        4: '#contact'
+      };
+      window.location.href = placeholders[n];
+    }
+
+    // mobile-friendly: ensure buttons are tappable size
+    (function ensureTapSize(){
+      const buttons = document.querySelectorAll('button');
+      buttons.forEach(b=>{
+        b.style.minWidth = '110px';
+      });
+    })();
+  </script>
 </body>
 </html>
