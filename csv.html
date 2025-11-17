@@ -23,7 +23,7 @@
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
 
-  // 🔹 Clean key for Firebase
+  // 🔹 Firebase-safe key
   function cleanKey(key){
     return key.trim().replace(/\./g,"_").replace(/#/g,"_")
               .replace(/\$/g,"_").replace(/\//g,"_")
@@ -33,7 +33,7 @@
 
   // 🔹 Upload function
   window.uploadSheet = function(){
-    const sheetId = "1ShY4bizpMAkm4NATq-jQoxWvz4WUS2atEKdig9njq_k"; // Your Sheet ID
+    const sheetId = "1ShY4bizpMAkm4NATq-jQoxWvz4WUS2atEKdig9njq_k"; // आपकी Sheet ID
     const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv`;
 
     fetch(csvUrl)
@@ -47,7 +47,7 @@
             let count = 0;
 
             results.data.forEach(row => {
-              if(!row.EPIC) return; // skip if no EPIC
+              if(!row.EPIC) return; // EPIC missing skip
               const key = cleanKey(row.EPIC);
               const data = {
                 name: row.Name || "",
@@ -82,7 +82,7 @@
 
             // Upload to Firebase
             set(ref(db, "/"), fullData)
-              .then(()=>{
+              .then(()=> {
                 document.getElementById("msg").innerText = `✔ Uploaded ${count} voters successfully`;
                 document.getElementById("msg").style.color = "green";
               })
