@@ -19,26 +19,19 @@
 </head>
 <body class="bg-gray-100 p-4">
 
-<script>
-// --- AUTH CHECK ---
-const role = localStorage.getItem("role");
-if (role !== "member") {
-  alert("❌ Unauthorized Access — Member Login Required");
-  window.location.href = "index.html";
-}
-</script>
+<h1 class="text-2xl font-bold mb-4">Member Survey - Voter Details</h1>
 
-<h1 class="text-2xl font-bold mb-4">Member Survey</h1>
-
-<form id="surveyForm" class="flex flex-col">
-  <input type="text" id="memberName" placeholder="Name" required class="border p-1 my-1">
-  <input type="text" id="memberMobile" placeholder="Mobile" required class="border p-1 my-1">
-  <input type="text" id="memberWard" placeholder="Ward No" required class="border p-1 my-1">
-  <input type="file" id="memberPoster" required class="border p-1 my-1">
+<form id="surveyForm" class="flex flex-col max-w-md">
+  <input type="text" id="voterName" placeholder="Voter Name" required class="border p-2 my-1">
+  <input type="text" id="voterID" placeholder="Voter ID / EPIC" required class="border p-2 my-1">
+  <input type="text" id="voterAddress" placeholder="Address" required class="border p-2 my-1">
+  <input type="text" id="memberWard" placeholder="Ward No" required class="border p-2 my-1">
+  <input type="file" id="memberPoster" required class="border p-2 my-1">
   <button type="submit" class="btn-3d my-2">Submit Survey</button>
 </form>
 
-<div id="memberCount" class="border p-2 rounded max-h-96 mt-4 overflow-auto bg-white shadow"></div>
+<h2 class="text-xl font-bold mt-6 mb-2">Submitted Voters</h2>
+<div id="memberCount" class="border p-2 rounded max-h-96 overflow-auto"></div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -56,71 +49,62 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
+const countDiv = document.getElementById("memberCount");
 
-// ---------- SURVEY FORM ----------
+// Survey Form Submit
 document.getElementById("surveyForm").addEventListener("submit", async e=>{
   e.preventDefault();
 
-  const name=document.getElementById("memberName").value;
-  const mobile=document.getElementById("memberMobile").value;
-  const ward=document.getElementById("memberWard").value;
-  const poster=document.getElementById("memberPoster").files[0];
+  const name = document.getElementById("voterName").value.trim();
+  const voterID = document.getElementById("voterID").value.trim();
+  const address = document.getElementById("voterAddress").value.trim();
+  const ward = document.getElementById("memberWard").value.trim();
+  const poster = document.getElementById("memberPoster").files[0];
+  if(!poster) return alert("Upload poster image!");
 
-  if(!poster) return alert("Poster upload required");
-
-  // --- Upload to IMGBB ---
-  const formData=new FormData();
+  // Upload poster to imgbb
+  const formData = new FormData();
   formData.append("image", poster);
+  const imgbbKey = "8ece3c1f959f2426083eee1699086c71";
 
-  const imgbbKey="8ece3c1f959f2426083eee1699086c71";
+  try {
+    const res = await fetch(`https://api.imgbb.com/1/upload?key=${imgbbKey}`, { method:"POST", body:formData });
+    const data = await res.json();
+    if(!data.success) return alert("❌ Poster upload failed!");
 
-  const res = await fetch(`https://api.imgbb.com/1/upload?key=${imgbbKey}`, {
-    method:"POST",
-    body:formData
-  });
+    push(dbRef(db,"memberSurveys"), {
+      voterName: name,
+      voterID: voterID,
+      address: address,
+      ward: ward,
+      poster: data.data.display_url,
+      timestamp: Date.now()
+    });
 
-  const data = await res.json();
+    alert("Survey submitted successfully!");
+    e.target.reset();
 
-  if(!data.success) {
-    alert("❌ Poster upload failed!");
-    return;
+  } catch(err) {
+    console.error(err);
+    alert("❌ Something went wrong while uploading poster!");
   }
-
-  const posterURL = data.data.display_url;
-
-  // Save to Firebase
-  push(dbRef(db,"memberSurveys"), {
-    name,
-    mobile,
-    ward,
-    poster: posterURL,
-    timestamp: Date.now()
-  });
-
-  alert("✅ Survey submitted!");
-  e.target.reset();
 });
 
-// ---------- SHOW SURVEY COUNTS ----------
-const countDiv=document.getElementById("memberCount");
-
+// Display Submitted Voters
 onValue(dbRef(db,"memberSurveys"), snapshot=>{
-  countDiv.innerHTML="";
-  const counts={};
-
+  countDiv.innerHTML = "";
   snapshot.forEach(snap=>{
-    const m=snap.val().name;
-    counts[m]=(counts[m]||0)+1;
+    const v = snap.val();
+    const div = document.createElement("div");
+    div.className = "border p-2 my-1 rounded bg-white";
+    div.innerHTML = `
+      <strong>${v.voterName}</strong> | EPIC: ${v.voterID} | Ward: ${v.ward} <br>
+      Address: ${v.address} <br>
+      <img src="${v.poster}" alt="Poster" style="width:100px;height:auto;margin-top:4px;border-radius:4px;">
+    `;
+    countDiv.appendChild(div);
   });
-
-  for(let m in counts){
-    const d=document.createElement("div");
-    d.className="p-2 border-b";
-    d.innerText=`${m} → ${counts[m]} surveys`;
-    countDiv.appendChild(d);
-  }
 });
 </script>
-
 </body>
 </html>
