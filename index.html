@@ -1,25 +1,128 @@
-<body>
-  <!-- Google Login -->
-  <button id="loginBtn">Login with Google</button>
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Voter Panel - Ward 20</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(to bottom right, #4f46e5, #ec4899, #facc15);
+      margin: 0;
+      padding: 0.5rem;
+    }
 
-  <!-- Center Image -->
-  <img src="https://i.postimg.cc/8kysF6DQ/Numeral-20-with-Bold-Ward.png" />
-  
+    img.panel-img {
+      max-width: 90%;
+      height: auto;
+      border-radius: 1rem;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+      margin-bottom: 2rem;
+    }
+
+    .btn-3d {
+      padding: 0.75rem 1.5rem;
+      margin: 0.5rem;
+      border: none;
+      border-radius: 0.75rem;
+      font-weight: bold;
+      color: white;
+      cursor: pointer;
+      transition: 0.1s;
+      box-shadow: 0 5px 0 rgba(0,0,0,0.25);
+    }
+    .btn-3d:hover {
+      transform: translateY(-2px);
+    }
+    .btn-3d:active {
+      transform: translateY(3px);
+      box-shadow: 0 2px 0 rgba(0,0,0,0.25);
+    }
+
+    /* Different button colors */
+    .btn1 { background-color: #3b82f6; }   /* Blue */
+    .btn2 { background-color: #ef4444; }   /* Red */
+    .btn3 { background-color: #f59e0b; }   /* Yellow */
+    .btn4 { background-color: #10b981; }   /* Green */
+
+    /* Login button on top */
+    .login-btn {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      padding: 0.5rem 1rem;
+      font-weight: bold;
+      border-radius: 0.75rem;
+      background-color: white;
+      color: #1f2937;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      box-shadow: 0 5px 0 rgba(0,0,0,0.25);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Login Button -->
+  <button id="loginBtn" class="login-btn">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" style="width:20px;height:20px;">
+    Login
+  </button>
+
+  <!-- Panel Image -->
+  <img src="https://i.postimg.cc/qRYkB8VT/khatik-imase.jpg" class="panel-img" />
+
+  <!-- Buttons -->
+  <div class="flex flex-wrap justify-center">
+    <button class="btn-3d btn1">Button 1</button>
+    <button class="btn-3d btn2">Button 2</button>
+    <button class="btn-3d btn3">Button 3</button>
+    <button class="btn-3d btn4">Button 4</button>
+  </div>
+
+  <!-- Firebase Auth Script -->
   <script type="module">
-    import { initializeApp } from "...";
-    import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "...";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
+      authDomain: "voter-25c94.firebaseapp.com",
+      databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
+      projectId: "voter-25c94",
+      storageBucket: "voter-25c94.firebasestorage.app",
+      messagingSenderId: "297773534400",
+      appId: "1:297773534400:web:3722c487b8c83e9b787125"
+    };
 
     const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
+    const auth = getAuth();
     const provider = new GoogleAuthProvider();
 
-    onAuthStateChanged(auth, user => {
-      if(user) window.location.href = 'panel.html';
+    // Login button click
+    const loginBtn = document.getElementById('loginBtn');
+    loginBtn.addEventListener('click', async () => {
+      try {
+        await signInWithPopup(auth, provider);
+        alert("Login Successful!");
+      } catch(e) {
+        alert("Login failed");
+        console.error(e);
+      }
     });
 
-    loginBtn.addEventListener('click', async ()=>{
-      await signInWithPopup(auth, provider);
-      window.location.href = 'panel.html';
+    // Redirect if not logged in
+    onAuthStateChanged(auth, user => {
+      if(!user) window.location.href = 'index.html';
     });
+
   </script>
+
 </body>
+</html>
