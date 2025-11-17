@@ -6,101 +6,98 @@
 <title>Upload Google Sheet to Firebase</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-// 🔑 Firebase Config
-const firebaseConfig = {
-  apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
-  authDomain: "voter-25c94.firebaseapp.com",
-  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
-  projectId: "voter-25c94",
-  storageBucket: "voter-25c94.firebasestorage.app",
-  messagingSenderId: "297773534400",
-  appId: "1:297773534400:web:3722c487b8c83e9b787125"
-};
+  // 🔑 Firebase Config
+  const firebaseConfig = {
+    apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
+    authDomain: "voter-25c94.firebaseapp.com",
+    databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
+    projectId: "voter-25c94",
+    storageBucket: "voter-25c94.firebasestorage.app",
+    messagingSenderId: "297773534400",
+    appId: "1:297773534400:web:3722c487b8c83e9b787125"
+  };
 
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
 
-// 🔹 Clean key for Firebase
-function cleanKey(key){
-  return key.trim().replace(/[.#$/\[\]\s]/g,"_");
-}
+  // 🔹 Clean key for Firebase
+  function cleanKey(key){
+    return key.trim().replace(/\./g,"_").replace(/#/g,"_")
+              .replace(/\$/g,"_").replace(/\//g,"_")
+              .replace(/\[/g,"_").replace(/\]/g,"_")
+              .replace(/\s+/g,"_");
+  }
 
-// 🔹 Upload Sheet Function
-window.uploadSheet = function(){
-  const sheetId = "1ShY4bizpMAkm4NATq-jQoxWvz4WUS2atEKdig9njq_k"; // Change to your Sheet ID
-  const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv`;
+  // 🔹 Upload function
+  window.uploadSheet = function(){
+    const sheetId = "1ShY4bizpMAkm4NATq-jQoxWvz4WUS2atEKdig9njq_k"; // Your Sheet ID
+    const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv`;
 
-  fetch(csvUrl)
-    .then(res => res.text())
-    .then(csvText => {
-      Papa.parse(csvText, {
-        header: true,
-        skipEmptyLines: true,
-        complete: results => {
+    fetch(csvUrl)
+      .then(res => res.text())
+      .then(csvText => {
+        Papa.parse(csvText, {
+          header: true,
+          skipEmptyLines: true,
+          complete: results => {
+            let votersData = {};
+            let count = 0;
 
-          let votersData = {};
-          let msgCounter = 0;
+            results.data.forEach(row => {
+              if(!row.EPIC) return; // skip if no EPIC
+              const key = cleanKey(row.EPIC);
+              const data = {
+                name: row.Name || "",
+                voterID: row.EPIC,
+                state: row.State || "",
+                district: row.District || "",
+                acNo: row["AC No"] || "",
+                partNo: row["Part No"] || "",
+                booth: row.Booth || "",
+                age: row.Age || "",
+                mobile: row.Mobile || "",
+                status: row.Status || "anti"
+              };
+              votersData[key] = data;
+              count++;
+            });
 
-          results.data.forEach(row => {
-            // Auto-mapping for EPIC / voterID column
-            const epic = row['EPIC'] || row['EpicID'] || row['VoterID'];
-            if(!epic) return; // skip if no EPIC
-
-            const key = cleanKey(epic);
-
-            const data = {
-              name: row['Name'] || row['Full Name'] || "",
-              voterID: epic,
-              state: row['State'] || "",
-              district: row['District'] || "",
-              acNo: row['AC No'] || row['AC'] || "",
-              partNo: row['Part No'] || row['Part'] || "",
-              booth: row['Booth'] || "",
-              age: row['Age'] || "",
-              mobile: row['Mobile'] || "",
-              status: row['Status'] || "anti"
+            // Full JSON structure
+            const fullData = {
+              voters: votersData,
+              admin: {
+                "ngogrant454@gmail_dot_com": { role:"admin", name:"Admin User" }
+              },
+              users: {
+                "zarafix3@gmail_dot_com": { role:"user", name:"Zara Fix" }
+              },
+              sender: {
+                description: "This is sender description",
+                image: ""
+              }
             };
 
-            votersData[key] = data;
-            msgCounter++;
-          });
-
-          // Full JSON structure
-          const fullData = {
-            voters: votersData,
-            admin: {
-              "ngogrant454@gmail_dot_com": { role:"admin", name:"Admin User" }
-            },
-            users: {
-              "zarafix3@gmail_dot_com": { role:"user", name:"Zara Fix" }
-            },
-            sender: {
-              description: "This is sender description",
-              image: ""
-            }
-          };
-
-          // Upload to Firebase (replace root)
-          set(ref(db, "/"), fullData)
-            .then(()=>{
-              document.getElementById("msg").innerText = `✔ Uploaded ${msgCounter} voters and full JSON structure`;
-              document.getElementById("msg").style.color = "green";
-            })
-            .catch(err=>{
-              document.getElementById("msg").innerText = "❌ Firebase Error: " + err;
-              document.getElementById("msg").style.color = "red";
-            });
-        }
+            // Upload to Firebase
+            set(ref(db, "/"), fullData)
+              .then(()=>{
+                document.getElementById("msg").innerText = `✔ Uploaded ${count} voters successfully`;
+                document.getElementById("msg").style.color = "green";
+              })
+              .catch(err=>{
+                document.getElementById("msg").innerText = "❌ Firebase Error: " + err;
+                document.getElementById("msg").style.color = "red";
+              });
+          }
+        });
+      })
+      .catch(err=>{
+        document.getElementById("msg").innerText = "❌ Fetch Error: " + err;
+        document.getElementById("msg").style.color = "red";
       });
-    })
-    .catch(err=>{
-      document.getElementById("msg").innerText = "❌ Fetch Error: " + err;
-      document.getElementById("msg").style.color = "red";
-    });
-}
+  }
 </script>
 </head>
 <body style="font-family:sans-serif; padding:20px; background:#eef2ff;">
