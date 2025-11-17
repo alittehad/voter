@@ -1,44 +1,22 @@
-<!doctype html>
-<html lang="hi">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Voter Panel — Ward 20</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    .btn-3d{
-      box-shadow:0 5px 0 rgba(0,0,0,0.25);
-      transition:0.1s;
-    }
-    .btn-3d:hover{
-      transform:translateY(-2px);
-    }
-    .btn-3d:active{
-      transform:translateY(3px);
-      box-shadow:0 2px 0 rgba(0,0,0,0.25);
-    }
-  </style>
-</head>
-<body class="bg-gradient-to-br from-blue-100 via-purple-100 to-pink-100 min-h-screen p-4 flex flex-col items-center">
+<body>
+  <!-- Panel Image -->
+  <img src="https://i.postimg.cc/qRYkB8VT/khatik-imase.jpg" />
 
-  <!-- Top Image -->
-  <img src="https://i.postimg.cc/qRYkB8VT/khatik-imase.jpg" class="w-40 h-40 object-cover rounded-full shadow-2xl mt-6" />
+  <!-- Buttons -->
+  <button>Button 1</button>
+  <button>Button 2</button>
+  <button>Button 3</button>
+  <button>Button 4</button>
 
-  <!-- Buttons below Image -->
-  <div class="grid grid-cols-2 gap-4 mt-8 w-full max-w-xs">
-    <button class="btn-3d bg-red-500 text-white py-2 rounded-xl font-semibold text-sm" onclick="go(1)">Button 1</button>
-    <button class="btn-3d bg-green-500 text-white py-2 rounded-xl font-semibold text-sm" onclick="go(2)">Button 2</button>
-    <button class="btn-3d bg-blue-500 text-white py-2 rounded-xl font-semibold text-sm" onclick="go(3)">Button 3</button>
-    <button class="btn-3d bg-yellow-500 text-white py-2 rounded-xl font-semibold text-sm" onclick="go(4)">Button 4</button>
-  </div>
+  <script type="module">
+    import { initializeApp } from "...";
+    import { getAuth, onAuthStateChanged } from "...";
 
-<script>
-  function go(n){
-    const links = { 1:'#', 2:'#', 3:'#', 4:'#' }; // Placeholder links
-    window.location.href = links[n];
-  }
-</script>
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth();
 
+    onAuthStateChanged(auth, user => {
+      if(!user) window.location.href = 'index.html';
+    });
+  </script>
 </body>
-</html>
-
