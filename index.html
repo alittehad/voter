@@ -1,46 +1,55 @@
 <!DOCTYPE html>
 <html lang="hi">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Voter Panel - Ward 20</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    body { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; margin:0; padding:0.5rem;
-           background: linear-gradient(to bottom right, #4f46e5, #ec4899, #facc15);}
-    img.panel-img { max-width:90%; height:auto; border-radius:1rem; box-shadow:0 8px 20px rgba(0,0,0,0.3); margin-bottom:2rem;}
-    .btn-3d { padding:0.75rem 1.5rem; margin:0.5rem; border:none; border-radius:0.75rem; font-weight:bold; color:white; cursor:pointer;
-              transition:0.1s; box-shadow:0 5px 0 rgba(0,0,0,0.25);}
-    .btn-3d:hover{transform:translateY(-2px);}
-    .btn-3d:active{transform:translateY(3px); box-shadow:0 2px 0 rgba(0,0,0,0.25);}
-    .btn1{background-color:#3b82f6;}
-    .btn2{background-color:#ef4444;}
-    .btn3{background-color:#f59e0b;}
-    .btn4{background-color:#10b981;}
-    .login-btn{position:absolute; top:1rem; right:1rem; padding:0.5rem 1rem; font-weight:bold; border-radius:0.75rem;
-               background-color:white; color:#1f2937; display:flex; align-items:center; gap:0.5rem; box-shadow:0 5px 0 rgba(0,0,0,0.25);}
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ward 20 — Login</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+body {
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  margin:0;
+  background: linear-gradient(to bottom right, #4f46e5, #ec4899, #facc15);
+  padding:1rem;
+}
+img.center-img {
+  max-width:90%;
+  height:auto;
+  margin-bottom:2rem;
+  border-radius:1rem;
+  box-shadow:0 8px 20px rgba(0,0,0,0.3);
+}
+.login-btn {
+  display:flex;
+  align-items:center;
+  gap:0.5rem;
+  padding:0.75rem 1.5rem;
+  background:white;
+  color:#1f2937;
+  font-weight:bold;
+  border-radius:0.75rem;
+  cursor:pointer;
+  box-shadow:0 5px 0 rgba(0,0,0,0.25);
+  transition:0.1s;
+}
+.login-btn:hover {transform:translateY(-2px);}
+.login-btn:active {transform:translateY(3px); box-shadow:0 2px 0 rgba(0,0,0,0.25);}
+</style>
 </head>
 <body>
 
-<div id="content" style="display:none;">
-  <!-- Login Button -->
-  <button id="loginBtn" class="login-btn">
-    <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" style="width:20px;height:20px;">
-    Login
-  </button>
+<!-- Center Image -->
+<img src="https://i.postimg.cc/8kysF6DQ/Numeral-20-with-Bold-Ward.png" class="center-img">
 
-  <!-- Panel Image -->
-  <img src="https://i.postimg.cc/qRYkB8VT/khatik-imase.jpg" class="panel-img" />
-
-  <!-- Buttons -->
-  <div class="flex flex-wrap justify-center">
-    <button class="btn-3d btn1">Button 1</button>
-    <button class="btn-3d btn2">Button 2</button>
-    <button class="btn-3d btn3">Button 3</button>
-    <button class="btn-3d btn4">Button 4</button>
-  </div>
-</div>
+<!-- Login Button -->
+<button id="loginBtn" class="login-btn">
+  <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" style="width:20px;height:20px;">
+  Login with Google
+</button>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -60,22 +69,18 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth();
 const provider = new GoogleAuthProvider();
 
-// Check login first
+// If already logged in → redirect to panel
 onAuthStateChanged(auth, user => {
-  if(!user){
-    // redirect to index.html if not logged in
-    window.location.href = 'index.html';
-  } else {
-    // Show panel content only after login
-    document.getElementById('content').style.display = 'block';
+  if(user){
+    window.location.replace('panel.html');
   }
 });
 
-// Login button
-const loginBtn = document.getElementById('loginBtn');
-loginBtn.addEventListener('click', async () => {
+// Login button click
+document.getElementById('loginBtn').addEventListener('click', async ()=>{
   try{
     await signInWithPopup(auth, provider);
+    window.location.replace('panel.html');
   }catch(e){
     alert("Login failed");
     console.error(e);
