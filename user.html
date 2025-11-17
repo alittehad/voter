@@ -189,26 +189,28 @@ function renderVoters(){
       div.querySelector(".antiBtn").onclick = ()=>{ set(dbRef(db,"voters/"+key), {...v,status:"anti"}); updateCardColor(div,"anti"); };
       div.querySelector(".deleteBtn").onclick = ()=>{ if(confirm(`Delete ${v.name}?`)) remove(dbRef(db,"voters/"+key)); };
 
-      // WhatsApp for individual voter
-      div.querySelector(".sendBtn").onclick = ()=>{
-        let msg = document.getElementById("senderDesc").value + "\n\n";
-        if(senderImageURL) msg += "[Sender Image Attached]\n";
-        msg += `${v.name} | EPIC:${v.voterID} | Address:${v.address} | Part:${v.partNo} | Status:${v.status}`;
-        const url = `https://wa.me/?text=${encodeURIComponent(msg)}`;
-        window.open(url,"_blank");
-      };
+     
+    // WhatsApp for individual voter
+div.querySelector(".sendBtn").onclick = ()=>{
+  let msg = document.getElementById("senderDesc").value + "\n\n";
+  if(senderImageURL) msg += "[Sender Image Attached]\n";
+  msg += `${v.name} | EPIC:${v.voterID} | Address:${v.address} | Part:${v.partNo}`;
+  const url = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+  window.open(url,"_blank");
+};
 
-      // Print individual voter
-      div.querySelector(".printBtn").onclick = ()=>{
-        let html = `<h2>Sender Info</h2>`;
-        if(senderImageURL) html += `<img src="${senderImageURL}" style="width:50px;height:50px;border-radius:50%;"><br>`;
-        html += `<pre>${document.getElementById("senderDesc").value}</pre><hr>`;
-        html += `<p>${v.name} | EPIC:${v.voterID} | Address:${v.address} | Part:${v.partNo} | Status:${v.status}</p>`;
-        const w = window.open();
-        w.document.write(html);
-        w.print();
-        w.close();
-      };
+// Print individual voter
+div.querySelector(".printBtn").onclick = ()=>{
+  let html = `<h2>Sender Info</h2>`;
+  if(senderImageURL) html += `<img src="${senderImageURL}" style="width:50px;height:50px;border-radius:50%;"><br>`;
+  html += `<pre>${document.getElementById("senderDesc").value}</pre><hr>`;
+  html += `<p>${v.name} | EPIC:${v.voterID} | Address:${v.address} | Part:${v.partNo}</p>`;
+  const w = window.open();
+  w.document.write(html);
+  w.print();
+  w.close();
+};
+
     });
   });
 }
