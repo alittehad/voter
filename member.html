@@ -19,7 +19,17 @@
 </head>
 <body class="bg-gray-100 p-4">
 
+<script>
+// --- AUTH CHECK ---
+const role = localStorage.getItem("role");
+if (role !== "member") {
+  alert("❌ Unauthorized Access — Member Login Required");
+  window.location.href = "index.html";
+}
+</script>
+
 <h1 class="text-2xl font-bold mb-4">Member Survey</h1>
+
 <form id="surveyForm" class="flex flex-col">
   <input type="text" id="memberName" placeholder="Name" required class="border p-1 my-1">
   <input type="text" id="memberMobile" placeholder="Mobile" required class="border p-1 my-1">
@@ -28,7 +38,7 @@
   <button type="submit" class="btn-3d my-2">Submit Survey</button>
 </form>
 
-<div id="memberCount" class="border p-2 rounded max-h-96 mt-4 overflow-auto"></div>
+<div id="memberCount" class="border p-2 rounded max-h-96 mt-4 overflow-auto bg-white shadow"></div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -47,42 +57,70 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// Survey Form
+// ---------- SURVEY FORM ----------
 document.getElementById("surveyForm").addEventListener("submit", async e=>{
   e.preventDefault();
+
   const name=document.getElementById("memberName").value;
   const mobile=document.getElementById("memberMobile").value;
   const ward=document.getElementById("memberWard").value;
   const poster=document.getElementById("memberPoster").files[0];
-  if(!poster) return alert("Upload poster");
 
+  if(!poster) return alert("Poster upload required");
+
+  // --- Upload to IMGBB ---
   const formData=new FormData();
   formData.append("image", poster);
+
   const imgbbKey="8ece3c1f959f2426083eee1699086c71";
 
-  const res = await fetch(`https://api.imgbb.com/1/upload?key=${imgbbKey}`, {method:"POST", body:formData});
+  const res = await fetch(`https://api.imgbb.com/1/upload?key=${imgbbKey}`, {
+    method:"POST",
+    body:formData
+  });
+
   const data = await res.json();
 
-  push(dbRef(db,"memberSurveys"), {name,mobile,ward,poster:data.data.display_url, timestamp:Date.now()});
-  alert("Survey submitted!");
+  if(!data.success) {
+    alert("❌ Poster upload failed!");
+    return;
+  }
+
+  const posterURL = data.data.display_url;
+
+  // Save to Firebase
+  push(dbRef(db,"memberSurveys"), {
+    name,
+    mobile,
+    ward,
+    poster: posterURL,
+    timestamp: Date.now()
+  });
+
+  alert("✅ Survey submitted!");
   e.target.reset();
 });
 
-// Load Survey Counts
+// ---------- SHOW SURVEY COUNTS ----------
 const countDiv=document.getElementById("memberCount");
+
 onValue(dbRef(db,"memberSurveys"), snapshot=>{
   countDiv.innerHTML="";
   const counts={};
+
   snapshot.forEach(snap=>{
     const m=snap.val().name;
     counts[m]=(counts[m]||0)+1;
   });
+
   for(let m in counts){
     const d=document.createElement("div");
-    d.innerText=`${m} -> ${counts[m]} surveys`;
+    d.className="p-2 border-b";
+    d.innerText=`${m} → ${counts[m]} surveys`;
     countDiv.appendChild(d);
   }
 });
 </script>
+
 </body>
 </html>
