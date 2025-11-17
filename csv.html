@@ -1,35 +1,52 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CSV Upload</title>
-
+<title>Upload CSV to Firebase</title>
 <script src="https://cdn.tailwindcss.com"></script>
 
+<style>
+body {
+  background: #f3f4f6;
+  padding: 20px;
+  font-family: sans-serif;
+}
+.box {
+  background:white;
+  padding:20px;
+  border-radius:10px;
+  max-width:450px;
+  margin:auto;
+  box-shadow:0 4px 10px rgba(0,0,0,0.1);
+}
+</style>
 </head>
-<body class="p-4">
 
-<h2 class="text-xl font-bold mb-4">📌 GOOGLE SHEET CSV IMPORT</h2>
+<body>
 
-<input 
-  type="text" 
-  id="csvUrl"
-  class="border p-2 w-full rounded"
-  placeholder="Google Sheet CSV Link Paste करें" 
-  value="https://docs.google.com/spreadsheets/d/e/2PACX-1vQ9fannLfFx7OH9_l8kmBEktXiJ_kzPQxA0uUmO8SoPV0tgYFUAfuCdanjWYlVQAg/pub?output=csv"
-/>
+<div class="box">
+  <h2 class="text-xl font-bold mb-4 text-center">📤 Upload CSV to Firebase</h2>
 
-<button onclick="uploadCSV()" class="mt-3 bg-blue-600 text-white px-4 py-2 rounded">
-  🚀 Upload CSV to Firebase
-</button>
+  <input id="csvFile" type="file" accept=".csv"
+    class="border p-2 w-full rounded mb-3">
 
-<p id="status" class="mt-4 font-semibold"></p>
+  <button onclick="uploadCSV()"
+    class="bg-blue-600 text-white p-2 w-full rounded font-bold">
+    Upload CSV
+  </button>
 
+  <p id="msg" class="mt-4 text-center font-bold"></p>
+</div>
+
+
+
+<!-- Firebase -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
+// Your Firebase Config
 const firebaseConfig = {
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
   authDomain: "voter-25c94.firebaseapp.com",
@@ -44,60 +61,78 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
 
-// CSV → JSON Converter
-function csvToJson(csv) {
-  const lines = csv.split("\n");
-  const headers = lines[0].split(",");
-
-  let result = {};
-
-  for (let i = 1; i < lines.length; i++) {
-    const data = lines[i].split(",");
-
-    if (!data[0]) continue;
-
-    const voterID = data[1]?.trim(); // second column = voterID (EPIC number)
-
-    result[voterID] = {
-      name: data[0]?.trim(),
-      voterID: voterID,
-      state: data[2]?.trim(),
-      district: data[3]?.trim(),
-      acNo: data[4]?.trim(),
-      partNo: data[5]?.trim(),
-      booth: data[6]?.trim(),
-      age: data[7]?.trim(),
-      mobile: data[8]?.trim(),
-      status: data[9]?.trim()
-    };
-  }
-
-  return result;
+// 🔥 Clean Key Function — Firebase Safe Key
+function cleanKey(key){
+  return key
+    .trim()
+    .replace(/\./g, "_")
+    .replace(/#/g, "_")
+    .replace(/\$/g, "_")
+    .replace(/\//g, "_")
+    .replace(/\[/g, "_")
+    .replace(/\]/g, "_")
+    .replace(/\s+/g, "_"); // space → underscore
 }
 
 
-// MAIN UPLOAD FUNCTION
-window.uploadCSV = async function () {
-  const url = document.getElementById("csvUrl").value.trim();
-  const status = document.getElementById("status");
+// 🔥 MAIN Upload Function
+window.uploadCSV = function () {
+  let file = document.getElementById("csvFile").files[0];
+  let msg = document.getElementById("msg");
 
-  status.innerText = "⏳ Uploading... Please wait";
-
-  try {
-    const response = await fetch(url);
-    const csvText = await response.text();
-
-    const votersData = csvToJson(csvText);
-
-    await set(ref(db, "voters"), votersData);
-
-    status.innerText = "✅ CSV Successfully Uploaded to Firebase!";
-  } 
-  catch (error) {
-    status.innerText = "❌ Error: " + error;
+  if(!file){
+    msg.innerHTML = "❌ Please select a CSV file";
+    msg.style.color = "red";
+    return;
   }
-}
 
+  let reader = new FileReader();
+  reader.onload = function(event){
+    let lines = event.target.result.split("\n");
+
+    let count = 0;
+
+    lines.forEach((line, index) => {
+      if(index === 0) return; // skip header row
+      if(!line.trim()) return; // skip blank line
+
+      let row = line.split(",");
+
+      // CSV Columns → modify according to your sheet:
+      let name   = row[0];
+      let voterID = cleanKey(row[1]);
+      let state  = row[2];
+      let district = row[3];
+      let acNo   = row[4];
+      let partNo = row[5];
+      let booth  = row[6];
+      let age    = row[7];
+      let mobile = row[8];
+      let status = row[9];
+
+      if(!voterID) return;  // skip empty keys
+
+      let data = {
+        name, voterID, state, district, acNo, partNo, booth, age, mobile, status
+      };
+
+      // Upload to Firebase
+      set(ref(db, "voters/" + voterID), data)
+      .then(() => {
+        count++;
+        msg.innerHTML = `✔ Uploaded: ${count} records`;
+        msg.style.color = "green";
+      })
+      .catch(err => {
+        msg.innerHTML = "❌ Firebase Error: " + err;
+        msg.style.color = "red";
+      });
+
+    });
+  };
+
+  reader.readAsText(file);
+}
 </script>
 
 </body>
