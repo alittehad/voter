@@ -1,28 +1,93 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="hi">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ward 20 Home</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<style>
-.btn-3d { 
-  background: linear-gradient(145deg,#4f46e5,#6366f1); 
-  color:white; font-weight:bold; padding:.7rem 1.5rem; 
-  border-radius:.5rem; box-shadow:4px 4px 6px #333,-4px -4px 6px #777; 
-  cursor:pointer; transition: all .2s; font-size:1.1rem;
-}
-.btn-3d:hover{
-  box-shadow: inset 4px 4px 6px #333,inset -4px -4px 6px #777;
-}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ward No. 20 — Login</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .btn-3d {
+      box-shadow: 0 6px 0 rgba(0,0,0,0.3);
+      transition: all 0.1s;
+    }
+    .btn-3d:active {
+      transform: translateY(4px);
+      box-shadow: 0 2px 0 rgba(0,0,0,0.3);
+    }
+  </style>
 </head>
-<body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen p-4">
-<img src="https://i.postimg.cc/htFMsTSZ/Numeral-20-with-Bold-Ward.png" class="h-24 w-24 mb-4 rounded-full shadow-lg cursor-pointer">
-<h1 class="text-2xl font-bold mb-6">Welcome to Ward 20 Voter App</h1>
+<body class="bg-gray-900 min-h-screen flex items-center justify-center relative">
+  <!-- LOGIN BUTTON TOP RIGHT -->
+  <button id="loginBtn" class="absolute top-5 right-5 bg-blue-500 text-white px-5 py-2 rounded-xl btn-3d text-lg font-bold">
+    Google Login
+  </button>
 
-<button class="btn-3d w-full mb-4" onclick="window.location.href='login.html'">Login</button>
-<button class="btn-3d w-full" onclick="window.open('https://your-link.com','_blank')">External Link</button>
+  <!-- CENTER IMAGE -->
+  <img src="https://i.postimg.cc/8kysF6DQ/Numeral-20-with-Bold-Ward.png" class="w-72 mx-auto" />
 
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
+  authDomain: "voter-25c94.firebaseapp.com",
+  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
+  projectId: "voter-25c94",
+  storageBucket: "voter-25c94.firebasestorage.app",
+  messagingSenderId: "297773534400",
+  appId: "1:297773534400:web:3722c487b8c83e9b787125"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const provider = new GoogleAuthProvider();
+
+// LOGIN ACTION
+loginBtn.addEventListener('click', () => {
+  signInWithPopup(auth, provider)
+    .then(() => {
+      window.location.href = "panel.html";
+    })
+    .catch((error) => console.error(error));
+});
+</script>
+</body>
+</html>
+
+
+<!-- ========================= PANEL PAGE ========================= -->
+<!-- Save this as panel.html -->
+<!doctype html>
+<html lang="hi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Voter Panel — Ward No. 20</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .btn-3d {
+      box-shadow: 0 6px 0 rgba(0,0,0,0.3);
+      transition: transform 0.1s, box-shadow 0.1s;
+    }
+    .btn-3d:active {
+      transform: translateY(4px);
+      box-shadow: 0 2px 0 rgba(0,0,0,0.3);
+    }
+  </style>
+</head>
+<body class="bg-gray-800 text-white min-h-screen flex flex-col items-center pt-10">
+  <h1 class="text-3xl font-bold mb-6">Voter Panel — Ward No. 20</h1>
+
+  <!-- CENTER IMAGE -->
+  <img src="https://i.postimg.cc/qRYkB8VT/khatik-imase.jpg" class="w-64 rounded-xl shadow-xl mb-10" />
+
+  <!-- 4 BUTTONS -->
+  <div class="grid grid-cols-1 gap-5 w-72 text-center">
+    <button class="btn-3d bg-red-500 text-white py-3 rounded-2xl text-xl font-bold">Button 1</button>
+    <button class="btn-3d bg-green-500 text-white py-3 rounded-2xl text-xl font-bold">Button 2</button>
+    <button class="btn-3d bg-blue-500 text-white py-3 rounded-2xl text-xl font-bold">Button 3</button>
+    <button class="btn-3d bg-yellow-500 text-white py-3 rounded-2xl text-xl font-bold">Button 4</button>
+  </div>
 </body>
 </html>
