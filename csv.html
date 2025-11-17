@@ -3,46 +3,39 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Voter Management Panel</title>
+<title>CSV Upload</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-
-<style>
-body { background:#eef2ff; }
-.card { border-radius:1rem; padding:16px; margin-bottom:12px; background:white; box-shadow:4px 4px 10px rgba(0,0,0,0.1); }
-.btn { padding:8px 12px; border-radius:8px; color:white; cursor:pointer; }
-.btn-blue { background:#2563eb; }
-</style>
 
 </head>
 <body class="p-4">
 
-<h1 class="text-2xl font-bold text-blue-700 mb-4 text-center">Voter Management Panel</h1>
+<h2 class="text-xl font-bold mb-4">📌 GOOGLE SHEET CSV IMPORT</h2>
 
-<!-- CSV Upload Section -->
-<div class="bg-white p-4 rounded shadow mb-4">
-  <h2 class="text-xl font-bold mb-2 text-blue-700">Upload Voter CSV</h2>
+<input 
+  type="text" 
+  id="csvUrl"
+  class="border p-2 w-full rounded"
+  placeholder="Google Sheet CSV Link Paste करें" 
+  value="https://docs.google.com/spreadsheets/d/e/2PACX-1vQ9fannLfFx7OH9_l8kmBEktXiJ_kzPQxA0uUmO8SoPV0tgYFUAfuCdanjWYlVQAg/pub?output=csv"
+/>
 
-  <input type="text" id="csvLink" placeholder="Paste Google Sheet CSV Link" class="border p-2 w-full mb-2">
+<button onclick="uploadCSV()" class="mt-3 bg-blue-600 text-white px-4 py-2 rounded">
+  🚀 Upload CSV to Firebase
+</button>
 
-  <button id="uploadCSV" class="btn btn-blue w-full">Upload CSV</button>
-</div>
-
-<!-- Voter List -->
-<div id="voterList"></div>
+<p id="status" class="mt-4 font-semibold"></p>
 
 <script type="module">
-/* ---------------- FIREBASE INIT ---------------- */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref as dbRef, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
   authDomain: "voter-25c94.firebaseapp.com",
   databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
   projectId: "voter-25c94",
-  storageBucket: "voter-25c94.appspot.com",
+  storageBucket: "voter-25c94.firebasestorage.app",
   messagingSenderId: "297773534400",
   appId: "1:297773534400:web:3722c487b8c83e9b787125"
 };
@@ -50,97 +43,61 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-const voterListDiv = document.getElementById("voterList");
 
+// CSV → JSON Converter
+function csvToJson(csv) {
+  const lines = csv.split("\n");
+  const headers = lines[0].split(",");
 
-/* ---------------- CSV UPLOAD ---------------- */
-document.getElementById("uploadCSV").onclick = () => {
-  let link = document.getElementById("csvLink").value.trim();
-  if (!link) return alert("Enter CSV link!");
+  let result = {};
 
-  // If already published CSV → do NOT change link
-  if (link.includes("docs.google.com") && !link.includes("output=csv")) {
+  for (let i = 1; i < lines.length; i++) {
+    const data = lines[i].split(",");
 
-    // Normal Google Sheet (/d/ID/)
-    if (link.includes("/d/")) {
-      const id = link.match(/\/d\/([a-zA-Z0-9-_]+)/)[1];
-      link = `https://docs.google.com/spreadsheets/d/${id}/export?format=csv`;
-    }
+    if (!data[0]) continue;
+
+    const voterID = data[1]?.trim(); // second column = voterID (EPIC number)
+
+    result[voterID] = {
+      name: data[0]?.trim(),
+      voterID: voterID,
+      state: data[2]?.trim(),
+      district: data[3]?.trim(),
+      acNo: data[4]?.trim(),
+      partNo: data[5]?.trim(),
+      booth: data[6]?.trim(),
+      age: data[7]?.trim(),
+      mobile: data[8]?.trim(),
+      status: data[9]?.trim()
+    };
   }
 
-  console.log("Fetching CSV:", link);
-
-  fetch(link)
-    .then(r => {
-      if (!r.ok) throw new Error("CSV not found!");
-      return r.text();
-    })
-    .then(csvText => {
-
-      Papa.parse(csvText, {
-        header: true,
-        skipEmptyLines: true,
-        complete: results => {
-
-          results.data.forEach(row => {
-
-            if (!row.EPIC) return;
-
-            const key = row.EPIC.replace(/\W/g, "_");
-
-            set(dbRef(db, "voters/" + key), {
-              name: row.Name || "",
-              voterID: row.EPIC,
-              state: row.State || "",
-              district: row.District || "",
-              acNo: row["AC No"] || "",
-              partNo: row["Part No"] || "",
-              booth: row.Booth || "",
-              age: row.Age || "",
-              mobile: row.Mobile || "",
-              status: "anti"
-            });
-          });
-
-          alert("CSV Uploaded Successfully!");
-        }
-      });
-
-    })
-    .catch(err => {
-      console.error("CSV Error:", err);
-      alert("CSV Upload Failed — Check Google Sheet Permissions!");
-    });
-};
+  return result;
+}
 
 
-/* ---------------- RENDER VOTERS ---------------- */
-onValue(dbRef(db, "voters"), snap => {
-  voterListDiv.innerHTML = "";
+// MAIN UPLOAD FUNCTION
+window.uploadCSV = async function () {
+  const url = document.getElementById("csvUrl").value.trim();
+  const status = document.getElementById("status");
 
-  snap.forEach(s => {
-    const v = s.val();
+  status.innerText = "⏳ Uploading... Please wait";
 
-    const div = document.createElement("div");
-    div.className = "card";
+  try {
+    const response = await fetch(url);
+    const csvText = await response.text();
 
-    div.innerHTML = `
-      <h2 class="font-bold text-lg">${v.name}</h2>
-      <p class="text-gray-600">
-        EPIC: ${v.voterID}<br>
-        State: ${v.state}<br>
-        District: ${v.district}<br>
-        AC No: ${v.acNo}<br>
-        Part: ${v.partNo}<br>
-        Booth: ${v.booth}<br>
-        Age: ${v.age}<br>
-        Mobile: ${v.mobile}<br>
-        Status: ${v.status}
-      </p>`;
-    voterListDiv.appendChild(div);
-  });
+    const votersData = csvToJson(csvText);
 
-});
+    await set(ref(db, "voters"), votersData);
+
+    status.innerText = "✅ CSV Successfully Uploaded to Firebase!";
+  } 
+  catch (error) {
+    status.innerText = "❌ Error: " + error;
+  }
+}
+
 </script>
 
 </body>
