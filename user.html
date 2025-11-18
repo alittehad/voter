@@ -1,76 +1,84 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>3D Voter Management Panel</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Voter Management Panel</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
 :root{--bg:#eef2ff;--card:#fff}
 body{background:var(--bg);font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;}
 .container{max-width:1100px;margin:24px auto;padding:12px;}
-/* 3D heading */
-.heading {font-size:clamp(1.8rem,4vw,2.5rem);font-weight:800;text-align:center;margin-bottom:12px;color:#0f172a;transform: perspective(500px) rotateX(8deg);text-shadow:0 1px 0 rgba(255,255,255,0.5),0 6px 12px rgba(2,6,23,0.12),0 18px 36px rgba(2,6,23,0.10);letter-spacing:0.6px;}
-.subhead{ text-align:center;color:#334155;margin-bottom:18px;font-weight:600;}
+.heading {font-size:clamp(1.6rem,3vw,2.2rem);font-weight:800;text-align:center;margin-bottom:12px;color:#0f172a;transform: perspective(500px) rotateX(8deg);text-shadow:0 1px 0 rgba(255,255,255,0.5),0 6px 12px rgba(2,6,23,0.12),0 18px 36px rgba(2,6,23,0.10);letter-spacing:0.6px;}
 .card{background:var(--card);border-radius:12px;padding:12px;margin-bottom:12px;box-shadow:6px 6px 18px rgba(2,6,23,0.06);}
-.btn {cursor:pointer;padding:4px 8px;border-radius:6px;font-weight:600;text-sm}
+.img-sender{width:56px;height:56px;border-radius:999px;object-fit:cover;margin-right:8px}
+.btn {cursor:pointer;padding:4px 6px;border-radius:6px;font-weight:600;font-size:12px;}
 .btn-blue{background:#2563eb;color:white}
 .btn-green{background:#16a34a;color:white}
 .btn-yellow{background:#facc15;color:#111}
 .btn-red{background:#dc2626;color:white}
 .btn-gray{background:#6b7280;color:white}
 .table-container{overflow:auto}
-table{width:100%;border-collapse:collapse;min-width:300px;background:white;border-radius:6px;overflow:hidden}
-th,td{padding:8px;border:1px solid #e6e9ef;text-align:left;white-space:nowrap}
+table{width:100%;border-collapse:collapse;min-width:600px;background:white;border-radius:6px;overflow:hidden}
+th,td{padding:6px;border:1px solid #e6e9ef;text-align:left;white-space:nowrap}
 thead tr{background:#ebf8ff;font-weight:700}
 tr:hover{background:#f7f9ff}
-.badge{display:inline-block;padding:2px 6px;border-radius:6px;font-weight:700;font-size:12px}
-.status-approved{background:#dcfce7}
-.status-opponent{background:#fef9c3}
-.status-anti{background:#fee2e2}
-.status-active{background:#dbeafe}
-.status-verified{background:#bbf7d0}
-.actions button{margin:0 2px}
-/* responsive */
-@media (max-width:900px){ table{min-width:250px} }
+.card-approved{background:#dcfce7}
+.card-opponent{background:#fef9c3}
+.card-anti{background:#fee2e2}
+.badge{display:inline-block;padding:2px 4px;border-radius:6px;font-weight:700;font-size:11px}
+.actions button{margin-right:4px}
+@media (max-width:900px){ table{min-width:400px} }
 </style>
 </head>
 <body>
 <div class="container">
-<h1 class="heading">3D Voter Management Panel</h1>
-<p class="subhead">Search, view, send WhatsApp & manage voters</p>
+  <h1 class="heading">Voter Management Panel</h1>
 
-<!-- Admin Panel -->
-<div id="adminPanel" class="card">
-<h2 class="text-lg font-bold text-blue-700 mb-2">Admin: Add Allowed Emails</h2>
-<div class="flex gap-2">
-<input id="newAdminEmail" placeholder="Enter email" class="border p-2 rounded flex-1">
-<button id="addAdminEmailBtn" class="btn btn-green">Add Email</button>
-</div>
-<div id="adminEmailsList" class="mt-2 text-sm text-gray-700"></div>
-</div>
+  <!-- Login -->
+  <div id="loginDiv" class="card text-center">
+    <h2 class="text-lg font-bold text-blue-700">Login to Access Voter Panel</h2>
+    <button id="googleLoginBtn" class="btn btn-blue mt-4">Login with Google</button>
+  </div>
 
-<!-- Login -->
-<div id="loginDiv" class="card text-center">
-<h2 class="text-xl font-bold text-blue-700">Login to Access Voter Panel</h2>
-<button id="googleLoginBtn" class="btn btn-blue mt-4">Login with Google</button>
-</div>
+  <!-- Panel -->
+  <div id="panelDiv" class="hidden">
 
-<!-- Panel -->
-<div id="panelDiv" class="hidden">
+    <!-- Sender & Search -->
+    <div class="card flex flex-col md:flex-row gap-2 md:items-center">
+      <div style="flex:1"><input id="searchVoter" placeholder="Search by Name, EPIC..." class="w-full border p-2 rounded" /></div>
+      <div style="flex:1"><textarea id="senderDesc" placeholder="Sender Description" class="w-full border p-2 rounded" rows="2"></textarea></div>
+    </div>
 
-<!-- status count -->
-<div id="statusCounts" class="card flex gap-4 flex-wrap mb-4"></div>
+    <!-- Status Count -->
+    <div id="statusCount" class="card font-bold"></div>
 
-<!-- top controls -->
-<div class="card flex gap-4 items-center mb-2">
-<input id="searchVoter" placeholder="Search by Name, EPIC..." class="w-full border p-2 rounded" />
-<textarea id="senderDesc" placeholder="Sender Description (will be sent)" class="w-1/3 border p-2 rounded" rows="2"></textarea>
-</div>
+    <!-- Table -->
+    <div id="voterList" class="mt-4 table-container card"></div>
 
-<!-- Table -->
-<div id="voterList" class="table-container card"></div>
-</div>
+    <!-- Add Voter -->
+    <div class="card mt-4">
+      <h3 class="text-lg font-bold text-blue-700 mb-2">Add Voter</h3>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+        <input id="voterName" placeholder="Name" class="border p-2 rounded" />
+        <input id="voterEPIC" placeholder="EPIC" class="border p-2 rounded" />
+        <select id="relationType" class="border p-2 rounded">
+          <option value="">Relation Type</option>
+          <option value="Father">Father</option>
+          <option value="Husband">Husband</option>
+        </select>
+        <input id="relationName" placeholder="Father/Husband Name" class="border p-2 rounded" />
+        <input id="voterGender" placeholder="Gender" class="border p-2 rounded" />
+        <input id="houseNo" placeholder="House No" class="border p-2 rounded" />
+        <input id="roomNo" placeholder="Room No" class="border p-2 rounded" />
+        <input id="voterAge" placeholder="Age" class="border p-2 rounded" />
+        <input id="voterAddress" placeholder="Address" class="border p-2 rounded" />
+        <input id="voterMobile" placeholder="Mobile" class="border p-2 rounded" />
+      </div>
+      <div class="mt-3"><button id="addVoterManual" class="btn btn-green w-full">Add Voter</button></div>
+    </div>
+
+  </div>
 </div>
 
 <script type="module">
@@ -93,110 +101,142 @@ const auth = getAuth();
 const provider = new GoogleAuthProvider();
 const db = getDatabase(app);
 
-// Admin emails
-let adminEmails = ["ngogrant454@gmail_com"];
-const adminEmailsList = document.getElementById('adminEmailsList');
-function renderAdminEmails(){ adminEmailsList.innerText = adminEmails.join(' , '); }
-renderAdminEmails();
-document.getElementById('addAdminEmailBtn').onclick = ()=>{
-  const val = document.getElementById('newAdminEmail').value.trim().replace(/\./g,'_');
-  if(val && !adminEmails.includes(val)){ adminEmails.push(val); renderAdminEmails(); document.getElementById('newAdminEmail').value=''; alert('Email added!'); }
-};
-
-// UI refs
 const loginDiv = document.getElementById("loginDiv");
 const panelDiv = document.getElementById("panelDiv");
 const loginBtn = document.getElementById("googleLoginBtn");
 const voterListDiv = document.getElementById("voterList");
 const searchInput = document.getElementById("searchVoter");
 const senderDescEl = document.getElementById("senderDesc");
-
+const statusCountDiv = document.getElementById("statusCount");
 const FIXED_SENDER_IMAGE = "https://i.ibb.co/LhDpnZFn/khatik-imase.jpg";
 
-// Login
+let voterData = [];
+let adminEmails = ["ngogrant454@gmail_com"]; // default admin
+
 loginBtn.onclick = ()=>{
   signInWithPopup(auth, provider).then(res=>{
     const emailKey = res.user.email.replace(/\./g,'_');
-    if(!adminEmails.includes(emailKey)) { alert('Access Denied'); auth.signOut(); }
-  }).catch(err=>{alert(err.message)});
+    if(!adminEmails.includes(emailKey)){
+      alert("Access Denied"); auth.signOut();
+    }
+  }).catch(err=>alert("Login failed: "+err.message));
 };
 
 onAuthStateChanged(auth,user=>{
-  if(user){ loginDiv.classList.add('hidden'); panelDiv.classList.remove('hidden'); loadVoters(); } else { loginDiv.classList.remove('hidden'); panelDiv.classList.add('hidden'); }
+  if(user){ loginDiv.classList.add("hidden"); panelDiv.classList.remove("hidden"); loadVoters(); }
+  else{ loginDiv.classList.remove("hidden"); panelDiv.classList.add("hidden"); }
 });
-
-let voterData = [];
 
 function loadVoters(){
   const r = dbRef(db,"voters");
   onValue(r,snap=>{
-    voterData = [];
-    snap.forEach(c=>voterData.push({id:c.key,...c.val()}));
-    renderTable(voterData); renderStatusCounts();
+    voterData = []; snap.forEach(c=>voterData.push({id:c.key,...c.val()}));
+    renderTable(voterData);
   });
 }
 
-function renderStatusCounts(){
-  const counts = {approved:0,opponent:0,anti:0,active:0,verified:0};
-  voterData.forEach(v=>{ counts[v.status] = (counts[v.status]||0)+1; });
-  const div = document.getElementById('statusCounts');
-  div.innerHTML='';
-  for(const s in counts){
-    div.innerHTML += `<div class='badge status-${s}'>${s}: ${counts[s]}</div>`;
-  }
-}
-
 function renderTable(list){
-  let html=`<table><thead><tr><th>Name</th><th>EPIC</th><th>Status</th></tr></thead><tbody></tbody></table>`;
+  // Count statuses
+  const count = {approved:0,opponent:0,anti:0};
+  list.forEach(v=>count[v.status] = (count[v.status]||0)+1);
+  statusCountDiv.innerHTML = `Status Count: Approved: ${count.approved||0}, Opponent: ${count.opponent||0}, Anti: ${count.anti||0}`;
+
+  let html = `<table><thead><tr><th>Name</th><th>EPIC</th><th>Status</th></tr></thead><tbody></tbody></table>`;
   voterListDiv.innerHTML = html;
-  const tbody = voterListDiv.querySelector('tbody');
+  const tbody = voterListDiv.querySelector("tbody");
+
   list.forEach(v=>{
-    const tr = document.createElement('tr');
-    tr.innerHTML=`<td>${v.name||''}</td><td>${v.epic||v.voterID||''}</td><td>${v.status||''}</td>`;
-    tr.classList.add(`status-${v.status}`);
-    tr.onclick = ()=> showVoterCard(v);
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${v.name||''}</td><td>${v.voterID||v.epic||''}</td><td>${v.status||''}</td>`;
+    tr.onclick = ()=>showVoterCard(v);
     tbody.appendChild(tr);
   });
 }
 
 function showVoterCard(v){
-  const existing = document.getElementById('voterDetailCard');
-  if(existing) existing.remove();
-  const div = document.createElement('div');
-  div.id='voterDetailCard'; div.className='card';
-  const relation = v.fatherName?`Father: ${v.fatherName}`:(v.husbandName?`Husband: ${v.husbandName}`:'');
-  div.innerHTML=`<div><h3>${v.name||''}</h3><p>${relation} | EPIC: ${v.epic||v.voterID||''}</p>
-  <p>House: ${v.houseNo||''} | Room: ${v.roomNo||''}</p>
-  <p>Polling Address: ${v.pollingAddress||''} | Booth: ${v.booth||''}</p>
-  <p>Part: ${v.partNo||v.part||''} | AC: ${v.acNo||v.ac||''}</p>
-  <p>Age: ${v.age||''} | Mobile: ${v.mobile||''}</p>
-  <div class='flex gap-1 mt-2'><button class='btn btn-yellow approveBtn'>Approved</button><button class='btn btn-yellow opponentBtn'>Opponent</button><button class='btn btn-red antiBtn'>Anti</button>
-  <button class='btn btn-blue sendBtn'>Send WhatsApp</button><button class='btn btn-green printBtn'>Print</button></div></div>`;
+  const existing = document.getElementById("voterDetailCard"); if(existing) existing.remove();
+  const div = document.createElement("div");
+  div.id="voterDetailCard"; div.className="card";
+  const relationLine = v.fatherName ? `Father: ${v.fatherName}` : (v.husbandName ? `Husband: ${v.husbandName}` : '');
+  const color = v.status==='approved'? '#dcfce7': v.status==='opponent'? '#fef9c3': '#fee2e2';
+  div.style.background=color;
+  div.innerHTML = `
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <div>
+      <h3>${v.name||''}</h3>
+      <div>${relationLine} | EPIC: ${v.voterID||v.epic||''}</div>
+    </div>
+    <div style="display:flex;gap:4px">
+      <button class="btn btn-yellow" onclick="updateStatus('${v.id}','approved')">Approve</button>
+      <button class="btn btn-yellow" onclick="updateStatus('${v.id}','opponent')">Opponent</button>
+      <button class="btn btn-red" onclick="updateStatus('${v.id}','anti')">Anti</button>
+      <button class="btn btn-gray" onclick="this.parentNode.parentNode.remove()">Close</button>
+      <button class="btn btn-blue" onclick="sendWhatsApp('${v.id}')">Send</button>
+      <button class="btn btn-green" onclick="printVoter('${v.id}')">Print</button>
+    </div>
+  </div>
+  <div style="margin-top:8px">
+    <p>House: ${v.houseNo||''} | Room: ${v.roomNo||''}</p>
+    <p>Address: ${v.address||''}</p>
+    <p>Polling: ${v.pollingAddress||''} | Booth: ${v.booth||''} | Part: ${v.partNo||v.part||''}</p>
+    <p>Age: ${v.age||''} | Mobile: ${v.mobile||''}</p>
+  </div>
+  `;
   voterListDiv.prepend(div);
-
-  // status change
-  function updateStatus(s){ set(dbRef(db,"voters/"+v.id), {...v,status:s}); }
-  div.querySelector('.approveBtn').onclick=()=>updateStatus('approved');
-  div.querySelector('.opponentBtn').onclick=()=>updateStatus('opponent');
-  div.querySelector('.antiBtn').onclick=()=>updateStatus('anti');
-
-  // Send WhatsApp
-  div.querySelector('.sendBtn').onclick=()=>{
-    const msg=(senderDescEl.value?senderDescEl.value+"\n\n":"")+
-      `Voter Details\nName: ${v.name||''}\n${relation} | EPIC: ${v.epic||v.voterID||''}\nHouse: ${v.houseNo||''}\nAddress: ${v.address||''}\nPart/Booth: ${v.partNo||v.part||''}/${v.booth||''}\nPolling Address: ${v.pollingAddress||''}\nRoom No: ${v.roomNo||''}\nMobile: ${v.mobile||''}\n\nImage: ${FIXED_SENDER_IMAGE}`;
-    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,'_blank');
-  };
-  div.querySelector('.printBtn').onclick=()=>{
-    const html=`<div style='font-family:Arial;padding:12px'><h2>${v.name||''}</h2><p>${relation}</p><p>EPIC: ${v.epic||v.voterID||''}</p><p>House: ${v.houseNo||''} | Room: ${v.roomNo||''}</p><p>Polling Address: ${v.pollingAddress||''} | Booth: ${v.booth||''}</p><p>Part: ${v.partNo||v.part||''} | AC: ${v.acNo||v.ac||''}</p><p>Age: ${v.age||''} | Mobile: ${v.mobile||''}</p><p><img src='${FIXED_SENDER_IMAGE}' style='width:50px;height:50px;border-radius:50%'></p></div>`;
-    const w=window.open(); w.document.write(html); w.print(); w.close();
-  };
 }
 
-searchInput.addEventListener('input',e=>{
-  const q=e.target.value.toLowerCase();
+function updateStatus(id,newStatus){
+  const v = voterData.find(x=>x.id===id); if(!v) return;
+  set(dbRef(db,'voters/'+id),{...v,status:newStatus}); loadVoters();
+}
+
+function sendWhatsApp(id){
+  const v = voterData.find(x=>x.id===id); if(!v) return;
+  const senderDesc = senderDescEl.value.trim();
+  const relLine = v.fatherName? `Father: ${v.fatherName}` : (v.husbandName? `Husband: ${v.husbandName}`:'');
+  let msg = senderDesc? senderDesc+'\n\n':'';
+  msg+=`Voter Details\nName: ${v.name||''}\n${relLine}\nEPIC: ${v.voterID||v.epic||''}\nHouse: ${v.houseNo||''}\nAddress: ${v.address||''}\nPart: ${v.partNo||v.part||''} | Booth: ${v.booth||''}\nPolling Address: ${v.pollingAddress||''}\nRoom: ${v.roomNo||''}\nMobile: ${v.mobile||''}\n\nImage: ${FIXED_SENDER_IMAGE}`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,'_blank');
+}
+
+function printVoter(id){
+  const v = voterData.find(x=>x.id===id); if(!v) return;
+  const relLine = v.fatherName? `Father: ${v.fatherName}` : (v.husbandName? `Husband: ${v.husbandName}`:'');
+  let html = `<div style="padding:12px;font-family:Arial"><img src='${FIXED_SENDER_IMAGE}' style='width:50px;height:50px;border-radius:50%;float:right'><h2>${v.name||''}</h2><p>${relLine}</p><p>EPIC: ${v.voterID||v.epic||''}</p><p>House: ${v.houseNo||''} Room: ${v.roomNo||''}</p><p>Address: ${v.address||''}</p><p>Polling: ${v.pollingAddress||''} Booth: ${v.booth||''} Part: ${v.partNo||v.part||''}</p><p>Age: ${v.age||''} Mobile: ${v.mobile||''}</p></div>`;
+  const w = window.open(); w.document.write(html); w.print(); w.close();
+}
+
+/* Search */
+searchInput.addEventListener('input',(e)=>{
+  const q=e.target.value.trim().toLowerCase();
   if(!q) renderTable(voterData);
-  else renderTable(voterData.filter(v=>`${v.name||''} ${v.epic||v.voterID||''}`.toLowerCase().includes(q)));
+  else renderTable(voterData.filter(v=>`${v.name||''} ${v.voterID||v.epic||''} ${v.partNo||v.part||''} ${v.houseNo||''} ${v.mobile||''}`.toLowerCase().includes(q)));
 });
+
+/* Add voter */
+document.getElementById("addVoterManual").onclick = ()=>{
+  const name=document.getElementById("voterName").value.trim();
+  const epic=document.getElementById("voterEPIC").value.trim();
+  if(!name||!epic) return alert("Name & EPIC required!");
+  const relationType=document.getElementById("relationType").value;
+  const relationName=document.getElementById("relationName").value.trim();
+  const payload={
+    name, voterID:epic, epic, relationType, relationName,
+    fatherName: relationType==='Father'?relationName:'',
+    husbandName: relationType==='Husband'?relationName:'',
+    gender: document.getElementById("voterGender").value.trim(),
+    houseNo: document.getElementById("houseNo").value.trim(),
+    roomNo: document.getElementById("roomNo").value.trim(),
+    age: document.getElementById("voterAge").value.trim(),
+    address: document.getElementById("voterAddress").value.trim(),
+    mobile: document.getElementById("voterMobile").value.trim(),
+    status:'anti', createdAt: Date.now()
+  };
+  push(dbRef(db,'voters'),payload).then(()=>{
+    alert("Voter added!");
+    ['voterName','voterEPIC','relationType','relationName','voterGender','houseNo','roomNo','voterAge','voterAddress','voterMobile'].forEach(id=>{document.getElementById(id).value='';});
+  });
+};
 
 </script>
 </body>
