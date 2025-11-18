@@ -2,91 +2,108 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Voter Management Panel - Merged</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Voter Management Panel</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
-body { background:#eef2ff; }
-.card { border-radius:1rem; box-shadow:6px 6px 12px rgba(0,0,0,0.1), -6px -6px 12px rgba(255,255,255,0.7); padding:16px; margin-bottom:12px; transition: all 0.2s; display:flex; flex-direction:column; }
-.card-approved { background-color: #dcfce7; }
-.card-opponent { background-color: #fef9c3; }
-.card-anti { background-color: #fee2e2; }
-.btn { cursor:pointer; padding:0.45rem 0.9rem; border-radius:0.6rem; font-weight:600; transition: all 0.15s; text-align:center; box-shadow:4px 4px 6px #bbb, -4px -4px 6px #fff; }
-.btn:hover { box-shadow: inset 4px 4px 6px #bbb, inset -4px -4px 6px #fff; }
-.btn-blue { background:#2563eb;color:white; }
-.btn-green { background:#16a34a;color:white; }
-.btn-yellow { background:#facc15;color:black; }
-.btn-red { background:#dc2626;color:white; }
-.btn-gray { background:#6b7280;color:white; }
-.img-sender { width:50px; height:50px; border-radius:50%; margin-right:8px; object-fit:cover; }
-.hidden { display:none; }
-.table-container { overflow-x:auto; }
-table, th, td { border:1px solid #ddd; }
-table { border-collapse: collapse; width: 100%; min-width: 900px; background:white; }
-th, td { padding: 8px; text-align: left; white-space: nowrap; }
-tr:hover { background-color: #f1f1f1; cursor:pointer; }
-.action-btn { margin-right:6px; }
-.badge { padding:4px 8px; border-radius:8px; font-weight:bold; display:inline-block; }
+:root{--bg:#eef2ff;--card:#fff}
+body{background:var(--bg);font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;}
+.container{max-width:1100px;margin:12px auto;padding:12px;}
+.heading {
+  font-size:clamp(1.4rem,3vw,1.8rem);
+  font-weight:800;text-align:center;margin-bottom:12px;color:#0f172a;
+  transform: perspective(500px) rotateX(8deg);
+  text-shadow:0 1px 0 rgba(255,255,255,0.5),
+  0 6px 12px rgba(2,6,23,0.12),
+  0 18px 36px rgba(2,6,23,0.10);
+  letter-spacing:0.6px;
+}
+.card{background:var(--card);border-radius:12px;padding:12px;margin-bottom:12px;box-shadow:6px 6px 18px rgba(2,6,23,0.06);}
+.img-sender{width:40px;height:40px;border-radius:999px;object-fit:cover;margin-right:8px}
+.btn{cursor:pointer;padding:4px 6px;border-radius:6px;font-weight:600;font-size:12px}
+.btn-blue{background:#2563eb;color:white}
+.btn-green{background:#16a34a;color:white}
+.btn-yellow{background:#facc15;color:#111}
+.btn-red{background:#dc2626;color:white}
+.btn-gray{background:#6b7280;color:white}
+.table-container{overflow:auto;width:100%}
+table{width:100%;border-collapse:collapse;min-width:300px;background:white;border-radius:6px;overflow:hidden}
+th,td{padding:6px;border:1px solid #e6e9ef;text-align:left;white-space:nowrap;font-size:12px}
+thead tr{background:#ebf8ff;font-weight:700}
+tr:hover{background:#f7f9ff}
+.card-approved{background:#dcfce7}
+.card-opponent{background:#fef9c3}
+.card-anti{background:#fee2e2}
+.badge{display:inline-block;padding:2px 6px;border-radius:6px;font-weight:700;font-size:11px}
+.actions button{margin-right:4px}
+/* responsive */
+@media (max-width:900px){ table{min-width:100%} }
 </style>
 </head>
-<body class="p-4">
+<body>
+<div class="container">
+<h1 class="heading">Voter Management Panel</h1>
 
 <!-- Login -->
-<div id="loginDiv" class="text-center mb-4">
-  <h1 class="text-2xl font-bold text-blue-700">Login to Access Voter Panel</h1>
+<div id="loginDiv" class="card text-center">
+  <h2 class="text-lg font-bold text-blue-700">Login to Access Panel</h2>
   <button id="googleLoginBtn" class="btn btn-blue mt-4">Login with Google</button>
 </div>
 
 <!-- Panel -->
 <div id="panelDiv" class="hidden">
 
-  <h1 class="text-2xl font-bold text-blue-700 text-center mb-4">Voter Management Panel</h1>
-
-  <!-- Search -->
-  <div class="bg-white p-4 rounded shadow mb-4">
-    <input type="text" id="searchVoter" placeholder="Search by Name, EPIC, Part No, House No, Mobile..." class="border p-2 w-full">
+  <!-- Admin add emails -->
+  <div class="card">
+    <h3 class="font-bold text-blue-700 mb-2 text-sm">Admin: Add Email</h3>
+    <div class="flex gap-2">
+      <input id="newAdminEmail" placeholder="Enter new admin email" class="border p-2 rounded flex-1 text-sm"/>
+      <button id="addAdminBtn" class="btn btn-green">Add</button>
+    </div>
   </div>
 
-  <!-- Voter List Table -->
-  <div id="voterList" class="mt-4 table-container"></div>
-
-  <!-- Sender Info -->
-  <div class="bg-white p-4 rounded shadow mb-4">
-    <h2 class="text-xl font-bold mb-2 text-blue-700">Sender Info</h2>
-    <textarea id="senderDesc" placeholder="Sender Description" class="border p-2 w-full mb-2"></textarea>
-    <input type="file" id="senderImage" class="border p-2 w-full mb-2" accept="image/*">
-    <button id="uploadSenderImage" class="btn btn-blue w-full mb-2">Upload Sender Image (Preview)</button>
-    <img id="senderImgPreview" src="" class="img-sender hidden" alt="Sender">
+  <!-- Top controls -->
+  <div class="card flex gap-4 flex-wrap items-center">
+    <div style="flex:1">
+      <input id="searchVoter" placeholder="Search by Name, EPIC, Part No, House No, Mobile..." class="w-full border p-2 rounded text-sm"/>
+    </div>
+    <div style="flex:1">
+      <textarea id="senderDesc" placeholder="Sender Description (appears above voter info)" class="w-full border p-2 rounded text-sm" rows="2"></textarea>
+    </div>
   </div>
 
-  <!-- Add Voter Manually -->
-  <div class="bg-white p-4 rounded shadow mb-4">
-    <h2 class="text-xl font-bold mb-2 text-blue-700">Add Voter Manually</h2>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
-      <input type="text" id="voterName" placeholder="Name" class="border p-2 w-full mb-2">
-      <input type="text" id="voterEPIC" placeholder="EPIC" class="border p-2 w-full mb-2">
-      <input type="text" id="voterSerial" placeholder="Serial No (optional)" class="border p-2 w-full mb-2">
-      <select id="relationType" class="border p-2 w-full mb-2">
-        <option value="">Relation Type</option>
-        <option value="Father">Father</option>
-        <option value="Husband">Husband</option>
+  <!-- Status count -->
+  <div id="statusCount" class="flex gap-4 mb-2 text-sm"></div>
+
+  <!-- Table -->
+  <div id="voterList" class="table-container card"></div>
+
+  <!-- Add Voter -->
+  <div class="card mt-4">
+    <h3 class="text-sm font-bold text-blue-700 mb-2">Add Voter Manually</h3>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
+      <input id="voterName" placeholder="Name" class="border p-2 rounded"/>
+      <input id="voterEPIC" placeholder="EPIC" class="border p-2 rounded"/>
+      <input id="voterSerial" placeholder="Serial No (optional)" class="border p-2 rounded"/>
+      <select id="relationType" class="border p-2 rounded">
+        <option value="">Relation Type</option><option value="Father">Father</option><option value="Husband">Husband</option>
       </select>
-      <input type="text" id="relationName" placeholder="Father/Husband Name" class="border p-2 w-full mb-2">
-      <input type="text" id="voterGender" placeholder="Gender" class="border p-2 w-full mb-2">
-      <input type="text" id="houseNo" placeholder="House No / Building" class="border p-2 w-full mb-2">
-      <input type="text" id="roomNo" placeholder="Room No (Polling Room)" class="border p-2 w-full mb-2">
-      <input type="text" id="voterAge" placeholder="Age" class="border p-2 w-full mb-2">
-      <input type="text" id="voterAddress" placeholder="Address (Street / Mohalla / Village)" class="border p-2 w-full mb-2">
-      <input type="text" id="voterPO" placeholder="Post Office" class="border p-2 w-full mb-2">
-      <input type="text" id="voterPS" placeholder="Police Station" class="border p-2 w-full mb-2">
-      <input type="text" id="voterState" placeholder="State" class="border p-2 w-full mb-2">
-      <input type="text" id="voterDistrict" placeholder="District" class="border p-2 w-full mb-2">
-      <input type="text" id="voterAC" placeholder="AC No" class="border p-2 w-full mb-2">
-      <input type="text" id="voterPart" placeholder="Part No" class="border p-2 w-full mb-2">
-      <input type="text" id="voterBooth" placeholder="Booth No / Location" class="border p-2 w-full mb-2">
-      <input type="text" id="pollingAddress" placeholder="Polling Address (e.g. Govt School, Main Rd)" class="border p-2 w-full mb-2">
-      <input type="text" id="voterSection" placeholder="Section No (optional)" class="border p-2 w-full mb-2">
-      <input type="text" id="voterMobile" placeholder="Mobile" class="border p-2 w-full mb-2">
+      <input id="relationName" placeholder="Father/Husband Name" class="border p-2 rounded"/>
+      <input id="voterGender" placeholder="Gender" class="border p-2 rounded"/>
+      <input id="houseNo" placeholder="House No / Building" class="border p-2 rounded"/>
+      <input id="roomNo" placeholder="Room No" class="border p-2 rounded"/>
+      <input id="voterAge" placeholder="Age" class="border p-2 rounded"/>
+      <input id="voterAddress" placeholder="Address (Street / Mohalla / Village)" class="border p-2 rounded"/>
+      <input id="voterPO" placeholder="Post Office" class="border p-2 rounded"/>
+      <input id="voterPS" placeholder="Police Station" class="border p-2 rounded"/>
+      <input id="voterState" placeholder="State" class="border p-2 rounded"/>
+      <input id="voterDistrict" placeholder="District" class="border p-2 rounded"/>
+      <input id="voterAC" placeholder="AC No" class="border p-2 rounded"/>
+      <input id="voterPart" placeholder="Part No" class="border p-2 rounded"/>
+      <input id="voterBooth" placeholder="Booth No / Location" class="border p-2 rounded"/>
+      <input id="pollingAddress" placeholder="Polling Address" class="border p-2 rounded"/>
+      <input id="voterSection" placeholder="Section No (optional)" class="border p-2 rounded"/>
+      <input id="voterMobile" placeholder="Mobile" class="border p-2 rounded"/>
     </div>
     <div class="mt-3">
       <button id="addVoterManual" class="btn btn-green w-full">Add Voter</button>
@@ -94,301 +111,186 @@ tr:hover { background-color: #f1f1f1; cursor:pointer; }
   </div>
 
 </div>
+</div>
 
 <script type="module">
-// ---------- Firebase imports ----------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref as dbRef, set, onValue, remove, push } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getDatabase, ref as dbRef, onValue, push, set, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-// ---------- Firebase config (your config) ----------
 const firebaseConfig = {
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
   authDomain: "voter-25c94.firebaseapp.com",
   databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
   projectId: "voter-25c94",
-  storageBucket: "voter-25c94.appspot.com",
+  storageBucket: "voter-25c94.firebasestorage.app",
   messagingSenderId: "297773534400",
   appId: "1:297773534400:web:3722c487b8c83e9b787125"
 };
+
 const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-const auth = getAuth(app);
+const auth = getAuth();
 const provider = new GoogleAuthProvider();
+const db = getDatabase(app);
 
-// ---------- State ----------
-let senderImageURL = ""; // base64
+const loginDiv = document.getElementById("loginDiv");
+const panelDiv = document.getElementById("panelDiv");
+const loginBtn = document.getElementById("googleLoginBtn");
 const voterListDiv = document.getElementById("voterList");
+const searchInput = document.getElementById("searchVoter");
+const senderDescEl = document.getElementById("senderDesc");
+const statusCountDiv = document.getElementById("statusCount");
 
-// ---------- Login ----------
-document.getElementById("googleLoginBtn").onclick = ()=> {
-  signInWithPopup(auth, provider).then(res=>{
-    const emailKey = res.user.email.replace(/\./g,"_");
-    const admins = ["ngogrant454@gmail_com"];
-    const users  = ["zarafix3@gmail_com"];
-    if(admins.includes(emailKey) || users.includes(emailKey)){
-      alert(`Welcome ${res.user.displayName}`);
-    } else {
-      alert("Access denied!");
-      auth.signOut();
-    }
-  }).catch(err=>{ console.error(err); alert("Login failed!"); });
+let voterData = [];
+let adminEmails = ["ngogrant454@gmail_com"]; // initial admin emails
+
+/* ---------- LOGIN ---------- */
+loginBtn.onclick = () => {
+  signInWithPopup(auth, provider)
+    .then(res => {
+      const emailKey = res.user.email.replace(/\./g,'_');
+      if(!adminEmails.includes(emailKey)){
+        alert("Access Denied"); auth.signOut();
+      }
+    })
+    .catch(err => { console.error(err); alert("Login failed: "+err.message); });
 };
 
-// ---------- Persist login (on refresh keep logged in) ----------
 onAuthStateChanged(auth, user => {
-  if(user){
-    const emailKey = user.email.replace(/\./g,"_");
-    const admins = ["ngogrant454@gmail_com"];
-    const users  = ["zarafix3@gmail_com"];
-    if(admins.includes(emailKey) || users.includes(emailKey)){
-      document.getElementById("loginDiv").classList.add("hidden");
-      document.getElementById("panelDiv").classList.remove("hidden");
-      renderVoters();
-    } else {
-      auth.signOut();
-    }
-  } else {
-    document.getElementById("loginDiv").classList.remove("hidden");
-    document.getElementById("panelDiv").classList.add("hidden");
-  }
+  if(user){ loginDiv.classList.add("hidden"); panelDiv.classList.remove("hidden"); loadVoters(); }
+  else{ loginDiv.classList.remove("hidden"); panelDiv.classList.add("hidden"); }
 });
 
-// ---------- Sender image preview (base64) ----------
-document.getElementById("uploadSenderImage").onclick = ()=> {
-  const file = document.getElementById("senderImage").files[0];
-  if(!file) return alert("Select image first!");
-  const reader = new FileReader();
-  reader.onload = e=>{
-    senderImageURL = e.target.result;
-    document.getElementById("senderImgPreview").src = senderImageURL;
-    document.getElementById("senderImgPreview").classList.remove("hidden");
-  };
-  reader.readAsDataURL(file);
+/* ---------- Add admin ---------- */
+document.getElementById("addAdminBtn").onclick = () => {
+  const email = document.getElementById("newAdminEmail").value.trim().replace(/\./g,'_');
+  if(email && !adminEmails.includes(email)){
+    adminEmails.push(email); alert("Admin added"); document.getElementById("newAdminEmail").value="";
+  }
 };
 
-// ---------- Helper: row color ----------
-function updateRowColor(tr, status){
-  tr.classList.remove("card-approved","card-opponent","card-anti");
-  if(status==="approved") tr.classList.add("card-approved");
-  else if(status==="opponent") tr.classList.add("card-opponent");
-  else tr.classList.add("card-anti");
-}
-
-// ---------- Render voters as table ----------
-function renderVoters(){
-  onValue(dbRef(db,"voters"), snap=>{
-    const query = document.getElementById("searchVoter").value.trim().toLowerCase();
-    voterListDiv.innerHTML='';
-
-    const table = document.createElement("table");
-    table.innerHTML = `
-      <thead>
-        <tr class="bg-blue-100">
-          <th>Name</th>
-          <th>EPIC</th>
-          <th>Relation</th>
-          <th>House No</th>
-          <th>Polling Address</th>
-          <th>Room No</th>
-          <th>Part No</th>
-          <th>Booth</th>
-          <th>Age</th>
-          <th>Mobile</th>
-          <th>Status</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    `;
-    const tbody = table.querySelector("tbody");
-    voterListDiv.appendChild(table);
-
-    snap.forEach(s=>{
-      const v = s.val(); const key=s.key;
-      const combined = `${v.name||''} ${v.voterID||v.epic||''} ${v.address||''} ${v.partNo||v.part||''}`.toLowerCase();
-      if(query && !combined.includes(query)) return;
-
-      const tr = document.createElement("tr");
-      const relationDisplay = (v.fatherName && v.fatherName.trim()) ? `Father: ${v.fatherName}` : (v.husbandName && v.husbandName.trim()) ? `Husband: ${v.husbandName}` : (v.relationType && v.relationName ? `${v.relationType}: ${v.relationName}` : '');
-      tr.innerHTML = `
-        <td>${v.name || ''}</td>
-        <td>${v.voterID || v.epic || ''}</td>
-        <td>${relationDisplay}</td>
-        <td>${v.houseNo || ''}</td>
-        <td>${v.pollingAddress || ''}</td>
-        <td>${v.roomNo || ''}</td>
-        <td>${v.partNo || v.part || ''}</td>
-        <td>${v.booth || ''}</td>
-        <td>${v.age || ''}</td>
-        <td>${v.mobile || ''}</td>
-        <td>${v.status || ''}</td>
-        <td>
-          <button class="btn btn-blue action-view">View</button>
-          <button class="btn btn-gray action-delete">Delete</button>
-        </td>
-      `;
-      updateRowColor(tr, v.status);
-      tbody.appendChild(tr);
-
-      // view opens detail card (same as old behaviour)
-      tr.querySelector(".action-view").onclick = ()=>{ showVoterDetail(v,key,tr); };
-
-      // delete removes record
-      tr.querySelector(".action-delete").onclick = ()=>{ 
-        if(confirm(`Delete ${v.name || 'this voter'}?`)){
-          remove(dbRef(db,"voters/"+key));
-          tr.remove();
-          const existing = document.getElementById("voterDetailCard");
-          if(existing) existing.remove();
-        }
-      };
-    });
+/* ---------- LOAD VOTERS ---------- */
+function loadVoters(){
+  onValue(dbRef(db,"voters"),snap=>{
+    voterData = [];
+    snap.forEach(c=>voterData.push({id:c.key,...c.val()}));
+    renderTable(voterData);
+    renderStatusCount();
   });
 }
 
-// ---------- Show detailed card ----------
-function showVoterDetail(v, key, tr){
-  let existing = document.getElementById("voterDetailCard");
-  if(existing) existing.remove();
+function renderStatusCount(){
+  let approved=0, opponent=0, anti=0;
+  voterData.forEach(v=>{ if(v.status==="approved") approved++; else if(v.status==="opponent") opponent++; else anti++; });
+  statusCountDiv.innerHTML = `<div class="badge" style="background:#dcfce7">Approved: ${approved}</div>
+  <div class="badge" style="background:#fef9c3">Opponent: ${opponent}</div>
+  <div class="badge" style="background:#fee2e2">Anti: ${anti}</div>`;
+}
 
-  const div = document.createElement("div");
-  div.id = "voterDetailCard";
-  div.className = "card mt-4";
-  const relationLine = (v.fatherName && v.fatherName.trim()) ? `Father: ${v.fatherName}` : ((v.husbandName && v.husbandName.trim()) ? `Husband: ${v.husbandName}` : (v.relationType && v.relationName ? `${v.relationType}: ${v.relationName}` : ''));
+/* ---------- RENDER TABLE ---------- */
+function renderTable(list){
+  voterListDiv.innerHTML=`<table><thead><tr><th>Name</th><th>EPIC</th><th>Status</th></tr></thead><tbody></tbody></table>`;
+  const tbody=voterListDiv.querySelector("tbody");
+  list.forEach(v=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td>${v.name||''}</td><td>${v.voterID||v.epic||''}</td><td>${v.status||''}</td>`;
+    tr.className=v.status==="approved"?"card-approved":v.status==="opponent"?"card-opponent":"card-anti";
+    tbody.appendChild(tr);
+    tr.onclick=()=>showVoterCard(v,tr);
+  });
+}
 
-  div.innerHTML = `
-    <div style="display:flex;align-items:center;margin-bottom:8px;">
-      ${senderImageURL ? `<img src='${senderImageURL}' class='img-sender'>` : ''}
-      <div style="flex:1">
-        <h2 class='font-bold text-xl'>${v.name}</h2>
-        <p class='text-sm text-gray-600'>
-          EPIC: ${v.voterID || v.epic || ''} | ${relationLine} 
-        </p>
-        <p class='text-sm text-gray-600'>
-          ${v.address || ''} | House: ${v.houseNo || ''} | Room: ${v.roomNo || ''}
-        </p>
-      </div>
+function showVoterCard(v,tr){
+  let existing=document.getElementById("voterDetailCard"); if(existing) existing.remove();
+  const div=document.createElement("div"); div.id="voterDetailCard"; div.className="card";
+  const relLine = v.fatherName?v.fatherName:(v.husbandName?v.husbandName:v.relationName||'');
+  div.innerHTML=`
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <div>
+      <h3 style="margin:0;font-weight:800">${v.name||''}</h3>
+      <div style="color:#475569;font-size:13px">Relation: ${relLine} | EPIC: ${v.voterID||v.epic||''}</div>
     </div>
+    <button id="closeDetailBtn" class="btn btn-red">Close</button>
+  </div>
+  <div style="margin-top:8px;font-size:12px">
+    <p><strong>House:</strong> ${v.houseNo||''} ${v.roomNo? '| Room:'+v.roomNo:''}</p>
+    <p><strong>Polling:</strong> ${v.pollingAddress||''} | Booth: ${v.booth||''}</p>
+    <p><strong>Part/AC:</strong> ${v.partNo||v.part||''} | ${v.acNo||v.ac||''}</p>
+    <p><strong>Age:</strong> ${v.age||''} | <strong>Mobile:</strong> ${v.mobile||''}</p>
+    <p><strong>Address:</strong> ${v.address||''}</p>
+  </div>
+  <div style="margin-top:8px;display:flex;gap:4px;flex-wrap:wrap">
+    <button class="btn btn-yellow approveBtn">Approve</button>
+    <button class="btn btn-yellow opponentBtn">Opponent</button>
+    <button class="btn btn-red antiBtn">Anti</button>
+    <button class="btn btn-blue sendBtn">Send WhatsApp</button>
+    <button class="btn btn-green printBtn">Print</button>
+  </div>`;
+  voterListDiv.prepend(div);
 
-    <div class='flex gap-2 flex-wrap mt-2'>
-      <button class='btn btn-yellow approveBtn'>Approve</button>
-      <button class='btn btn-yellow opponentBtn'>Opponent</button>
-      <button class='btn btn-red antiBtn'>Anti</button>
-      <button class='btn btn-gray deleteBtn'>Delete</button>
-      <button class='btn btn-blue sendBtn'>Send WhatsApp</button>
-      <button class='btn btn-green printBtn'>Print</button>
-    </div>
-  `;
-  voterListDiv.appendChild(div);
+  div.querySelector("#closeDetailBtn").onclick=()=>div.remove();
 
-  function updateStatus(newStatus){
-    set(dbRef(db,"voters/"+key), {...v, status:newStatus});
-    v.status = newStatus;
-    updateRowColor(tr,newStatus);
-  }
+  function updateStatus(newStatus){ set(dbRef(db,"voters/"+v.id),{...v,status:newStatus}); renderStatusCount(); }
+  div.querySelector(".approveBtn").onclick=()=>updateStatus("approved");
+  div.querySelector(".opponentBtn").onclick=()=>updateStatus("opponent");
+  div.querySelector(".antiBtn").onclick=()=>updateStatus("anti");
 
-  div.querySelector(".approveBtn").onclick = ()=>{ updateStatus("approved"); };
-  div.querySelector(".opponentBtn").onclick = ()=>{ updateStatus("opponent"); };
-  div.querySelector(".antiBtn").onclick = ()=>{ updateStatus("anti"); };
-
-  div.querySelector(".deleteBtn").onclick = ()=>{ 
-    if(confirm(`Delete ${v.name}?`)){
-      remove(dbRef(db,"voters/"+key));
-      div.remove();
-      tr.remove();
-    }
+  div.querySelector(".sendBtn").onclick=()=>{
+    const msg=(senderDescEl.value?senderDescEl.value+"\n\n":"")+`Voter Details\nName:${v.name||''}\nRelation:${relLine}\nEPIC:${v.voterID||v.epic||''}\nHouse:${v.houseNo||''}\nAddress:${v.address||''}\nPart/Booth:${v.partNo||v.part||''}/${v.booth||''}\nPolling:${v.pollingAddress||''}\nRoom:${v.roomNo||''}\nMobile:${v.mobile||''}\nImage:https://i.ibb.co/LhDpnZFn/khatik-imase.jpg`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,"_blank");
   };
 
-  div.querySelector(".sendBtn").onclick = ()=> {
-    // build message
-    let msg = document.getElementById("senderDesc").value.trim();
-    if(msg) msg += "\n\n";
-    const rel = relationLine ? relationLine + " | " : "";
-    msg += `${v.name || ''} | ${rel}EPIC:${v.voterID || v.epic || ''}\nHouse:${v.houseNo || ''}${v.roomNo ? ' / Room:'+v.roomNo : ''}\nAddress:${v.address || ''}\nPart:${v.partNo || v.part || ''} | Booth:${v.booth || ''}\nPolling Address:${v.pollingAddress || ''}`;
-
-    // attach base64 image if present
-    if(senderImageURL) msg += "\n\nSender Image:\n" + senderImageURL;
-
-    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
-  };
-
-  div.querySelector(".printBtn").onclick = ()=> {
-    let html = `<div style="font-family:Arial,Helvetica,sans-serif;padding:12px;">`;
-    if(senderImageURL) html += `<img src="${senderImageURL}" style="width:60px;height:60px;border-radius:50%;float:right;margin-left:8px;">`;
-    html += `<h2 style="margin-top:0">${v.name || ''}</h2>`;
-    html += `<p><b>${relationLine || ''}</b></p>`;
-    html += `<p>EPIC: ${v.voterID || v.epic || ''} | Serial: ${v.serial || ''}</p>`;
-    html += `<p>House No: ${v.houseNo || ''} ${v.roomNo ? '| Room No: '+v.roomNo : ''}</p>`;
-    html += `<p>Polling Address: ${v.pollingAddress || ''} | Room: ${v.roomNo || ''}</p>`;
-    html += `<p>Address: ${v.address || ''} ${v.po ? ', PO:'+v.po : ''} ${v.ps ? ', PS:'+v.ps : ''}</p>`;
-    html += `<p>AC: ${v.acNo || v.ac || ''} | Part: ${v.partNo || v.part || ''} | Booth: ${v.booth || ''}</p>`;
-    html += `<hr>`;
-    html += `<p>Mobile: ${v.mobile || ''}</p>`;
-    html += `</div>`;
-    const w = window.open();
-    w.document.write(html);
-    w.print();
-    w.close();
+  div.querySelector(".printBtn").onclick=()=>{
+    const w=window.open(); w.document.write(`<pre style="font-family:Arial">${div.innerText}</pre>`); w.print(); w.close();
   };
 }
 
-// ---------- Search & Manual Add ----------
-document.getElementById("searchVoter").addEventListener("input", renderVoters);
+/* ---------- Search ---------- */
+searchInput.addEventListener("input",(e)=>{
+  const q=e.target.value.trim().toLowerCase();
+  if(!q) renderTable(voterData);
+  else renderTable(voterData.filter(v=>{
+    return `${v.name||''} ${v.voterID||v.epic||''} ${v.partNo||v.part||''} ${v.houseNo||''} ${v.mobile||''}`.toLowerCase().includes(q);
+  }));
+});
 
-document.getElementById("addVoterManual").onclick = ()=> {
-  const name = document.getElementById("voterName").value.trim();
-  const epic = document.getElementById("voterEPIC").value.trim();
-  const partNo = document.getElementById("voterPart").value.trim();
-  if(!name || !epic) return alert("Name & EPIC required!");
-
-  // build payload with many fields
-  const payload = {
+/* ---------- Add Voter ---------- */
+document.getElementById("addVoterManual").onclick=()=>{
+  const name=document.getElementById("voterName").value.trim();
+  const epic=document.getElementById("voterEPIC").value.trim();
+  if(!name||!epic)return alert("Name & EPIC required!");
+  const payload={
     name,
-    voterID: epic,
-    epic,
-    serial: document.getElementById("voterSerial").value.trim(),
-    relationType: document.getElementById("relationType").value,
-    relationName: document.getElementById("relationName").value.trim(),
-    fatherName: '',
-    husbandName: '',
-    gender: document.getElementById("voterGender").value.trim(),
-    houseNo: document.getElementById("houseNo").value.trim(),
-    roomNo: document.getElementById("roomNo").value.trim(),
-    age: document.getElementById("voterAge").value.trim(),
-    address: document.getElementById("voterAddress").value.trim(),
-    po: document.getElementById("voterPO").value.trim(),
-    ps: document.getElementById("voterPS").value.trim(),
-    state: document.getElementById("voterState").value.trim(),
-    district: document.getElementById("voterDistrict").value.trim(),
-    acNo: document.getElementById("voterAC").value.trim(),
-    partNo,
-    part: partNo,
-    booth: document.getElementById("voterBooth").value.trim(),
-    pollingAddress: document.getElementById("pollingAddress").value.trim(),
-    section: document.getElementById("voterSection").value.trim(),
-    mobile: document.getElementById("voterMobile").value.trim(),
-    status: "anti",
-    createdAt: Date.now()
+    voterID:epic, epic,
+    serial:document.getElementById("voterSerial").value.trim(),
+    relationType:document.getElementById("relationType").value,
+    relationName:document.getElementById("relationName").value.trim(),
+    fatherName:'', husbandName:'',
+    gender:document.getElementById("voterGender").value.trim(),
+    houseNo:document.getElementById("houseNo").value.trim(),
+    roomNo:document.getElementById("roomNo").value.trim(),
+    age:document.getElementById("voterAge").value.trim(),
+    address:document.getElementById("voterAddress").value.trim(),
+    po:document.getElementById("voterPO").value.trim(),
+    ps:document.getElementById("voterPS").value.trim(),
+    state:document.getElementById("voterState").value.trim(),
+    district:document.getElementById("voterDistrict").value.trim(),
+    acNo:document.getElementById("voterAC").value.trim(),
+    partNo:document.getElementById("voterPart").value.trim(),
+    part:document.getElementById("voterPart").value.trim(),
+    booth:document.getElementById("voterBooth").value.trim(),
+    pollingAddress:document.getElementById("pollingAddress").value.trim(),
+    section:document.getElementById("voterSection").value.trim(),
+    mobile:document.getElementById("voterMobile").value.trim(),
+    status:"anti",
+    createdAt:Date.now()
   };
+  if(payload.relationType==="Father") payload.fatherName=payload.relationName;
+  else if(payload.relationType==="Husband") payload.husbandName=payload.relationName;
+  else if(payload.relationName) payload.fatherName=payload.relationName;
 
-  // relation mapping
-  const rType = payload.relationType;
-  const rName = payload.relationName;
-  if(rType === "Father") payload.fatherName = rName;
-  else if(rType === "Husband") payload.husbandName = rName;
-  else if(rName) payload.fatherName = rName;
-
-  // push new voter (unique key)
-  push(dbRef(db,"voters"), payload).then(()=>{
-    alert("Voter added!");
-    // clear inputs
-    const ids = ["voterName","voterEPIC","voterSerial","relationType","relationName","voterGender","houseNo","roomNo","voterAge","voterAddress","voterPO","voterPS","voterState","voterDistrict","voterAC","voterPart","voterBooth","pollingAddress","voterSection","voterMobile"];
-    ids.forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
-    // re-render will happen by onValue listener
-  }).catch(err=>{ console.error(err); alert("Error saving voter"); });
+  push(dbRef(db,"voters"),payload).then(()=>{alert("Voter added!"); document.querySelectorAll("#panelDiv input,#panelDiv select,#panelDiv textarea").forEach(x=>x.value="");});
 };
 </script>
-
 </body>
 </html>
