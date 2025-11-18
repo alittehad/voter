@@ -1,222 +1,320 @@
-// --- Login ---
-function login() {
-  const provider = new firebase.auth.GoogleAuthProvider();
-  firebase.auth().signInWithPopup(provider).catch(err => alert("Login failed"));
-}
+// app.js (module)
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getDatabase, ref as dbRef, set, onValue, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-// --- Auth State Listener ---
-firebase.auth().onAuthStateChanged(user => {
-  if (!user) {
+// ---------- Firebase config (replace if different) ----------
+const firebaseConfig = {
+  apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
+  authDomain: "voter-25c94.firebaseapp.com",
+  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
+  projectId: "voter-25c94",
+  storageBucket: "voter-25c94.appspot.com",
+  messagingSenderId: "297773534400",
+  appId: "1:297773534400:web:3722c487b8c83e9b787125"
+};
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const auth = getAuth(app);
+const provider = new GoogleAuthProvider();
+
+// ---------- State ----------
+let senderImageURL = "";
+const voterListDiv = document.getElementById("voterList");
+
+// ---------- Auth (Google) ----------
+document.getElementById("googleLoginBtn").onclick = ()=> {
+  signInWithPopup(auth, provider).then(res=>{
+    const emailKey = res.user.email.replace(/\./g,"_");
+    const admins = ["ngogrant454@gmail_com"];
+    const users  = ["zarafix3@gmail_com"];
+    if(admins.includes(emailKey) || users.includes(emailKey)){
+      alert(`Welcome ${res.user.displayName}`);
+    } else {
+      alert("Access denied!");
+      auth.signOut();
+    }
+  }).catch(err=>{ console.error(err); alert("Login failed!"); });
+};
+
+auth.onAuthStateChanged(user => {
+  if(user){
+    const emailKey = user.email.replace(/\./g,"_");
+    const admins = ["ngogrant454@gmail_com"];
+    const users  = ["zarafix3@gmail_com"];
+    if(admins.includes(emailKey) || users.includes(emailKey)){
+      document.getElementById("loginDiv").classList.add("hidden");
+      document.getElementById("panelDiv").classList.remove("hidden");
+      renderVoters();
+    } else {
+      auth.signOut();
+    }
+  } else {
     document.getElementById("loginDiv").classList.remove("hidden");
-    document.getElementById("mainDiv").classList.add("hidden");
-    return;
+    document.getElementById("panelDiv").classList.add("hidden");
   }
-
-  document.getElementById("loginDiv").classList.add("hidden");
-  document.getElementById("mainDiv").classList.remove("hidden");
-
-  const emailKey = user.email.replace(/\./g, "_");
-
-  firebase.database().ref("users/" + emailKey).once("value")
-    .then(snapshot => {
-      if (!snapshot.exists()) {
-        alert("Not Authorized!");
-        firebase.auth().signOut();
-        return;
-      }
-
-      const role = snapshot.val().role;
-
-      if (role === "admin") showAdminPanel();
-      else if (role === "member") showMemberPanel();
-      else showUserPanel();
-    });
-
-  loadHomeImage();
 });
 
-// --- Panels ---
-function showAdminPanel() {
-  adminPanel.style.display = "block";
-  adminImagePanel.style.display = "block";
-  userPanel.style.display = "block";
-  memberPanel.style.display = "block";
-}
-function showMemberPanel() {
-  adminPanel.style.display = "none";
-  adminImagePanel.style.display = "none";
-  userPanel.style.display = "block";
-  memberPanel.style.display = "block";
-}
-function showUserPanel() {
-  adminPanel.style.display = "none";
-  adminImagePanel.style.display = "none";
-  memberPanel.style.display = "none";
-  userPanel.style.display = "block";
-}
-
-// --- Upload Home Image (Admin Only) ---
-function uploadHomeImage() {
-  const file = document.getElementById("homeImage").files[0];
-  if (!file) return alert("Select image");
-
+// ---------- Sender Image preview (not stored) ----------
+document.getElementById("uploadSenderImage").onclick = ()=> {
+  const file = document.getElementById("senderImage").files[0];
+  if(!file) return alert("Select image first!");
   const reader = new FileReader();
-  reader.onload = function () {
-    firebase.database().ref("homeImage").set(reader.result, err => {
-      if (err) alert(err);
-      else loadHomeImage();
-    });
+  reader.onload = e=>{
+    senderImageURL = e.target.result;
+    const img = document.getElementById("senderImgPreview");
+    img.src = senderImageURL;
+    img.classList.remove("hidden");
   };
   reader.readAsDataURL(file);
+};
+
+// ---------- Helpers ----------
+function updateRowColor(tr, status){
+  tr.classList.remove("card-approved","card-opponent","card-anti");
+  if(status==="approved") tr.classList.add("card-approved");
+  else if(status==="opponent") tr.classList.add("card-opponent");
+  else tr.classList.add("card-anti");
 }
 
-function loadHomeImage() {
-  firebase.database().ref("homeImage").once("value").then(snap => {
-    if (snap.exists()) {
-      document.getElementById("homeScreenImage").src = snap.val();
-    }
-  });
-}
+// ---------- Render Voters ----------
+function renderVoters(){
+  onValue(dbRef(db,"voters"), snap=>{
+    const query = document.getElementById("searchVoter").value.trim().toLowerCase();
+    voterListDiv.innerHTML='';
 
-// --- Add User ---
-document.getElementById("addUserForm").addEventListener("submit", e => {
-  e.preventDefault();
-  const name = newUserName.value;
-  const email = newUserEmail.value;
-  const role = newUserRole.value;
+    const table = document.createElement("table");
+    table.innerHTML = `
+      <thead>
+        <tr class="bg-blue-100">
+          <th>Name</th>
+          <th>EPIC</th>
+          <th>Part No</th>
+          <th>House No / Room</th>
+          <th>Relation</th>
+          <th>Polling Address</th>
+          <th>Room No</th>
+          <th>AC No</th>
+          <th>Booth</th>
+          <th>Age</th>
+          <th>Mobile</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    `;
+    const tbody = table.querySelector("tbody");
+    voterListDiv.appendChild(table);
 
-  const safe = email.replace(/\./g, "_");
-  firebase.database().ref("users/" + safe).set({ name, email, role });
+    snap.forEach(s=>{
+      const v = s.val(); const key = s.key;
+      const combined = `
+        ${v.name||''} ${v.voterID||''} ${v.partNo||''} ${v.houseNo||''} ${v.roomNo||''} ${v.relationName||''}
+        ${v.pollingAddress||''} ${v.village||''} ${v.district||''} ${v.mobile||''}
+      `.toLowerCase();
 
-  alert("User Added");
-  addUserForm.reset();
-});
+      if(query && !combined.includes(query)) return;
 
-// --- Import CSV ---
-function importVotersFromSheet() {
-  const url = sheetCSV.value;
-  if (!url) return alert("Enter CSV URL");
-
-  Papa.parse(url, {
-    download: true,
-    header: true,
-    complete: function (results) {
-      const ref = firebase.database().ref("voters");
-
-      results.data.forEach(row => {
-        if (!row.EPIC) return;
-
-        const key = row.EPIC.replace(/[.#$/\[\]]/g, "_");
-
-        ref.child(key).set({
-          name: row.Name,
-          voterID: row.EPIC,
-          ward: row.Ward,
-          status: "pending"
-        });
-      });
-
-      alert("Imported");
-      loadVoters();
-    }
-  });
-}
-
-// --- Load Voters ---
-function loadVoters() {
-  const ref = firebase.database().ref("voters");
-  voterListUser.innerHTML = "";
-  voterListAdmin.innerHTML = "";
-
-  ref.on("value", snap => {
-    voterListUser.innerHTML = "";
-    voterListAdmin.innerHTML = "";
-
-    snap.forEach(s => {
-      const v = s.val();
-
-      let bg = "bg-yellow-200";
-      if (v.status === "approved") bg = "bg-green-200";
-      if (v.status === "opponent") bg = "bg-red-200";
-
-      const div = document.createElement("div");
-      div.className = `p-2 border rounded my-1 flex justify-between ${bg}`;
-      div.innerHTML = `
-        <span><b>${v.name}</b> | EPIC: ${v.voterID} | Ward: ${v.ward} | Status: ${v.status}</span>
+      const tr = document.createElement("tr");
+      const relationDisplay = (v.fatherName && v.fatherName.trim()) ? `Father: ${v.fatherName}` : (v.husbandName && v.husbandName.trim()) ? `Husband: ${v.husbandName}` : '';
+      tr.innerHTML = `
+        <td>${v.name || ''}</td>
+        <td>${v.voterID || ''}</td>
+        <td>${v.partNo || ''}</td>
+        <td>${(v.houseNo||'')}${v.roomNo ? ' / Rm:'+v.roomNo : ''}</td>
+        <td>${relationDisplay}</td>
+        <td>${v.pollingAddress || ''}</td>
+        <td>${v.roomNo || ''}</td>
+        <td>${v.acNo || ''}</td>
+        <td>${v.booth || ''}</td>
+        <td>${v.age || ''}</td>
+        <td>${v.mobile || ''}</td>
+        <td>${v.status || ''}</td>
       `;
+      updateRowColor(tr, v.status);
+      tbody.appendChild(tr);
 
-      const w = document.createElement("button");
-      w.innerText = "Share WhatsApp";
-      w.className = "btn-3d ml-2";
-      w.onclick = () => {
-        const msg = encodeURIComponent(`Voter: ${v.name}\nEPIC: ${v.voterID}\nWard: ${v.ward}\nStatus: ${v.status}`);
-        window.open(`https://wa.me/?text=${msg}`, "_blank");
-      };
-
-      div.appendChild(w);
-      voterListUser.appendChild(div);
-
-      voterListAdmin.appendChild(div.cloneNode(true));
+      tr.onclick = ()=>{ showVoterDetail(v, key, tr); };
     });
   });
 }
 
-// --- Search ---
-searchInput.addEventListener("input", function () {
-  const val = this.value.toLowerCase();
-  [...voterListUser.children].forEach(div => {
-    div.style.display = div.innerText.toLowerCase().includes(val) ? "" : "none";
-  });
-});
+// ---------- Show Voter Detail ----------
+function showVoterDetail(v, key, tr){
+  let existing = document.getElementById("voterDetailCard");
+  if(existing) existing.remove();
 
-// --- Member Survey ---
-surveyForm.addEventListener("submit", function (e) {
-  e.preventDefault();
+  const div = document.createElement("div");
+  div.id = "voterDetailCard";
+  div.className = "card mt-4";
 
-  const name = memberName.value;
-  const mobile = memberMobile.value;
-  const ward = memberWard.value;
-  const poster = memberPoster.files[0];
+  // pick relation display exactly as in list: prefer fatherName, else husbandName
+  const relationLine = (v.fatherName && v.fatherName.trim()) ? `Father: ${v.fatherName}` : ((v.husbandName && v.husbandName.trim()) ? `Husband: ${v.husbandName}` : '');
 
-  if (!poster) return alert("Upload poster");
+  div.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+      <div style="display:flex;align-items:center;">
+        ${senderImageURL ? `<img src='${senderImageURL}' class='img-sender'>` : ''}
+        <div>
+          <h2 class='font-bold text-2xl mb-1'>${v.name || ''}</h2>
+          <p class="text-sm text-gray-600">
+            <strong>EPIC:</strong> ${v.voterID || ''} &nbsp; | &nbsp;
+            <strong>Serial:</strong> ${v.serial || ''} 
+          </p>
+        </div>
+      </div>
 
-  const fd = new FormData();
-  fd.append("image", poster);
+      <div style="text-align:right;">
+        <div style="margin-bottom:6px;">
+          ${v.status === 'approved' ? `<span class="badge" style="background:#dcfce7">Approved</span>` : v.status === 'opponent' ? `<span class="badge" style="background:#fef9c3">Opponent</span>` : `<span class="badge" style="background:#fee2e2">Anti</span>`}
+        </div>
+        <button id="closeDetailCard" style="background:#dc2626;color:white;padding:6px 10px;border-radius:8px;font-weight:bold;">❌ Close</button>
+      </div>
+    </div>
 
-  const key = "8ece3c1f959f2426083eee1699086c71";
+    <hr class="my-2">
 
-  fetch(`https://api.imgbb.com/1/upload?key=${key}`, {
-    method: "POST",
-    body: fd
-  })
-    .then(r => r.json())
-    .then(d => {
-      firebase.database().ref("memberSurveys").push({
-        name, mobile, ward,
-        poster: d.data.display_url
-      });
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div>
+        <p><b>Relation (as in list):</b> ${relationLine || '-'}</p>
+        <p><b>Gender:</b> ${v.gender || ''} &nbsp; | &nbsp; <b>Age:</b> ${v.age || ''}</p>
+        <p><b>Mobile:</b> ${v.mobile || ''}</p>
+        <p><b>House No:</b> ${v.houseNo || ''} ${v.roomNo ? '| Room No: '+v.roomNo : ''}</p>
+        <p><b>Address:</b> ${v.address || ''} ${v.village ? ', '+v.village : ''} ${v.po ? ', PO:'+v.po : ''}</p>
+      </div>
 
-      alert("Survey Submitted");
-      surveyForm.reset();
-      loadMemberCounts();
-    });
-});
+      <div>
+        <p><b>State:</b> ${v.state || ''}</p>
+        <p><b>District:</b> ${v.district || ''}</p>
+        <p><b>AC No:</b> ${v.acNo || ''} &nbsp; | &nbsp; <b>Part No:</b> ${v.partNo || ''}</p>
+        <p><b>Booth:</b> ${v.booth || ''}</p>
+        <p><b>Polling Address:</b> ${v.pollingAddress || ''}</p>
+        <p><b>Room No:</b> ${v.roomNo || ''}</p>
+        <p><b>Section:</b> ${v.section || ''}</p>
+      </div>
+    </div>
 
-function loadMemberCounts() {
-  const ref = firebase.database().ref("memberSurveys");
-  memberCount.innerHTML = "";
-  const count = {};
+    <hr class="my-2">
 
-  ref.once("value").then(s => {
-    s.forEach(r => {
-      const n = r.val().name;
-      count[n] = (count[n] || 0) + 1;
-    });
+    <div class="flex gap-2 flex-wrap mt-2">
+      <button class='btn btn-yellow approveBtn'>Approve</button>
+      <button class='btn btn-yellow opponentBtn'>Opponent</button>
+      <button class='btn btn-red antiBtn'>Anti</button>
+      <button class='btn btn-gray deleteBtn'>Delete</button>
+      <button class='btn btn-blue sendBtn'>Send WhatsApp</button>
+      <button class='btn btn-green printBtn'>Print</button>
+    </div>
+  `;
+  voterListDiv.appendChild(div);
 
-    for (let n in count) {
-      const div = document.createElement("div");
-      div.innerText = `${n} → ${count[n]} surveys`;
-      memberCount.appendChild(div);
+  // Close
+  div.querySelector("#closeDetailCard").onclick = ()=>{ div.remove(); };
+
+  // Status update helper (overwrite full record to preserve structure)
+  function updateStatus(newStatus){
+    const payload = {...v, status:newStatus};
+    set(dbRef(db,"voters/"+key), payload);
+    v.status = newStatus;
+    updateRowColor(tr,newStatus);
+  }
+
+  // Buttons
+  div.querySelector(".approveBtn").onclick = ()=>{ updateStatus("approved"); };
+  div.querySelector(".opponentBtn").onclick = ()=>{ updateStatus("opponent"); };
+  div.querySelector(".antiBtn").onclick = ()=>{ updateStatus("anti"); };
+
+  div.querySelector(".deleteBtn").onclick = ()=>{ 
+    if(confirm(`Delete ${v.name || 'this voter'}?`)){
+      remove(dbRef(db,"voters/"+key));
+      div.remove();
+      tr.remove();
     }
-  });
+  };
+
+  div.querySelector(".sendBtn").onclick = ()=> {
+    let msg = document.getElementById("senderDesc").value.trim();
+    if(msg) msg += "\n\n";
+    if(senderImageURL) msg += "[Sender Image Attached]\n\n";
+    const rel = relationLine ? relationLine + " | " : "";
+    msg += `${v.name || ''} | ${rel}EPIC:${v.voterID || ''}\nHouse:${v.houseNo || ''}${v.roomNo ? ' / Room:'+v.roomNo : ''}\nAddress:${v.address || ''}${v.village ? ', '+v.village : ''}\nPart:${v.partNo || ''} | Booth:${v.booth || ''} | Polling Address:${v.pollingAddress || ''} | Room:${v.roomNo || ''}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
+  };
+
+  div.querySelector(".printBtn").onclick = ()=> {
+    let html = `<div style="font-family:Arial,Helvetica,sans-serif;padding:12px;">`;
+    if(senderImageURL) html += `<img src="${senderImageURL}" style="width:50px;height:50px;border-radius:50%;float:right;margin-left:8px;">`;
+    html += `<h2 style="margin-top:0">${v.name || ''}</h2>`;
+    html += `<p><b>${relationLine || ''}</b></p>`;
+    html += `<p>EPIC: ${v.voterID || ''} | Serial: ${v.serial || ''}</p>`;
+    html += `<p>House No: ${v.houseNo || ''} ${v.roomNo ? '| Room No: '+v.roomNo : ''}</p>`;
+    html += `<p>Polling Address: ${v.pollingAddress || ''} | Room: ${v.roomNo || ''}</p>`;
+    html += `<p>Address: ${v.address || ''} ${v.village ? ', '+v.village : ''} ${v.po ? ', PO:'+v.po : ''}</p>`;
+    html += `<p>AC: ${v.acNo || ''} | Part: ${v.partNo || ''} | Booth: ${v.booth || ''}</p>`;
+    html += `<hr>`;
+    html += `<p>Mobile: ${v.mobile || ''}</p>`;
+    html += `</div>`;
+    const w = window.open();
+    w.document.write(html);
+    w.print();
+    w.close();
+  };
 }
+
+// ---------- Search & Manual Add ----------
+document.getElementById("searchVoter").addEventListener("input", renderVoters);
+
+document.getElementById("addVoterManual").onclick = ()=>{
+  const name = document.getElementById("voterName").value.trim();
+  const epic = document.getElementById("voterEPIC").value.trim();
+  if(!name || !epic) return alert("Name & EPIC required!");
+
+  const key = epic.replace(/\W/g,"_");
+
+  // build payload following agreed JSON structure
+  const payload = {
+    name,
+    voterID: epic,
+    serial: document.getElementById("voterSerial").value.trim(),
+    fatherName: '', // keep empty, set from relation fields below
+    husbandName: '',
+    // relation fields
+    // if user used relationType+relationName then map to father/husband fields
+    pollingAddress: document.getElementById("pollingAddress").value.trim(),
+    roomNo: document.getElementById("roomNo").value.trim(),
+    houseNo: document.getElementById("houseNo").value.trim(),
+    address: document.getElementById("voterAddress").value.trim(),
+    village: '', 
+    po: document.getElementById("voterPO").value.trim(),
+    ps: document.getElementById("voterPS").value.trim(),
+    state: document.getElementById("voterState").value.trim(),
+    district: document.getElementById("voterDistrict").value.trim(),
+    acNo: document.getElementById("voterAC").value.trim(),
+    partNo: document.getElementById("voterPart").value.trim(),
+    booth: document.getElementById("voterBooth").value.trim(),
+    pollingStation: document.getElementById("pollingAddress").value.trim(),
+    section: document.getElementById("voterSection").value.trim(),
+    age: document.getElementById("voterAge").value.trim(),
+    gender: document.getElementById("voterGender").value.trim(),
+    mobile: document.getElementById("voterMobile").value.trim(),
+    status: "anti",
+    createdAt: Date.now()
+  };
+
+  // map relationType -> fatherName or husbandName
+  const relType = document.getElementById("relationType").value;
+  const relName = document.getElementById("relationName").value.trim();
+  if(relType === "Father") payload.fatherName = relName;
+  else if(relType === "Husband") payload.husbandName = relName;
+  else {
+    // if user typed relationName without selecting type, try to heuristically place it in fatherName
+    if(relName) payload.fatherName = relName;
+  }
+
+  set(dbRef(db,"voters/"+key), payload).then(()=>{
+    alert("Voter added!");
+    // clear form
+    const ids = ["voterName","voterEPIC","voterSerial","relationType","relationName","voterGender","houseNo","roomNo","voterAge","voterAddress","voterPO","voterPS","voterState","voterDistrict","voterAC","voterPart","voterBooth","pollingAddress","voterSection","voterMobile"];
+    ids.forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+    renderVoters();
+  }).catch(err => { console.error(err); alert("Error saving voter"); });
+};
