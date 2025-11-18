@@ -1,13 +1,22 @@
-// ==============================
-// FIREBASE CONFIG
-// ==============================
+// ----------------------------
+// Firebase Init
+// ----------------------------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { 
-  getFirestore, collection, addDoc, getDocs 
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { 
-  getAuth, GoogleAuthProvider, signInWithPopup, signOut 
+    getAuth, 
+    GoogleAuthProvider, 
+    signInWithPopup, 
+    signOut, 
+    onAuthStateChanged 
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+import { 
+    getDatabase, 
+    ref, 
+    set, 
+    push, 
+    onValue 
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
@@ -20,204 +29,228 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
+const auth = getAuth();
 const provider = new GoogleAuthProvider();
+const db = getDatabase();
 
-// ==============================
-// UI ELEMENTS
-// ==============================
+// ----------------------------
+// UI Elements
+// ----------------------------
 const loginDiv = document.getElementById("loginDiv");
 const panelDiv = document.getElementById("panelDiv");
-const googleLoginBtn = document.getElementById("googleLoginBtn");
-const searchInput = document.getElementById("searchVoter");
+const loginBtn = document.getElementById("googleLoginBtn");
 const voterListDiv = document.getElementById("voterList");
+const searchInput = document.getElementById("searchVoter");
 
-// Sender fields
-const senderDesc = document.getElementById("senderDesc");
-const senderImageInput = document.getElementById("senderImage");
-const senderImgPreview = document.getElementById("senderImgPreview");
 
-// Base64 sender image
+// ----------------------------
+// LOGIN
+// ----------------------------
+loginBtn.onclick = () => {
+    signInWithPopup(auth, provider)
+    .then(() => console.log("Login Success"))
+    .catch(err => alert("Login Failed: " + err.message));
+};
+
+
+// ----------------------------
+// Auto Login (Refresh par Logout NAHI)
+// ----------------------------
+onAuthStateChanged(auth, (user) => {
+    if (user) {
+        loginDiv.classList.add("hidden");
+        panelDiv.classList.remove("hidden");
+        loadVoters();
+    } else {
+        panelDiv.classList.add("hidden");
+        loginDiv.classList.remove("hidden");
+    }
+});
+
+
+// ----------------------------
+// LOAD VOTERS
+// ----------------------------
+let voterData = [];
+
+function loadVoters() {
+    const dbRef = ref(db, "voters");
+
+    onValue(dbRef, (snapshot) => {
+        voterData = [];
+
+        snapshot.forEach(child => {
+            voterData.push({ id: child.key, ...child.val() });
+        });
+
+        displayVoters(voterData);
+    });
+}
+
+
+// ----------------------------
+// DISPLAY TABLE
+// ----------------------------
+function displayVoters(list) {
+    let html = `
+        <table class="table-auto w-full border text-sm">
+            <thead class="bg-blue-100">
+                <tr>
+                    <th class="border p-2">Name</th>
+                    <th class="border p-2">EPIC</th>
+                    <th class="border p-2">Relation</th>
+                    <th class="border p-2">House</th>
+                    <th class="border p-2">Booth</th>
+                    <th class="border p-2">Polling Address</th>
+                    <th class="border p-2">Room No</th>
+                    <th class="border p-2">Mobile</th>
+                    <th class="border p-2">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+
+    list.forEach(v => {
+        const rel = v.relationType && v.relationName ? `${v.relationType}: ${v.relationName}` : "";
+
+        html += `
+            <tr>
+                <td class="border p-2">${v.name || ''}</td>
+                <td class="border p-2">${v.epic || ''}</td>
+                <td class="border p-2">${rel}</td>
+                <td class="border p-2">${v.houseNo || ''}</td>
+                <td class="border p-2">${v.booth || ''}</td>
+                <td class="border p-2">${v.pollingAddress || ''}</td>
+                <td class="border p-2">${v.roomNo || ''}</td>
+                <td class="border p-2">${v.mobile || ''}</td>
+
+                <td class="border p-2">
+                    <button class="sendBtn bg-green-600 text-white px-2 py-1 rounded"
+                        data-id="${v.id}">
+                        Send
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+
+    html += "</tbody></table>";
+
+    voterListDiv.innerHTML = html;
+
+    attachSendEvents();
+}
+
+
+// ----------------------------
+// SEARCH SYSTEM
+// ----------------------------
+searchInput.addEventListener("input", () => {
+    let q = searchInput.value.toLowerCase();
+
+    const filtered = voterData.filter(v =>
+        (v.name || '').toLowerCase().includes(q) ||
+        (v.epic || '').toLowerCase().includes(q) ||
+        (v.part || '').toLowerCase().includes(q) ||
+        (v.mobile || '').toLowerCase().includes(q) ||
+        (v.houseNo || '').toLowerCase().includes(q)
+    );
+
+    displayVoters(filtered);
+});
+
+
+// ----------------------------
+// Sender Image Preview (Base64)
+// ----------------------------
 let senderImageURL = "";
 
-// ==============================
-// GOOGLE LOGIN
-// ==============================
-googleLoginBtn.onclick = async function () {
-  try {
-    const result = await signInWithPopup(auth, provider);
-    loginDiv.classList.add("hidden");
-    panelDiv.classList.remove("hidden");
+document.getElementById("senderImage").addEventListener("change", () => {
+    let file = event.target.files[0];
+    let reader = new FileReader();
 
-    loadVoters();
-
-  } catch (err) {
-    alert("Login Failed: " + err.message);
-  }
-};
-
-// ==============================
-// SENDER IMAGE BASE64 CONVERT
-// ==============================
-senderImageInput.addEventListener("change", () => {
-  const file = senderImageInput.files[0];
-  const reader = new FileReader();
-
-  reader.onload = function (e) {
-    senderImageURL = e.target.result;
-    senderImgPreview.src = senderImageURL;
-    senderImgPreview.classList.remove("hidden");
-  };
-
-  reader.readAsDataURL(file);
-});
-
-// ==============================
-// FETCH & RENDER VOTERS
-// ==============================
-let allVoters = [];
-
-async function loadVoters() {
-  allVoters = [];
-  voterListDiv.innerHTML = "Loading...";
-
-  const querySnapshot = await getDocs(collection(db, "voters"));
-  querySnapshot.forEach((doc) => {
-    allVoters.push({ id: doc.id, ...doc.data() });
-  });
-
-  renderVoterList(allVoters);
-}
-
-// ==============================
-// SEARCH
-// ==============================
-searchInput.addEventListener("keyup", () => {
-  const q = searchInput.value.toLowerCase();
-
-  const filtered = allVoters.filter(v =>
-    (v.name || "").toLowerCase().includes(q) ||
-    (v.voterID || "").toLowerCase().includes(q) ||
-    (v.partNo || "").toLowerCase().includes(q) ||
-    (v.houseNo || "").toLowerCase().includes(q) ||
-    (v.mobile || "").toLowerCase().includes(q)
-  );
-
-  renderVoterList(filtered);
-});
-
-// ==============================
-// RENDER TABLE
-// ==============================
-function renderVoterList(list) {
-  let html = `
-    <table class="w-full border text-sm">
-      <thead class="bg-blue-100 font-bold">
-        <tr>
-          <th class="border p-2">Part</th>
-          <th class="border p-2">EPIC</th>
-          <th class="border p-2">Name</th>
-          <th class="border p-2">Father/Husband</th>
-          <th class="border p-2">House</th>
-          <th class="border p-2">Room</th>
-          <th class="border p-2">Polling Address</th>
-          <th class="border p-2">Mobile</th>
-          <th class="border p-2">Send</th>
-        </tr>
-      </thead>
-      <tbody>
-  `;
-
-  list.forEach(v => {
-    const relationLine = v.relationType ? `${v.relationType}: ${v.relationName}` : "";
-
-    html += `
-      <tr class="border">
-        <td class="border p-2">${v.partNo || ""}</td>
-        <td class="border p-2">${v.voterID || ""}</td>
-        <td class="border p-2">${v.name || ""}</td>
-        <td class="border p-2">${relationLine}</td>
-        <td class="border p-2">${v.houseNo || ""}</td>
-        <td class="border p-2">${v.roomNo || ""}</td>
-        <td class="border p-2">${v.pollingAddress || ""}</td>
-        <td class="border p-2">${v.mobile || ""}</td>
-
-        <td class="border p-2">
-          <button class="sendBtn bg-green-500 text-white px-3 py-1 rounded"
-            data-id="${v.id}">
-            Send
-          </button>
-        </td>
-      </tr>
-    `;
-  });
-
-  html += "</tbody></table>";
-
-  voterListDiv.innerHTML = html;
-
-  attachSendButtons(list);
-}
-
-// ==============================
-// SEND WHATSAPP
-// ==============================
-function attachSendButtons(list) {
-  document.querySelectorAll(".sendBtn").forEach(btn => {
-    btn.onclick = () => {
-      const id = btn.getAttribute("data-id");
-      const v = list.find(x => x.id === id);
-
-      const relationLine = v.relationType ? `${v.relationType}: ${v.relationName}` : "";
-
-      let msg = senderDesc.value.trim();
-      if (msg) msg += "\n\n";
-
-      msg += `${v.name || ''}\n${relationLine}\nEPIC: ${v.voterID}\nHouse: ${v.houseNo}${v.roomNo ? ' / Room: ' + v.roomNo : ''}\nAddress: ${v.address}\nPart: ${v.partNo} | Booth: ${v.booth}\nPolling Address: ${v.pollingAddress}`;
-
-      if (senderImageURL) {
-        msg += "\n\nSender Image:\n" + senderImageURL;
-      }
-
-      window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
+    reader.onload = (e) => {
+        senderImageURL = e.target.result;
+        document.getElementById("senderImgPreview").src = senderImageURL;
+        document.getElementById("senderImgPreview").classList.remove("hidden");
     };
-  });
+
+    reader.readAsDataURL(file);
+});
+
+
+// ----------------------------
+// SEND WHATSAPP
+// ----------------------------
+function attachSendEvents() {
+    document.querySelectorAll(".sendBtn").forEach(btn => {
+        btn.onclick = () => {
+            let id = btn.getAttribute("data-id");
+            let v = voterData.find(x => x.id === id);
+
+            if (!v) return;
+
+            const relationLine = v.relationType && v.relationName 
+                ? `${v.relationType}: ${v.relationName}` 
+                : "";
+
+            let msg = document.getElementById("senderDesc").value.trim();
+            if (msg) msg += "\n\n";
+
+            msg += 
+`Name: ${v.name}
+${relationLine}
+EPIC: ${v.epic}
+House: ${v.houseNo}
+Address: ${v.address}
+Part: ${v.part}
+Booth: ${v.booth}
+Polling Address: ${v.pollingAddress}
+Room No: ${v.roomNo}`;
+
+            if (senderImageURL) {
+                msg += `\n\nSender Image:\n${senderImageURL}`;
+            }
+
+            window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
+        };
+    });
 }
 
-// ==============================
+
+// ----------------------------
 // ADD VOTER MANUALLY
-// ==============================
-document.getElementById("addVoterManual").onclick = async () => {
-  const v = {
-    name: voterName.value.trim(),
-    voterID: voterEPIC.value.trim(),
-    serial: voterSerial.value.trim(),
-    relationType: relationType.value,
-    relationName: relationName.value.trim(),
+// ----------------------------
+document.getElementById("addVoterManual").onclick = () => {
 
-    gender: voterGender.value,
-    houseNo: houseNo.value.trim(),
-    roomNo: roomNo.value.trim(),
-    age: voterAge.value.trim(),
+    let data = {
+        name: voterName.value,
+        epic: voterEPIC.value,
+        serial: voterSerial.value,
+        relationType: relationType.value,
+        relationName: relationName.value,
+        gender: voterGender.value,
+        houseNo: houseNo.value,
+        roomNo: roomNo.value,
+        age: voterAge.value,
+        address: voterAddress.value,
+        po: voterPO.value,
+        ps: voterPS.value,
+        state: voterState.value,
+        district: voterDistrict.value,
+        ac: voterAC.value,
+        part: voterPart.value,
+        booth: voterBooth.value,
+        pollingAddress: pollingAddress.value,
+        section: voterSection.value,
+        mobile: voterMobile.value,
+    };
 
-    address: voterAddress.value,
-    po: voterPO.value,
-    ps: voterPS.value,
+    push(ref(db, "voters"), data);
 
-    state: voterState.value,
-    district: voterDistrict.value,
-    acNo: voterAC.value,
+    alert("Voter Added!");
 
-    partNo: voterPart.value,
-    booth: voterBooth.value,
-    pollingAddress: pollingAddress.value,
-
-    section: voterSection.value,
-    mobile: voterMobile.value,
-  };
-
-  await addDoc(collection(db, "voters"), v);
-  alert("Voter Added!");
-  loadVoters();
+    document.querySelectorAll("input").forEach(x => x.value = "");
+    relationType.value = "";
 };
+
