@@ -3,192 +3,49 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Voter Management Panel</title>
+<title>Voter Management Login</title>
 <script src="https://cdn.tailwindcss.com"></script>
-<style>
-:root{--bg:#eef2ff;--card:#fff}
-body{background:var(--bg);font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;}
-.container{max-width:1100px;margin:12px auto;padding:12px;}
-.heading {font-size:clamp(1.6rem,3vw,2rem);font-weight:800;text-align:center;margin-bottom:12px;color:#0f172a;transform: perspective(500px) rotateX(6deg);text-shadow:0 1px 0 rgba(255,255,255,0.5),0 6px 12px rgba(2,6,23,0.12),0 18px 36px rgba(2,6,23,0.10);letter-spacing:0.6px;}
-.card{background:var(--card);border-radius:10px;padding:10px;margin-bottom:10px;box-shadow:4px 4px 12px rgba(2,6,23,0.06);}
-.img-sender{width:50px;height:50px;border-radius:999px;object-fit:cover;margin-right:6px}
-.btn{cursor:pointer;padding:4px 6px;border-radius:6px;font-weight:600;font-size:12px}
-.btn-blue{background:#2563eb;color:white}
-.btn-green{background:#16a34a;color:white}
-.btn-yellow{background:#facc15;color:#111}
-.btn-red{background:#dc2626;color:white}
-.btn-gray{background:#6b7280;color:white}
-.table-container{overflow-x:auto}
-table{width:100%;border-collapse:collapse;min-width:300px;background:white;border-radius:6px;overflow:hidden}
-th,td{padding:6px;border:1px solid #e6e9ef;text-align:left;white-space:nowrap;font-size:13px}
-thead tr{background:#ebf8ff;font-weight:700}
-tr:hover{background:#f7f9ff}
-.badge{display:inline-block;padding:2px 6px;border-radius:6px;font-weight:700;font-size:12px}
-.actions button{margin-right:4px;padding:3px 5px;font-size:11px}
-@media (max-width:900px){ table{min-width:100%} }
-</style>
 </head>
-<body>
-<div class="container">
-<h1 class="heading">Voter Management Panel</h1>
-
-<!-- Login -->
-<div id="loginDiv" class="card text-center">
-<h2 class="text-lg font-bold text-blue-700">Login to Access Voter Panel</h2>
-<button id="googleLoginBtn" class="btn btn-blue mt-2">Login with Google</button>
-</div>
-
-<!-- Panel -->
-<div id="panelDiv" class="hidden">
-
-<!-- sender description + status count -->
-<div class="flex flex-col md:flex-row justify-between items-center mb-2">
-<textarea id="senderDesc" placeholder="Sender Description" class="border p-2 rounded w-full md:w-1/2 mb-2 md:mb-0" rows="2"></textarea>
-<div id="statusCount" class="text-sm md:text-base font-semibold"></div>
-</div>
-
-<!-- search -->
-<input id="searchVoter" placeholder="Search Name/EPIC" class="w-full border p-2 rounded mb-2"/>
-
-<!-- voter table -->
-<div id="voterList" class="table-container card"></div>
-
-<!-- add voter form -->
-<div class="card mt-2">
-<h3 class="text-md font-bold text-blue-700 mb-1">Add Voter</h3>
-<div class="grid grid-cols-1 md:grid-cols-3 gap-2">
-<input id="voterName" placeholder="Name" class="border p-2 rounded" />
-<input id="voterEPIC" placeholder="EPIC" class="border p-2 rounded" />
-<select id="relationType" class="border p-2 rounded">
-<option value="">Relation Type</option><option value="Father">Father</option><option value="Husband">Husband</option>
-</select>
-<input id="relationName" placeholder="Father/Husband Name" class="border p-2 rounded" />
-<input id="voterHouse" placeholder="House No" class="border p-2 rounded" />
-<input id="voterPart" placeholder="Part No" class="border p-2 rounded" />
-<input id="voterBooth" placeholder="Booth" class="border p-2 rounded" />
-<input id="voterMobile" placeholder="Mobile" class="border p-2 rounded" />
-</div>
-<div class="mt-2"><button id="addVoterManual" class="btn btn-green w-full">Add Voter</button></div>
-</div>
-
-</div>
-</div>
+<body class="bg-blue-50 flex items-center justify-center h-screen">
+  <div class="bg-white p-6 rounded shadow w-full max-w-sm text-center">
+    <h1 class="text-2xl font-bold mb-4">Voter Management Panel</h1>
+    <p class="mb-4">Login with Google</p>
+    <button id="googleLoginBtn" class="bg-blue-600 text-white px-4 py-2 rounded font-semibold">Login with Google</button>
+  </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getDatabase, ref as dbRef, onValue, push, set, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-const firebaseConfig = {apiKey:"AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",authDomain:"voter-25c94.firebaseapp.com",databaseURL:"https://voter-25c94-default-rtdb.firebaseio.com",projectId:"voter-25c94",storageBucket:"voter-25c94.firebasestorage.app",messagingSenderId:"297773534400",appId:"1:297773534400:web:3722c487b8c83e9b787125"};
+const firebaseConfig = {
+  apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
+  authDomain: "voter-25c94.firebaseapp.com",
+  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
+  projectId: "voter-25c94",
+  storageBucket: "voter-25c94.firebasestorage.app",
+  messagingSenderId: "297773534400",
+  appId: "1:297773534400:web:3722c487b8c83e9b787125"
+};
+
 const app = initializeApp(firebaseConfig);
 const auth = getAuth();
 const provider = new GoogleAuthProvider();
-const db = getDatabase(app);
-const loginDiv = document.getElementById("loginDiv");
-const panelDiv = document.getElementById("panelDiv");
-const loginBtn = document.getElementById("googleLoginBtn");
-const voterListDiv = document.getElementById("voterList");
-const searchInput = document.getElementById("searchVoter");
-const senderDescEl = document.getElementById("senderDesc");
-const statusCountDiv = document.getElementById("statusCount");
-const FIXED_SENDER_IMAGE = "https://i.ibb.co/LhDpnZFn/khatik-imase.jpg";
 
-let voterData = [];
-let admins = ["ngogrant454@gmail_com"]; // existing admin emails
+const adminsRef = ["ngogrant454@gmail_com"]; // Admin emails
+const usersRef = ["zarafix3@gmail_com"]; // Example user emails
 
-loginBtn.onclick = ()=>{
- signInWithPopup(auth,provider).then(res=>{
-  const emailKey = res.user.email.replace(/\./g,'_');
-  if(!admins.includes(emailKey)){alert("Access Denied");auth.signOut();}
- }).catch(err=>alert("Login failed: "+err.message));
-};
-
-onAuthStateChanged(auth,user=>{
- if(user){
-  loginDiv.classList.add("hidden");
-  panelDiv.classList.remove("hidden");
-  loadVoters();
- }else{
-  loginDiv.classList.remove("hidden");
-  panelDiv.classList.add("hidden");
- }
-});
-
-function loadVoters(){
- const r = dbRef(db,"voters");
- onValue(r,snap=>{
-  voterData = [];
-  snap.forEach(c=>voterData.push({id:c.key,...c.val()}));
-  renderTable(voterData);
- });
-}
-
-function renderTable(list){
- let statusCount = {approved:0,opponent:0,anti:0};
- list.forEach(v=>{statusCount[v.status] = (statusCount[v.status]||0)+1;});
- statusCountDiv.innerHTML = `Approved: ${statusCount.approved} | Opponent: ${statusCount.opponent} | Anti: ${statusCount.anti}`;
- let html=`<table><thead><tr><th>Name</th><th>EPIC</th><th>Status</th><th>Action</th></tr></thead><tbody></tbody></table>`;
- voterListDiv.innerHTML=html;
- const tbody=voterListDiv.querySelector('tbody');
- list.forEach(v=>{
-  const tr=document.createElement('tr');
-  tr.innerHTML=`<td>${v.name||''}</td><td>${v.epic||v.voterID||''}</td><td>${v.status||''}</td><td><button class='btn btn-blue viewBtn'>View</button></td>`;
-  tbody.appendChild(tr);
-  tr.querySelector('.viewBtn').onclick=()=>showCard(v,tr);
- });
-}
-
-function showCard(v,tr){
- const existing=document.getElementById('voterCard'); if(existing) existing.remove();
- const div=document.createElement('div'); div.id='voterCard'; div.className='card';
- const relName=v.relationType&&v.relationName?`${v.relationType}: ${v.relationName}`:'';
- div.innerHTML=`<div style='display:flex;justify-content:space-between;align-items:center'>
- <div><h3>${v.name}</h3><p>${relName} | EPIC: ${v.epic||v.voterID||''}</p></div>
- <button id='closeCard' class='btn btn-red'>Close</button></div>
- <p>House: ${v.houseNo||''}</p>
- <p>Part: ${v.part||v.partNo||''} | Booth: ${v.booth||''}</p>
- <p>Mobile: ${v.mobile||''}</p>
- <div style='margin-top:4px'>
- <button class='btn btn-yellow approveBtn'>Approved</button>
- <button class='btn btn-yellow opponentBtn'>Opponent</button>
- <button class='btn btn-red antiBtn'>Anti</button>
- <button class='btn btn-blue sendBtn'>Send WhatsApp</button>
- <button class='btn btn-green printBtn'>Print</button>
- </div>`;
- voterListDiv.prepend(div);
- div.querySelector('#closeCard').onclick=()=>div.remove();
- function updateStatus(st){ set(dbRef(db,'voters/'+v.id),{...v,status:st}); div.style.backgroundColor=st==='approved'?'#dcfce7':st==='opponent'?'#fef9c3':'#fee2e2';}
- div.querySelector('.approveBtn').onclick=()=>updateStatus('approved');
- div.querySelector('.opponentBtn').onclick=()=>updateStatus('opponent');
- div.querySelector('.antiBtn').onclick=()=>updateStatus('anti');
- div.querySelector('.sendBtn').onclick=()=>{
-  let msg=''; if(senderDescEl.value) msg+=senderDescEl.value+'\n\n';
-  msg+=`Name: ${v.name}\n${relName}\nEPIC: ${v.epic||v.voterID}\nHouse: ${v.houseNo}\nPart: ${v.part||v.partNo} | Booth: ${v.booth}\nMobile: ${v.mobile}\n\nImage: ${FIXED_SENDER_IMAGE}`;
-  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,'_blank');
- };
- div.querySelector('.printBtn').onclick=()=>{
-  let html=`<div style='font-family:Arial;padding:10px'><img src='${FIXED_SENDER_IMAGE}' style='width:50px;height:50px;border-radius:50%;float:right'>
- <h3>${v.name}</h3><p>${relName} | EPIC: ${v.epic||v.voterID||''}</p>
- <p>House: ${v.houseNo}</p><p>Part: ${v.part||v.partNo} | Booth: ${v.booth}</p><p>Mobile: ${v.mobile}</p></div>`;
-  const w=window.open(); w.document.write(html); w.print(); w.close();
- };
-}
-
-searchInput.addEventListener('input',e=>{
- const q=e.target.value.toLowerCase(); renderTable(q?voterData.filter(v=>`${v.name} ${v.epic||v.voterID}`.toLowerCase().includes(q)):voterData);
-});
-
-document.getElementById('addVoterManual').onclick=()=>{
- const name=document.getElementById('voterName').value.trim();
- const epic=document.getElementById('voterEPIC').value.trim();
- if(!name||!epic)return alert('Name & EPIC required');
- const relType=document.getElementById('relationType').value;
- const relName=document.getElementById('relationName').value.trim();
- const payload={name,epic,voterID:epic,relationType:relType,relationName:relName,houseNo:document.getElementById('voterHouse').value,part:document.getElementById('voterPart').value,booth:document.getElementById('voterBooth').value,mobile:document.getElementById('voterMobile').value,status:'anti'};
- push(dbRef(db,'voters'),payload).then(()=>{
-  alert('Voter added');
-  ['voterName','voterEPIC','relationType','relationName','voterHouse','voterPart','voterBooth','voterMobile'].forEach(id=>document.getElementById(id).value='');
- });
+document.getElementById("googleLoginBtn").onclick = () => {
+  signInWithPopup(auth, provider)
+    .then(res => {
+      const emailKey = res.user.email.replace(/\./g,'_');
+      if(adminsRef.includes(emailKey)) window.location.href = "admin.html";
+      else if(usersRef.includes(emailKey)) window.location.href = "user.html";
+      else {
+        alert("Access Denied");
+        auth.signOut();
+      }
+    })
+    .catch(err => alert("Login Failed: "+err.message));
 };
 </script>
 </body>
