@@ -3,19 +3,10 @@
 // ----------------------------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { 
-    getAuth, 
-    GoogleAuthProvider, 
-    signInWithPopup, 
-    signOut, 
-    onAuthStateChanged 
+    getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged 
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-
 import { 
-    getDatabase, 
-    ref, 
-    set, 
-    push, 
-    onValue 
+    getDatabase, ref, set, push, onValue, remove
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 const firebaseConfig = {
@@ -42,7 +33,6 @@ const loginBtn = document.getElementById("googleLoginBtn");
 const voterListDiv = document.getElementById("voterList");
 const searchInput = document.getElementById("searchVoter");
 
-
 // ----------------------------
 // LOGIN
 // ----------------------------
@@ -52,9 +42,8 @@ loginBtn.onclick = () => {
     .catch(err => alert("Login Failed: " + err.message));
 };
 
-
 // ----------------------------
-// Auto Login (Refresh par Logout NAHI)
+// Auto Login
 // ----------------------------
 onAuthStateChanged(auth, (user) => {
     if (user) {
@@ -67,7 +56,6 @@ onAuthStateChanged(auth, (user) => {
     }
 });
 
-
 // ----------------------------
 // LOAD VOTERS
 // ----------------------------
@@ -78,43 +66,39 @@ function loadVoters() {
 
     onValue(dbRef, (snapshot) => {
         voterData = [];
-
         snapshot.forEach(child => {
             voterData.push({ id: child.key, ...child.val() });
         });
-
         displayVoters(voterData);
     });
 }
-
 
 // ----------------------------
 // DISPLAY TABLE
 // ----------------------------
 function displayVoters(list) {
     let html = `
-        <table class="table-auto w-full border text-sm">
-            <thead class="bg-blue-100">
-                <tr>
-                    <th class="border p-2">Name</th>
-                    <th class="border p-2">EPIC</th>
-                    <th class="border p-2">Relation</th>
-                    <th class="border p-2">House</th>
-                    <th class="border p-2">Booth</th>
-                    <th class="border p-2">Polling Address</th>
-                    <th class="border p-2">Room No</th>
-                    <th class="border p-2">Mobile</th>
-                    <th class="border p-2">Action</th>
-                </tr>
-            </thead>
-            <tbody>
-    `;
+    <table class="table-auto w-full border text-sm">
+        <thead class="bg-blue-100">
+            <tr>
+                <th class="border p-2">Name</th>
+                <th class="border p-2">EPIC</th>
+                <th class="border p-2">Relation</th>
+                <th class="border p-2">House</th>
+                <th class="border p-2">Booth</th>
+                <th class="border p-2">Polling Address</th>
+                <th class="border p-2">Room</th>
+                <th class="border p-2">Mobile</th>
+                <th class="border p-2">Action</th>
+            </tr>
+        </thead>
+        <tbody>`;
 
     list.forEach(v => {
         const rel = v.relationType && v.relationName ? `${v.relationType}: ${v.relationName}` : "";
 
         html += `
-            <tr>
+            <tr class="hover:bg-yellow-100">
                 <td class="border p-2">${v.name || ''}</td>
                 <td class="border p-2">${v.epic || ''}</td>
                 <td class="border p-2">${rel}</td>
@@ -124,30 +108,28 @@ function displayVoters(list) {
                 <td class="border p-2">${v.roomNo || ''}</td>
                 <td class="border p-2">${v.mobile || ''}</td>
 
-                <td class="border p-2">
-                    <button class="sendBtn bg-green-600 text-white px-2 py-1 rounded"
-                        data-id="${v.id}">
-                        Send
-                    </button>
+                <td class="border p-2 space-x-1">
+                    <button class="sendBtn bg-green-600 text-white px-2 py-1 rounded" data-id="${v.id}">WA</button>
+                    <button class="printBtn bg-blue-600 text-white px-2 py-1 rounded" data-id="${v.id}">Print</button>
+                    <button class="deleteBtn bg-red-600 text-white px-2 py-1 rounded" data-id="${v.id}">Del</button>
                 </td>
-            </tr>
-        `;
+            </tr>`;
     });
 
-    html += "</tbody></table>";
+    html += `</tbody></table>`;
 
     voterListDiv.innerHTML = html;
 
     attachSendEvents();
+    attachPrintEvents();
+    attachDeleteEvents();
 }
 
-
 // ----------------------------
-// SEARCH SYSTEM
+// SEARCH
 // ----------------------------
 searchInput.addEventListener("input", () => {
     let q = searchInput.value.toLowerCase();
-
     const filtered = voterData.filter(v =>
         (v.name || '').toLowerCase().includes(q) ||
         (v.epic || '').toLowerCase().includes(q) ||
@@ -155,17 +137,15 @@ searchInput.addEventListener("input", () => {
         (v.mobile || '').toLowerCase().includes(q) ||
         (v.houseNo || '').toLowerCase().includes(q)
     );
-
     displayVoters(filtered);
 });
 
-
 // ----------------------------
-// Sender Image Preview (Base64)
+// Image Preview (Base64)
 // ----------------------------
 let senderImageURL = "";
 
-document.getElementById("senderImage").addEventListener("change", () => {
+document.getElementById("senderImage").addEventListener("change", (event) => {
     let file = event.target.files[0];
     let reader = new FileReader();
 
@@ -178,7 +158,6 @@ document.getElementById("senderImage").addEventListener("change", () => {
     reader.readAsDataURL(file);
 });
 
-
 // ----------------------------
 // SEND WHATSAPP
 // ----------------------------
@@ -187,18 +166,14 @@ function attachSendEvents() {
         btn.onclick = () => {
             let id = btn.getAttribute("data-id");
             let v = voterData.find(x => x.id === id);
-
             if (!v) return;
 
-            const relationLine = v.relationType && v.relationName 
-                ? `${v.relationType}: ${v.relationName}` 
-                : "";
+            const relationLine = v.relationType && v.relationName ? `${v.relationType}: ${v.relationName}` : "";
 
             let msg = document.getElementById("senderDesc").value.trim();
             if (msg) msg += "\n\n";
 
-            msg += 
-`Name: ${v.name}
+            msg += `Name: ${v.name}
 ${relationLine}
 EPIC: ${v.epic}
 House: ${v.houseNo}
@@ -208,49 +183,26 @@ Booth: ${v.booth}
 Polling Address: ${v.pollingAddress}
 Room No: ${v.roomNo}`;
 
-            if (senderImageURL) {
-                msg += `\n\nSender Image:\n${senderImageURL}`;
-            }
+            if (senderImageURL) msg += `\n\nSender Image:\n${senderImageURL}`;
 
             window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
         };
     });
 }
 
-
 // ----------------------------
-// ADD VOTER MANUALLY
+// PRINT
 // ----------------------------
-document.getElementById("addVoterManual").onclick = () => {
+function attachPrintEvents() {
+    document.querySelectorAll(".printBtn").forEach(btn => {
+        btn.onclick = () => {
+            let id = btn.getAttribute("data-id");
+            let v = voterData.find(x => x.id === id);
+            if (!v) return;
 
-    let data = {
-        name: voterName.value,
-        epic: voterEPIC.value,
-        serial: voterSerial.value,
-        relationType: relationType.value,
-        relationName: relationName.value,
-        gender: voterGender.value,
-        houseNo: houseNo.value,
-        roomNo: roomNo.value,
-        age: voterAge.value,
-        address: voterAddress.value,
-        po: voterPO.value,
-        ps: voterPS.value,
-        state: voterState.value,
-        district: voterDistrict.value,
-        ac: voterAC.value,
-        part: voterPart.value,
-        booth: voterBooth.value,
-        pollingAddress: pollingAddress.value,
-        section: voterSection.value,
-        mobile: voterMobile.value,
-    };
-
-    push(ref(db, "voters"), data);
-
-    alert("Voter Added!");
-
-    document.querySelectorAll("input").forEach(x => x.value = "");
-    relationType.value = "";
-};
-
+            let content = `
+                <h2>Voter Card</h2>
+                <p>Name: ${v.name}</p>
+                <p>EPIC: ${v.epic}</p>
+                <p>House: ${v.houseNo}</p>
+                <p>Address: ${v.address}</p>
