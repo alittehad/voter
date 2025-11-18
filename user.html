@@ -1,413 +1,88 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Voter Management Panel - Full Voter Info</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<style>
-  body { background:#eef2ff; }
-  .card { border-radius:1rem; box-shadow:6px 6px 12px rgba(0,0,0,0.1), -6px -6px 12px rgba(255,255,255,0.7); padding:16px; margin-bottom:12px; transition: all 0.2s; display:flex; flex-direction:column; }
-  .card-approved { background-color: #dcfce7; }
-  .card-opponent { background-color: #fef9c3; }
-  .card-anti { background-color: #fee2e2; }
-  .btn { cursor:pointer; padding:0.5rem 1rem; border-radius:0.7rem; font-weight:bold; transition: all 0.2s; text-align:center; box-shadow:4px 4px 6px #bbb, -4px -4px 6px #fff; }
-  .btn:hover { box-shadow: inset 4px 4px 6px #bbb, inset -4px -4px 6px #fff; }
-  .btn-blue { background:#2563eb;color:white; }
-  .btn-green { background:#16a34a;color:white; }
-  .btn-yellow { background:#facc15;color:black; }
-  .btn-red { background:#dc2626;color:white; }
-  .btn-gray { background:#9ca3af;color:white; }
-  .img-sender { width:50px; height:50px; border-radius:50%; margin-right:8px; }
-  .hidden { display:none; }
-  .table-container { overflow-x:auto; }
-  table, th, td { border:1px solid #ddd; }
-  table { border-collapse: collapse; width: 100%; min-width: 900px; }
-  th, td { padding: 8px; text-align: left; white-space: nowrap; }
-  tr:hover { background-color: #f1f1f1; cursor:pointer; }
-  .badge { padding:4px 8px; border-radius:8px; font-weight:bold; display:inline-block; }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Voter Management Panel - Full Voter Info</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body class="p-4">
 
-<!-- Login -->
-<div id="loginDiv" class="text-center mb-4">
-  <h1 class="text-2xl font-bold text-blue-700">Login to Access Voter Panel</h1>
-  <button id="googleLoginBtn" class="btn btn-blue mt-4">Login with Google</button>
-</div>
-
-<!-- Panel -->
-<div id="panelDiv" class="hidden">
-
-  <h1 class="text-2xl font-bold text-blue-700 text-center mb-4">Voter Management Panel</h1>
-
-  <!-- Search -->
-  <div class="bg-white p-4 rounded shadow mb-4">
-    <input type="text" id="searchVoter" placeholder="Search by Name, EPIC, Part No, House No, Mobile..." class="border p-2 w-full">
+  <!-- Login -->
+  <div id="loginDiv" class="text-center mb-4">
+    <h1 class="text-2xl font-bold text-blue-700">Login to Access Voter Panel</h1>
+    <button id="googleLoginBtn" class="btn btn-blue mt-4">Login with Google</button>
   </div>
 
-  <!-- Voter List Table -->
-  <div id="voterList" class="mt-4 table-container"></div>
+  <!-- Panel -->
+  <div id="panelDiv" class="hidden">
 
-  <!-- Sender Info -->
-  <div class="bg-white p-4 rounded shadow mb-4">
-    <h2 class="text-xl font-bold mb-2 text-blue-700">Sender Info</h2>
-    <textarea id="senderDesc" placeholder="Sender Description" class="border p-2 w-full mb-2"></textarea>
-    <input type="file" id="senderImage" class="border p-2 w-full mb-2" accept="image/*">
-    <button id="uploadSenderImage" class="btn btn-blue w-full mb-2">Upload Sender Image (Preview only)</button>
-    <img id="senderImgPreview" src="" class="img-sender hidden" alt="Sender">
+    <h1 class="text-2xl font-bold text-blue-700 text-center mb-4">Voter Management Panel</h1>
+
+    <!-- Search -->
+    <div class="bg-white p-4 rounded shadow mb-4">
+      <input type="text" id="searchVoter" placeholder="Search by Name, EPIC, Part No, House No, Mobile..." class="border p-2 w-full">
+    </div>
+
+    <!-- Voter List Table -->
+    <div id="voterList" class="mt-4 table-container"></div>
+
+    <!-- Sender Info -->
+    <div class="bg-white p-4 rounded shadow mb-4">
+      <h2 class="text-xl font-bold mb-2 text-blue-700">Sender Info</h2>
+      <textarea id="senderDesc" placeholder="Sender Description" class="border p-2 w-full mb-2"></textarea>
+      <input type="file" id="senderImage" class="border p-2 w-full mb-2" accept="image/*">
+      <button id="uploadSenderImage" class="btn btn-blue w-full mb-2">Upload Sender Image (Preview only)</button>
+      <img id="senderImgPreview" src="" class="img-sender hidden" alt="Sender">
+    </div>
+
+    <!-- Add Voter Manually -->
+    <div class="bg-white p-4 rounded shadow mb-4">
+      <h2 class="text-xl font-bold mb-2 text-blue-700">Add Voter Manually</h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+
+        <input type="text" id="voterName" placeholder="Name" class="border p-2 w-full">
+        <input type="text" id="voterEPIC" placeholder="EPIC" class="border p-2 w-full">
+        <input type="text" id="voterSerial" placeholder="Serial No (optional)" class="border p-2 w-full">
+
+        <select id="relationType" class="border p-2 w-full">
+          <option value="">Relation Type (as in list)</option>
+          <option value="Father">Father</option>
+          <option value="Husband">Husband</option>
+        </select>
+        <input type="text" id="relationName" placeholder="Father/Husband Name" class="border p-2 w-full">
+        <input type="text" id="voterGender" placeholder="Gender (Male/Female/Other)" class="border p-2 w-full">
+
+        <input type="text" id="houseNo" placeholder="House No / Building" class="border p-2 w-full">
+        <input type="text" id="roomNo" placeholder="Room No (Polling Room)" class="border p-2 w-full">
+        <input type="text" id="voterAge" placeholder="Age" class="border p-2 w-full">
+
+        <input type="text" id="voterAddress" placeholder="Address (Street / Mohalla / Village)" class="border p-2 w-full">
+        <input type="text" id="voterPO" placeholder="Post Office" class="border p-2 w-full">
+        <input type="text" id="voterPS" placeholder="Police Station" class="border p-2 w-full">
+
+        <input type="text" id="voterState" placeholder="State" class="border p-2 w-full">
+        <input type="text" id="voterDistrict" placeholder="District" class="border p-2 w-full">
+        <input type="text" id="voterAC" placeholder="AC No" class="border p-2 w-full">
+
+        <input type="text" id="voterPart" placeholder="Part No" class="border p-2 w-full">
+        <input type="text" id="voterBooth" placeholder="Booth No / Location" class="border p-2 w-full">
+        <input type="text" id="pollingAddress" placeholder="Polling Address (e.g. Govt School, Main Rd)" class="border p-2 w-full">
+
+        <input type="text" id="voterSection" placeholder="Section No (optional)" class="border p-2 w-full">
+        <input type="text" id="voterMobile" placeholder="Mobile" class="border p-2 w-full">
+
+      </div>
+
+      <div class="mt-3">
+        <button id="addVoterManual" class="btn btn-green w-full">Add Voter</button>
+      </div>
+    </div>
+
   </div>
 
-  <!-- Add Voter Manually -->
-  <div class="bg-white p-4 rounded shadow mb-4">
-    <h2 class="text-xl font-bold mb-2 text-blue-700">Add Voter Manually</h2>
-
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
-
-      <input type="text" id="voterName" placeholder="Name" class="border p-2 w-full">
-      <input type="text" id="voterEPIC" placeholder="EPIC" class="border p-2 w-full">
-      <input type="text" id="voterSerial" placeholder="Serial No (optional)" class="border p-2 w-full">
-
-      <select id="relationType" class="border p-2 w-full">
-        <option value="">Relation Type (as in list)</option>
-        <option value="Father">Father</option>
-        <option value="Husband">Husband</option>
-      </select>
-      <input type="text" id="relationName" placeholder="Father/Husband Name" class="border p-2 w-full">
-      <input type="text" id="voterGender" placeholder="Gender (Male/Female/Other)" class="border p-2 w-full">
-
-      <input type="text" id="houseNo" placeholder="House No / Building" class="border p-2 w-full">
-      <input type="text" id="roomNo" placeholder="Room No (Polling Room)" class="border p-2 w-full">
-      <input type="text" id="voterAge" placeholder="Age" class="border p-2 w-full">
-
-      <input type="text" id="voterAddress" placeholder="Address (Street / Mohalla / Village)" class="border p-2 w-full">
-      <input type="text" id="voterPO" placeholder="Post Office" class="border p-2 w-full">
-      <input type="text" id="voterPS" placeholder="Police Station" class="border p-2 w-full">
-
-      <input type="text" id="voterState" placeholder="State" class="border p-2 w-full">
-      <input type="text" id="voterDistrict" placeholder="District" class="border p-2 w-full">
-      <input type="text" id="voterAC" placeholder="AC No" class="border p-2 w-full">
-
-      <input type="text" id="voterPart" placeholder="Part No" class="border p-2 w-full">
-      <input type="text" id="voterBooth" placeholder="Booth No / Location" class="border p-2 w-full">
-      <input type="text" id="pollingStation" placeholder="Polling Station Name / Building" class="border p-2 w-full">
-
-      <input type="text" id="voterSection" placeholder="Section No (optional)" class="border p-2 w-full">
-      <input type="text" id="voterMobile" placeholder="Mobile" class="border p-2 w-full">
-
-    </div>
-
-    <div class="mt-3">
-      <button id="addVoterManual" class="btn btn-green w-full">Add Voter</button>
-    </div>
-  </div>
-
-</div>
-
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref as dbRef, set, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-
-// Firebase config (keep your existing config)
-const firebaseConfig = {
-  apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
-  authDomain: "voter-25c94.firebaseapp.com",
-  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
-  projectId: "voter-25c94",
-  storageBucket: "voter-25c94.appspot.com",
-  messagingSenderId: "297773534400",
-  appId: "1:297773534400:web:3722c487b8c83e9b787125"
-};
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-const auth = getAuth(app);
-const provider = new GoogleAuthProvider();
-
-let senderImageURL = "";
-const voterListDiv = document.getElementById("voterList");
-
-// Login
-document.getElementById("googleLoginBtn").onclick = ()=> {
-  signInWithPopup(auth, provider).then(res=>{
-    const emailKey = res.user.email.replace(/\./g,"_");
-    const admins = ["ngogrant454@gmail_com"];
-    const users  = ["zarafix3@gmail_com"];
-    if(admins.includes(emailKey) || users.includes(emailKey)){
-      alert(`Welcome ${res.user.displayName}`);
-    } else {
-      alert("Access denied!");
-      auth.signOut();
-    }
-  }).catch(err=>{ console.error(err); alert("Login failed!"); });
-};
-
-// Persist login
-auth.onAuthStateChanged(user => {
-  if(user){
-    const emailKey = user.email.replace(/\./g,"_");
-    const admins = ["ngogrant454@gmail_com"];
-    const users  = ["zarafix3@gmail_com"];
-    if(admins.includes(emailKey) || users.includes(emailKey)){
-      document.getElementById("loginDiv").classList.add("hidden");
-      document.getElementById("panelDiv").classList.remove("hidden");
-      renderVoters();
-    } else {
-      auth.signOut();
-    }
-  } else {
-    document.getElementById("loginDiv").classList.remove("hidden");
-    document.getElementById("panelDiv").classList.add("hidden");
-  }
-});
-
-// Upload Sender Image (preview only, not stored server-side)
-document.getElementById("uploadSenderImage").onclick = ()=> {
-  const file = document.getElementById("senderImage").files[0];
-  if(!file) return alert("Select image first!");
-  const reader = new FileReader();
-  reader.onload = e=>{
-    senderImageURL = e.target.result;
-    const img = document.getElementById("senderImgPreview");
-    img.src = senderImageURL;
-    img.classList.remove("hidden");
-  };
-  reader.readAsDataURL(file);
-};
-
-// Row color helper
-function updateRowColor(tr, status){
-  tr.classList.remove("card-approved","card-opponent","card-anti");
-  if(status==="approved") tr.classList.add("card-approved");
-  else if(status==="opponent") tr.classList.add("card-opponent");
-  else tr.classList.add("card-anti");
-}
-
-// Render voters as table (listens to all voters)
-function renderVoters(){
-  onValue(dbRef(db,"voters"), snap=>{
-    const query = document.getElementById("searchVoter").value.trim().toLowerCase();
-    voterListDiv.innerHTML='';
-
-    const table = document.createElement("table");
-    table.innerHTML = `
-      <thead>
-        <tr class="bg-blue-100">
-          <th>Name</th>
-          <th>EPIC</th>
-          <th>Part No</th>
-          <th>House No / Room</th>
-          <th>Relation</th>
-          <th>AC No</th>
-          <th>Booth</th>
-          <th>Age</th>
-          <th>Mobile</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    `;
-    const tbody = table.querySelector("tbody");
-    voterListDiv.appendChild(table);
-
-    snap.forEach(s=>{
-      const v = s.val(); const key = s.key;
-      // combined searchable text across many fields
-      const combined = `
-        ${v.name||''} ${v.voterID||''} ${v.partNo||''} ${v.houseNo||''} ${v.roomNo||''} ${v.relationName||''}
-        ${v.village||''} ${v.district||''} ${v.mobile||''} ${v.pollingStation||''}
-      `.toLowerCase();
-
-      if(query && !combined.includes(query)) return;
-
-      const tr = document.createElement("tr");
-      const relationDisplay = v.relationType && v.relationName ? `${v.relationType}: ${v.relationName}` : (v.relationName || '');
-      tr.innerHTML = `
-        <td>${v.name || ''}</td>
-        <td>${v.voterID || ''}</td>
-        <td>${v.partNo || ''}</td>
-        <td>${(v.houseNo||'')}${v.roomNo ? ' / Rm:'+v.roomNo : ''}</td>
-        <td>${relationDisplay}</td>
-        <td>${v.acNo || ''}</td>
-        <td>${v.booth || ''}</td>
-        <td>${v.age || ''}</td>
-        <td>${v.mobile || ''}</td>
-        <td>${v.status || ''}</td>
-      `;
-      updateRowColor(tr, v.status);
-      tbody.appendChild(tr);
-
-      tr.onclick = ()=>{ showVoterDetail(v, key, tr); };
-    });
-  });
-}
-
-// Show detailed card with full election-style info
-function showVoterDetail(v, key, tr){
-  let existing = document.getElementById("voterDetailCard");
-  if(existing) existing.remove();
-
-  const div = document.createElement("div");
-  div.id = "voterDetailCard";
-  div.className = "card mt-4";
-  // choose relation name display exactly as in list
-  const relationLine = v.relationType && v.relationName ? `${v.relationType}: ${v.relationName}` : (v.relationName||'');
-
-  div.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
-      <div style="display:flex;align-items:center;">
-        ${senderImageURL ? `<img src='${senderImageURL}' class='img-sender'>` : ''}
-        <div>
-          <h2 class='font-bold text-2xl mb-1'>${v.name || ''}</h2>
-          <p class="text-sm text-gray-600">
-            <strong>EPIC:</strong> ${v.voterID || ''} &nbsp; | &nbsp;
-            <strong>Serial:</strong> ${v.serial || ''} 
-          </p>
-          <p class="text-sm text-gray-600">
-            <strong>${relationLine ? '' : ''}</strong>
-          </p>
-        </div>
-      </div>
-
-      <div style="text-align:right;">
-        <div style="margin-bottom:6px;">
-          ${v.status === 'approved' ? `<span class="badge" style="background:#dcfce7">Approved</span>` : v.status === 'opponent' ? `<span class="badge" style="background:#fef9c3">Opponent</span>` : `<span class="badge" style="background:#fee2e2">Anti</span>`}
-        </div>
-        <button id="closeDetailCard" style="background:#dc2626;color:white;padding:6px 10px;border-radius:8px;font-weight:bold;">❌ Close</button>
-      </div>
-    </div>
-
-    <hr class="my-2">
-
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-      <div>
-        <p><b>Relation (as in list):</b> ${relationLine || '-'}</p>
-        <p><b>Gender:</b> ${v.gender || ''} &nbsp; | &nbsp; <b>Age:</b> ${v.age || ''}</p>
-        <p><b>Mobile:</b> ${v.mobile || ''}</p>
-        <p><b>House No:</b> ${v.houseNo || ''} ${v.roomNo ? '| Room No: '+v.roomNo : ''}</p>
-        <p><b>Address:</b> ${v.address || ''} ${v.village ? ', '+v.village : ''} ${v.po ? ', PO:'+v.po : ''}</p>
-      </div>
-
-      <div>
-        <p><b>State:</b> ${v.state || ''}</p>
-        <p><b>District:</b> ${v.district || ''}</p>
-        <p><b>AC No:</b> ${v.acNo || ''} &nbsp; | &nbsp; <b>Part No:</b> ${v.partNo || ''}</p>
-        <p><b>Booth:</b> ${v.booth || ''}</p>
-        <p><b>Polling Station / Building:</b> ${v.pollingStation || ''}</p>
-        <p><b>Section:</b> ${v.section || ''}</p>
-      </div>
-    </div>
-
-    <hr class="my-2">
-
-    <div class="flex gap-2 flex-wrap mt-2">
-      <button class='btn btn-yellow approveBtn'>Approve</button>
-      <button class='btn btn-yellow opponentBtn'>Opponent</button>
-      <button class='btn btn-red antiBtn'>Anti</button>
-      <button class='btn btn-gray deleteBtn'>Delete</button>
-      <button class='btn btn-blue sendBtn'>Send WhatsApp</button>
-      <button class='btn btn-green printBtn'>Print</button>
-    </div>
-  `;
-  voterListDiv.appendChild(div);
-
-  // Close
-  div.querySelector("#closeDetailCard").onclick = ()=>{ div.remove(); };
-
-  // Status update helper (merge to preserve all fields)
-  function updateStatus(newStatus){
-    const payload = {...v, status:newStatus};
-    set(dbRef(db,"voters/"+key), payload);
-    v.status = newStatus;
-    updateRowColor(tr,newStatus);
-  }
-
-  div.querySelector(".approveBtn").onclick = ()=>{ updateStatus("approved"); };
-  div.querySelector(".opponentBtn").onclick = ()=>{ updateStatus("opponent"); };
-  div.querySelector(".antiBtn").onclick = ()=>{ updateStatus("anti"); };
-
-  div.querySelector(".deleteBtn").onclick = ()=>{ 
-    if(confirm(`Delete ${v.name || 'this voter'}?`)){
-      remove(dbRef(db,"voters/"+key));
-      div.remove();
-      tr.remove();
-    }
-  };
-
-  div.querySelector(".sendBtn").onclick = ()=> {
-    // Build message including house/room and relation as in list
-    let msg = document.getElementById("senderDesc").value.trim();
-    if(msg) msg += "\n\n";
-    if(senderImageURL) msg += "[Sender Image Attached]\n\n";
-    const rel = relationLine ? relationLine + " | " : "";
-    msg += `${v.name || ''} | ${rel}EPIC:${v.voterID || ''}\nHouse:${v.houseNo || ''}${v.roomNo ? ' / Room:'+v.roomNo : ''}\nAddress:${v.address || ''}${v.village ? ', '+v.village : ''}\nPart:${v.partNo || ''} | Booth:${v.booth || ''} | Polling Station:${v.pollingStation || ''}`;
-    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
-  };
-
-  div.querySelector(".printBtn").onclick = ()=> {
-    let html = `<div style="font-family:Arial,Helvetica,sans-serif;padding:12px;">`;
-    if(senderImageURL) html += `<img src="${senderImageURL}" style="width:50px;height:50px;border-radius:50%;float:right;margin-left:8px;">`;
-    html += `<h2 style="margin-top:0">${v.name || ''}</h2>`;
-    html += `<p><b>${relationLine || ''}</b></p>`;
-    html += `<p>EPIC: ${v.voterID || ''} | Serial: ${v.serial || ''}</p>`;
-    html += `<p>House No: ${v.houseNo || ''} ${v.roomNo ? '| Room No: '+v.roomNo : ''}</p>`;
-    html += `<p>Address: ${v.address || ''} ${v.village ? ', '+v.village : ''} ${v.po ? ', PO:'+v.po : ''}</p>`;
-    html += `<p>AC: ${v.acNo || ''} | Part: ${v.partNo || ''} | Booth: ${v.booth || ''}</p>`;
-    html += `<hr>`;
-    html += `<p>Mobile: ${v.mobile || ''}</p>`;
-    html += `</div>`;
-    const w = window.open();
-    w.document.write(html);
-    w.print();
-    w.close();
-  };
-}
-
-// Search & Manual Add
-document.getElementById("searchVoter").addEventListener("input", renderVoters);
-
-// Add voter - collects all fields and writes to Firebase
-document.getElementById("addVoterManual").onclick = ()=>{
-  const name = document.getElementById("voterName").value.trim();
-  const epic = document.getElementById("voterEPIC").value.trim();
-  if(!name || !epic) return alert("Name & EPIC required!");
-
-  const key = epic.replace(/\W/g,"_");
-  // Collect fields
-  const payload = {
-    name,
-    voterID: epic,
-    serial: document.getElementById("voterSerial").value.trim(),
-    relationType: document.getElementById("relationType").value,
-    relationName: document.getElementById("relationName").value.trim(),
-    gender: document.getElementById("voterGender").value.trim(),
-    houseNo: document.getElementById("houseNo").value.trim(),
-    roomNo: document.getElementById("roomNo").value.trim(),
-    age: document.getElementById("voterAge").value.trim(),
-    address: document.getElementById("voterAddress").value.trim(),
-    village: "", // optional separate field if needed
-    po: document.getElementById("voterPO").value.trim(),
-    ps: document.getElementById("voterPS").value.trim(),
-    state: document.getElementById("voterState").value.trim(),
-    district: document.getElementById("voterDistrict").value.trim(),
-    acNo: document.getElementById("voterAC").value.trim(),
-    partNo: document.getElementById("voterPart").value.trim(),
-    booth: document.getElementById("voterBooth").value.trim(),
-    pollingStation: document.getElementById("pollingStation").value.trim(),
-    section: document.getElementById("voterSection").value.trim(),
-    mobile: document.getElementById("voterMobile").value.trim(),
-    status: "anti",
-    createdAt: Date.now()
-  };
-
-  set(dbRef(db,"voters/"+key), payload).then(()=>{
-    alert("Voter added!");
-    // clear form
-    const ids = ["voterName","voterEPIC","voterSerial","relationType","relationName","voterGender","houseNo","roomNo","voterAge","voterAddress","voterPO","voterPS","voterState","voterDistrict","voterAC","voterPart","voterBooth","pollingStation","voterSection","voterMobile"];
-    ids.forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
-    renderVoters();
-  }).catch(err => { console.error(err); alert("Error saving voter"); });
-};
-</script>
+  <script type="module" src="app.js"></script>
 </body>
 </html>
