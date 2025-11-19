@@ -156,7 +156,7 @@ loginBtn.onclick = () => signInWithPopup(auth, provider)
 logoutBtn.onclick = () => signOut(auth);
 
 // -------- Admin setup (one admin only) --------
-const adminEmail = "ngogrant454@gmail";
+const adminEmail = "ngogrant454@gmail.com";
 const adminKey = emailToKey(adminEmail);
 get(dbRef(db,"admins/"+adminKey)).then(snap=>{
   if(!snap.exists()) set(dbRef(db,"admins/"+adminKey), true);
