@@ -1,75 +1,52 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Login - Ward 20</title>
+<title>Login - Voter Management</title>
 <script src="https://cdn.tailwindcss.com"></script>
-<style>
-.btn-3d { 
-  background: linear-gradient(145deg,#4f46e5,#6366f1); 
-  color:white; font-weight:bold; padding:.5rem 1rem; 
-  border-radius:.5rem; box-shadow:4px 4px 6px #333,-4px -4px 6px #777; 
-  cursor:pointer; transition: all .2s; width:100%;
-}
-.btn-3d:hover{
-  box-shadow: inset 4px 4px 6px #333,inset -4px -4px 6px #777;
-}
-</style>
 </head>
-<body class="bg-gray-900 flex items-center justify-center h-screen">
-
-<div class="bg-white p-8 rounded-xl shadow-xl w-96 text-center">
-  <h1 class="text-2xl font-bold mb-4">Login</h1>
-  <button id="googleLoginBtn" class="btn-3d">Login with Google</button>
-</div>
+<body class="bg-blue-50 flex items-center justify-center h-screen">
+  <div class="bg-white p-8 rounded-xl shadow-lg w-80 text-center">
+    <h1 class="text-2xl font-bold mb-4">Voter Management Panel</h1>
+    <button id="googleLoginBtn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+      Login with Google
+    </button>
+  </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getDatabase, ref as dbRef, get, child } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
-  authDomain: "voter-25c94.firebaseapp.com",
-  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
-  projectId: "voter-25c94",
-  storageBucket: "voter-25c94.appspot.com",
-  messagingSenderId: "297773534400",
-  appId: "1:297773534400:web:3722c487b8c83e9b787125"
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
+  projectId: "YOUR_PROJECT",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "XXXX",
+  appId: "XXXX"
 };
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth();
 const provider = new GoogleAuthProvider();
-const db = getDatabase(app);
 
-document.getElementById("googleLoginBtn").addEventListener("click", async () => {
+const admins = ["admin_email@gmail_com"]; // Admin emails (add more later)
+
+document.getElementById("googleLoginBtn").onclick = async () => {
   try {
     const result = await signInWithPopup(auth, provider);
-    const user = result.user;
-    const emailKey = user.email.replace(/\./g,"_");
-    const snapshot = await get(child(dbRef(db), "users/" + emailKey));
-
-    if(!snapshot.exists()) {
-      alert("❌ आप authorized user नहीं हैं");
-      return;
+    const emailKey = result.user.email.replace(/\./g,'_');
+    if (admins.includes(emailKey)) {
+      window.location.href = "admin.html";
+    } else {
+      window.location.href = "user.html";
     }
-
-    const role = snapshot.val().role;
-    localStorage.setItem("role", role);
-    localStorage.setItem("user", JSON.stringify(user));
-
-    // Role ke hisaab redirect
-    if(role === "admin") window.location.href = "admin.html";
-    else if(role === "user") window.location.href = "user.html";
-    else if(role === "member") window.location.href = "member.html";
-  } catch(err){
-    console.error(err);
-    alert("Login failed!");
+  } catch(err) {
+    alert("Login failed: " + err.message);
   }
-});
+};
 </script>
-
 </body>
 </html>
