@@ -9,18 +9,13 @@
 :root{--bg:#eef2ff;--card:#fff}
 body{background:var(--bg);font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;}
 .container{max-width:1100px;margin:12px auto;padding:12px;}
-.heading {
-  font-size:clamp(1.4rem,3vw,1.8rem);
-  font-weight:800;text-align:center;margin-bottom:12px;color:#0f172a;
-  transform: perspective(500px) rotateX(8deg);
-  text-shadow:0 1px 0 rgba(255,255,255,0.5),
-  0 6px 12px rgba(2,6,23,0.12),
-  0 18px 36px rgba(2,6,23,0.10);
-  letter-spacing:0.6px;
-}
+.heading {font-size:clamp(1.4rem,3vw,1.8rem);font-weight:800;text-align:center;margin-bottom:12px;color:#0f172a;
+transform: perspective(500px) rotateX(8deg);
+text-shadow:0 1px 0 rgba(255,255,255,0.5),0 6px 12px rgba(2,6,23,0.12),0 18px 36px rgba(2,6,23,0.10);
+letter-spacing:0.6px;}
 .card{background:var(--card);border-radius:12px;padding:12px;margin-bottom:12px;box-shadow:6px 6px 18px rgba(2,6,23,0.06);}
 .img-sender{width:40px;height:40px;border-radius:999px;object-fit:cover;margin-right:8px}
-.btn{cursor:pointer;padding:6px 12px;border-radius:8px;font-weight:700;font-size:12px;transition: all 0.2s; box-shadow:3px 3px 6px rgba(0,0,0,0.2);}
+.btn{cursor:pointer;padding:6px 12px;border-radius:8px;font-weight:700;font-size:12px;transition: all 0.2s;box-shadow:3px 3px 6px rgba(0,0,0,0.2);}
 .btn:hover{transform: translateY(-2px); box-shadow:4px 4px 10px rgba(0,0,0,0.25);}
 .btn-blue{background:#2563eb;color:white}
 .btn-green{background:#16a34a;color:white}
@@ -40,6 +35,7 @@ tr:hover{background:#f7f9ff}
 .actions button{margin-right:4px}
 .opacity-50{opacity:0.5;}
 .cursor-not-allowed{cursor:not-allowed;}
+.hidden{display:none;}
 @media (max-width:900px){ table{min-width:100%} }
 </style>
 </head>
@@ -57,7 +53,7 @@ tr:hover{background:#f7f9ff}
 <div id="panelDiv" class="hidden">
 
   <!-- Admin add users + logout -->
-  <div class="card flex justify-between items-center">
+  <div id="adminControls" class="card flex justify-between items-center hidden">
     <div>
       <h3 class="font-bold text-blue-700 mb-2 text-sm">Admin: Add User</h3>
       <div class="flex gap-2">
@@ -69,7 +65,7 @@ tr:hover{background:#f7f9ff}
   </div>
 
   <!-- User List -->
-  <div class="card mt-2">
+  <div class="card mt-2" id="userListCard" class="hidden">
     <h3 class="font-bold text-blue-700 mb-2 text-sm">Existing Users</h3>
     <div id="userList" class="flex flex-wrap gap-2 text-sm"></div>
   </div>
@@ -90,8 +86,8 @@ tr:hover{background:#f7f9ff}
   <!-- Table -->
   <div id="voterList" class="table-container card"></div>
 
-  <!-- Add Voter -->
-  <div class="card mt-4">
+  <!-- Add Voter (Admin only) -->
+  <div id="addVoterCard" class="card mt-4 hidden">
     <h3 class="text-sm font-bold text-blue-700 mb-2">Add Voter Manually</h3>
     <div class="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
       <input id="voterName" placeholder="Name" class="border p-2 rounded"/>
@@ -143,8 +139,12 @@ const searchInput = document.getElementById("searchVoter");
 const senderDescEl = document.getElementById("senderDesc");
 const statusCountDiv = document.getElementById("statusCount");
 const userListDiv = document.getElementById("userList");
+const adminControls = document.getElementById("adminControls");
+const addVoterCard = document.getElementById("addVoterCard");
+const userListCard = document.getElementById("userListCard");
 
 let voterData = [];
+let isAdmin = false;
 
 function emailToKey(email){ return email.replace(/\./g,"_dot_"); }
 
@@ -158,10 +158,16 @@ get(dbRef(db,"admins/"+adminKey)).then(snap=>{ if(!snap.exists()) set(dbRef(db,"
 onAuthStateChanged(auth,user=>{
   if(user){
     const emailKey = emailToKey(user.email.toLowerCase());
-    get(dbRef(db,"admins/"+emailKey)).then(snap=>{
-      if(!snap.exists()){ alert("Access Denied"); signOut(auth); return; }
+    get(dbRef(db,"admins/"+emailKey)).then(async snap=>{
+      if(snap.exists()) isAdmin = true;
+      else {
+        const userSnap = await get(dbRef(db,"users/"+emailKey));
+        if(!userSnap.exists()){ alert("Access Denied"); signOut(auth); return; }
+        isAdmin = false;
+      }
       loginDiv.classList.add("hidden"); 
       panelDiv.classList.remove("hidden"); 
+      if(isAdmin){ adminControls.classList.remove("hidden"); addVoterCard.classList.remove("hidden"); userListCard.classList.remove("hidden"); }
       loadVoters();
       renderUsers();
     });
@@ -193,11 +199,11 @@ function renderTable(list){
     tr.innerHTML=`<td>${v.name||''}</td><td>${v.voterID||v.epic||''}</td><td>${v.status||''}</td>`;
     tr.className=v.status==="approved"?"card-approved":v.status==="opponent"?"card-opponent":"card-anti";
     tbody.appendChild(tr);
-    tr.onclick=()=>showVoterCard(v,tr);
+    tr.onclick=()=>showVoterCard(v);
   });
 }
 
-function showVoterCard(v,tr){
+function showVoterCard(v){
   let existing=document.getElementById("voterDetailCard"); if(existing) existing.remove();
   const div=document.createElement("div"); div.id="voterDetailCard"; div.className="card";
   const relLine = v.fatherName || v.husbandName || v.relationName || 'N/A';
@@ -218,42 +224,41 @@ function showVoterCard(v,tr){
     <p><strong>Polling:</strong> ${v.pollingAddress||'-'} | Booth: ${v.booth||'-'}</p>
     <p><strong>Part:</strong> ${v.partNo||'-'}</p>
     <p><strong>Address:</strong> ${v.address||'-'}</p>
+    <p><strong>Status:</strong> ${v.status||'-'}</p>
   </div>
   <div style="margin-top:8px;display:flex;gap:4px;flex-wrap:wrap">
-    <button class="btn btn-yellow approveBtn">Approve</button>
+    ${isAdmin?`<button class="btn btn-yellow approveBtn">Approve</button>
     <button class="btn btn-yellow opponentBtn">Opponent</button>
-    <button class="btn btn-red antiBtn">Anti</button>
+    <button class="btn btn-red antiBtn">Anti</button>`:""}
     <button class="btn btn-blue sendBtn">Send WhatsApp</button>
     <button class="btn btn-green printBtn">Print</button>
   </div>`;
   voterListDiv.prepend(div);
   div.querySelector("#closeDetailBtn").onclick=()=>div.remove();
 
-  function updateStatus(newStatus){ set(dbRef(db,"voters/"+v.id),{...v,status:newStatus}); }
-  div.querySelector(".approveBtn").onclick=()=>updateStatus("approved");
-  div.querySelector(".opponentBtn").onclick=()=>updateStatus("opponent");
-  div.querySelector(".antiBtn").onclick=()=>updateStatus("anti");
+  if(isAdmin){
+    div.querySelector(".approveBtn").onclick=()=>set(dbRef(db,"voters/"+v.id),{...v,status:"approved"});
+    div.querySelector(".opponentBtn").onclick=()=>set(dbRef(db,"voters/"+v.id),{...v,status:"opponent"});
+    div.querySelector(".antiBtn").onclick=()=>set(dbRef(db,"voters/"+v.id),{...v,status:"anti"});
+  }
 
   div.querySelector(".sendBtn").onclick=()=>{
-    const msg=(senderDescEl.value?senderDescEl.value+"\n\n":"")+`Name: ${v.name||'-'}\nRelation: ${relLine}\nEPIC: ${v.voterID||'-'}\nHouse: ${v.houseNo||'-'}${v.roomNo? ' | Room: '+v.roomNo:''}\nAddress: ${v.address||'-'}\nPart: ${v.partNo||'-'}\nBooth: ${v.booth||'-'}\nPolling: ${v.pollingAddress||'-'}`;
+    const msg=`Name: ${v.name||'-'}\nRelation: ${relLine}\nEPIC: ${v.voterID||'-'}\nHouse: ${v.houseNo||'-'}${v.roomNo? ' | Room: '+v.roomNo:''}\nAddress: ${v.address||'-'}\nPart: ${v.partNo||'-'}\nBooth: ${v.booth||'-'}\nPolling: ${v.pollingAddress||'-'}\nStatus: ${v.status||'-'}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,"_blank");
   };
 
   div.querySelector(".printBtn").onclick=()=>{
-    const w=window.open(); w.document.write(`<pre style="font-family:Arial">${div.innerText}</pre>`); w.print(); w.close();
+    const info = div.querySelector("div:nth-child(2)").innerText;
+    const w=window.open(); w.document.write(`<pre style="font-family:Arial">${info}</pre>`); w.print(); w.close();
   };
 }
 
-// -------- Search --------
 searchInput.addEventListener("input",e=>{
   const q = e.target.value.trim().toLowerCase();
   if(!q) renderTable(voterData);
-  else renderTable(voterData.filter(v=>{
-    return `${v.name||''} ${v.voterID||v.epic||''} ${v.partNo||v.part||''} ${v.houseNo||''}`.toLowerCase().includes(q);
-  }));
+  else renderTable(voterData.filter(v=>`${v.name||''} ${v.voterID||v.epic||''} ${v.partNo||v.part||''} ${v.houseNo||''}`.toLowerCase().includes(q)));
 });
 
-// -------- Add Voter --------
 document.getElementById("addVoterManual").onclick=async ()=>{
   const name=document.getElementById("voterName").value.trim();
   const epic=document.getElementById("voterEPIC").value.trim();
@@ -279,17 +284,14 @@ document.getElementById("addVoterManual").onclick=async ()=>{
   else if(payload.relationType==="Husband") payload.husbandName=payload.relationName;
   else if(payload.relationName) payload.fatherName=payload.relationName;
 
-  push(dbRef(db,"voters"),payload)
-  .then(()=>{ 
+  push(dbRef(db,"voters"),payload).then(()=>{ 
     alert("Voter added!"); 
     document.querySelectorAll("#panelDiv input,#panelDiv select,#panelDiv textarea").forEach(x=>x.value=""); 
-  })
-  .catch(err=>alert("Add failed: "+err.message));
+  }).catch(err=>alert("Add failed: "+err.message));
 };
 
-// -------- User management --------
 function renderUsers(){
-  const currentUserEmail = auth.currentUser.email.toLowerCase();
+  if(!isAdmin) return;
   onValue(dbRef(db,"users"),snap=>{
     userListDiv.innerHTML="";
     snap.forEach(c=>{
@@ -299,28 +301,20 @@ function renderUsers(){
       div.innerHTML=`<span class="px-2 py-1 bg-gray-200 rounded">${email}</span>
       <button class="btn btn-red btn-sm deleteBtn">Delete</button>`;
       userListDiv.appendChild(div);
-
       if(email.toLowerCase()===adminEmail) {
         div.querySelector(".deleteBtn").disabled=true;
         div.querySelector(".deleteBtn").classList.add("opacity-50","cursor-not-allowed");
       } else {
-        div.querySelector(".deleteBtn").onclick=()=>{
-          if(confirm("Delete user "+email+"?")){
-            set(dbRef(db,"users/"+emailToKey(email)),null).then(()=>alert("Deleted"));
-          }
-        };
+        div.querySelector(".deleteBtn").onclick=()=>{ if(confirm("Delete user "+email+"?")) set(dbRef(db,"users/"+emailToKey(email)),null).then(()=>alert("Deleted")); };
       }
     });
   });
 }
 
-// Add new user
 document.getElementById("addUserBtn").onclick=()=>{
   const email=document.getElementById("newUserEmail").value.trim().toLowerCase();
   if(!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return alert("Enter valid email");
-  const key=emailToKey(email);
-  set(dbRef(db,"users/"+key),true)
-  .then(()=>{ alert("User added"); document.getElementById("newUserEmail").value=""; })
+  set(dbRef(db,"users/"+emailToKey(email)),true).then(()=>{ alert("User added"); document.getElementById("newUserEmail").value=""; })
   .catch(err=>alert("Failed: "+err.message));
 };
 </script>
