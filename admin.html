@@ -255,19 +255,13 @@ function showVoterCard(v){
   // Close button
   div.querySelector("#closeDetailBtn").onclick = () => div.remove();
 
-  // Status buttons
-  if(isAdmin){
-    function updateStatus(newStatus){ 
-      set(dbRef(db,"voters/"+v.id),{...v,status:newStatus}); 
-    }
-    div.querySelector(".approveBtn").onclick = () => updateStatus("approved");
-    div.querySelector(".opponentBtn").onclick = () => updateStatus("opponent");
-    div.querySelector(".antiBtn").onclick = () => updateStatus("anti");
-  } else {
-    div.querySelector(".approveBtn").onclick = 
-    div.querySelector(".opponentBtn").onclick = 
-    div.querySelector(".antiBtn").onclick = () => alert("Only admin can change status");
+  // Status buttons - ALL users can now update
+  function updateStatus(newStatus){ 
+    set(dbRef(db,"voters/"+v.id),{...v,status:newStatus}); 
   }
+  div.querySelector(".approveBtn").onclick = () => updateStatus("approved");
+  div.querySelector(".opponentBtn").onclick = () => updateStatus("opponent");
+  div.querySelector(".antiBtn").onclick = () => updateStatus("anti");
 
   // WhatsApp button
   div.querySelector(".sendBtn").onclick = () => {
@@ -284,7 +278,6 @@ function showVoterCard(v){
     w.close();
   };
 }
-// ==========================================
 
 // Search
 searchInput.addEventListener("input",e=>{
@@ -348,7 +341,6 @@ async function renderUsers(){
     listDiv.appendChild(d);
   });
 }
-
 </script>
 </body>
 </html>
