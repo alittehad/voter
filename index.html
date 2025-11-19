@@ -1,18 +1,20 @@
 <!DOCTYPE html>
 <html lang="hi">
 <head>
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#2563eb">
+
+
 
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
 
+
+
+  
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ward 20 — Login</title>
 <script src="https://cdn.tailwindcss.com"></script>
-
 <style>
 body {
   min-height:100vh;
@@ -46,23 +48,9 @@ img.center-img {
 }
 .login-btn:hover {transform:translateY(-2px);}
 .login-btn:active {transform:translateY(3px); box-shadow:0 2px 0 rgba(0,0,0,0.25);}
-#installBtn {
-  display:none;
-  margin-top:1rem;
-  padding:0.75rem 1.5rem;
-  background:#2563eb;
-  color:white;
-  font-weight:bold;
-  border-radius:0.75rem;
-  cursor:pointer;
-}
-#installBtn:hover {background:#1e40af;}
 </style>
 </head>
 <body>
-
-<!-- Install App Button -->
-<button id="installBtn">Install App</button>
 
 <!-- Center Image -->
 <img src="https://i.postimg.cc/8kysF6DQ/Numeral-20-with-Bold-Ward.png" class="center-img">
@@ -91,14 +79,14 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth();
 const provider = new GoogleAuthProvider();
 
-// Redirect if already logged in
+// If already logged in → redirect to panel
 onAuthStateChanged(auth, user => {
   if(user){
     window.location.replace('panel.html');
   }
 });
 
-// Google Login
+// Login button click
 document.getElementById('loginBtn').addEventListener('click', async ()=>{
   try{
     await signInWithPopup(auth, provider);
@@ -108,34 +96,6 @@ document.getElementById('loginBtn').addEventListener('click', async ()=>{
     console.error(e);
   }
 });
-
-// PWA Install Button
-let deferredPrompt;
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  deferredPrompt = e;
-  document.getElementById('installBtn').style.display = 'block';
-});
-
-document.getElementById('installBtn').addEventListener('click', async () => {
-  if(!deferredPrompt) return;
-  deferredPrompt.prompt();
-  const { outcome } = await deferredPrompt.userChoice;
-  console.log('User response:', outcome);
-  deferredPrompt = null;
-  document.getElementById('installBtn').style.display = 'none';
-});
-</script>
-
-<!-- Service Worker -->
-<script>
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js')
-      .then(reg => console.log('Service Worker registered', reg))
-      .catch(err => console.log('SW registration failed', err));
-  });
-}
 </script>
 
 </body>
