@@ -116,7 +116,7 @@ const firebaseConfig = {
   authDomain: "voter-25c94.firebaseapp.com",
   databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
   projectId: "voter-25c94",
-  storageBucket: "voter-25c94.appspot.com",
+  storageBucket: "voter-25c94.firebasestorage.app",
   messagingSenderId: "297773534400",
   appId: "1:297773534400:web:3722c487b8c83e9b787125"
 };
@@ -134,25 +134,36 @@ const voterListDiv = document.getElementById("voterList");
 const searchInput = document.getElementById("searchVoter");
 const senderDescEl = document.getElementById("senderDesc");
 const statusCountDiv = document.getElementById("statusCount");
+
 const adminControls = document.getElementById("adminControls");
 const userListDivContainer = document.getElementById("userListDiv");
 const addVoterDiv = document.getElementById("addVoterDiv");
 
 let voterData = [];
 let isAdmin = false;
+
 function emailToKey(email){ return email.replace(/\./g,"_dot_"); }
 
+// Login / Logout
 loginBtn.onclick = () => signInWithPopup(auth, provider).catch(err=>alert("Login failed: "+err.message));
 logoutBtn.onclick = () => signOut(auth);
 
+// On auth state change
 onAuthStateChanged(auth, async user=>{
   if(user){
     const emailKey = emailToKey(user.email.toLowerCase());
     const adminSnap = await get(dbRef(db,"admins/"+emailKey));
     const userSnap = await get(dbRef(db,"users/"+emailKey));
-    if(!adminSnap.exists() && !userSnap.exists()){ alert("Access Denied"); signOut(auth); return; }
+
+    if(!adminSnap.exists() && !userSnap.exists()){
+      alert("Access Denied"); signOut(auth); return;
+    }
+
     isAdmin = adminSnap.exists();
-    loginDiv.classList.add("hidden"); panelDiv.classList.remove("hidden");
+
+    loginDiv.classList.add("hidden");
+    panelDiv.classList.remove("hidden");
+
     if(isAdmin){
       adminControls.classList.remove("hidden");
       userListDivContainer.classList.remove("hidden");
@@ -162,15 +173,22 @@ onAuthStateChanged(auth, async user=>{
       userListDivContainer.classList.add("hidden");
       addVoterDiv.classList.add("hidden");
     }
-    loadVoters(); if(isAdmin) renderUsers();
-  } else { loginDiv.classList.remove("hidden"); panelDiv.classList.add("hidden"); }
+
+    loadVoters();
+    if(isAdmin) renderUsers();
+  } else {
+    loginDiv.classList.remove("hidden");
+    panelDiv.classList.add("hidden");
+  }
 });
 
+// Load voters
 function loadVoters(){
   onValue(dbRef(db,"voters"),snap=>{
     voterData = [];
     snap.forEach(c=>voterData.push({id:c.key,...c.val()}));
-    renderTable(voterData); renderStatusCount();
+    renderTable(voterData);
+    renderStatusCount();
   });
 }
 
@@ -194,10 +212,12 @@ function renderTable(list){
   });
 }
 
+// Show voter details card
 function showVoterCard(v){
   let existing=document.getElementById("voterDetailCard"); if(existing) existing.remove();
   const div=document.createElement("div"); div.id="voterDetailCard"; div.className="card";
   const relLine = v.fatherName || v.husbandName || v.relationName || 'N/A';
+
   div.innerHTML=`
   <div style="display:flex;justify-content:space-between;align-items:center">
     <div style="display:flex;align-items:center;gap:8px">
@@ -213,7 +233,7 @@ function showVoterCard(v){
     <p><strong>Relation:</strong> ${relLine} | EPIC: ${v.voterID||'-'}</p>
     <p><strong>House:</strong> ${v.houseNo||'-'}${v.roomNo? ' | Room: '+v.roomNo:''}</p>
     <p><strong>Booth:</strong> ${v.booth||'-'}</p>
-    <p><strong>Part:</strong> ${v.partNo||v.part||'-'}</p>
+    <p><strong>Part:</strong> ${v.partNo||'-'}</p>
     <p><strong>Address:</strong> ${v.address||'-'}</p>
   </div>
   <div style="margin-top:8px;display:flex;gap:4px;flex-wrap:wrap">
@@ -223,24 +243,41 @@ function showVoterCard(v){
     <button class="btn btn-blue sendBtn">Send WhatsApp</button>
     <button class="btn btn-green printBtn">Print</button>
   </div>`;
+
   voterListDiv.prepend(div);
-  div.querySelector("#closeDetailBtn").onclick=()=>div.remove();
+
+  const closeBtn = div.querySelector("#closeDetailBtn");
+  closeBtn.onclick=()=>div.remove();
+
+  // Close card on outside click
+  setTimeout(()=>{ // timeout to avoid immediate close
+    document.addEventListener("click",function handler(e){
+      if(!div.contains(e.target)){ div.remove(); document.removeEventListener("click",handler); }
+    });
+  },100);
+
   if(isAdmin){
-    function updateStatus(newStatus){ set(dbRef(db,"voters/"+v.id),{...v,status:newStatus}); }
+    function updateStatus(newStatus){
+      set(dbRef(db,"voters/"+v.id),{...v,status:newStatus})
+      .then(()=>renderStatusCount());
+    }
     div.querySelector(".approveBtn").onclick=()=>updateStatus("approved");
     div.querySelector(".opponentBtn").onclick=()=>updateStatus("opponent");
     div.querySelector(".antiBtn").onclick=()=>updateStatus("anti");
   }
+
   div.querySelector(".sendBtn").onclick=()=>{
-    const msg = `${senderDescEl.value?senderDescEl.value+"\n\n":""}Name: ${v.name||'-'}\nRelation: ${relLine}\nEPIC: ${v.voterID||'-'}\nHouse: ${v.houseNo||'-'}${v.roomNo? ' | Room: '+v.roomNo:''}\nAddress: ${v.address||'-'}\nPart: ${v.partNo||v.part||'-'}\nBooth: ${v.booth||'-'}`;
+    const msg = `${senderDescEl.value?senderDescEl.value+"\n\n":""}Name: ${v.name||'-'}\nRelation: ${relLine}\nEPIC: ${v.voterID||'-'}\nHouse: ${v.houseNo||'-'}${v.roomNo? ' | Room: '+v.roomNo:''}\nAddress: ${v.address||'-'}\nPart: ${v.partNo||'-'}\nBooth: ${v.booth||'-'}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,"_blank");
   };
+
   div.querySelector(".printBtn").onclick=()=>{
-    const info = `Name: ${v.name||'-'}\nRelation: ${relLine}\nEPIC: ${v.voterID||'-'}\nHouse: ${v.houseNo||'-'}${v.roomNo? ' | Room: '+v.roomNo:''}\nAddress: ${v.address||'-'}\nPart: ${v.partNo||v.part||'-'}\nBooth: ${v.booth||'-'}`;
+    const info = `Name: ${v.name||'-'}\nRelation: ${relLine}\nEPIC: ${v.voterID||'-'}\nHouse: ${v.houseNo||'-'}${v.roomNo? ' | Room: '+v.roomNo:''}\nAddress: ${v.address||'-'}\nPart: ${v.partNo||'-'}\nBooth: ${v.booth||'-'}`;
     const w = window.open(); w.document.write(`<pre style="font-family:Arial">${info}</pre>`); w.print(); w.close();
   };
 }
 
+// Search
 searchInput.addEventListener("input",e=>{
   const q = e.target.value.trim().toLowerCase();
   if(!q) renderTable(voterData);
@@ -249,6 +286,7 @@ searchInput.addEventListener("input",e=>{
   }));
 });
 
+// Admin: Add Voter
 document.getElementById("addVoterManual").onclick=async ()=>{
   if(!isAdmin) return alert("Access Denied");
   const name=document.getElementById("voterName").value.trim();
@@ -271,36 +309,32 @@ document.getElementById("addVoterManual").onclick=async ()=>{
   };
   if(payload.relationType==="Father") payload.fatherName=payload.relationName;
   else if(payload.relationType==="Husband") payload.husbandName=payload.relationName;
-  else if(payload.relationName) payload.fatherName=payload.relationName;
-  push(dbRef(db,"voters"),payload)
-  .then(()=>{ alert("Voter added!"); document.querySelectorAll("#panelDiv input,#panelDiv select,#panelDiv textarea").forEach(x=>x.value=""); })
-  .catch(err=>alert("Add failed: "+err.message));
+  push(dbRef(db,"voters"),payload).then(()=>{ alert("Voter Added"); 
+    document.getElementById("voterName").value=''; document.getElementById("voterEPIC").value=''; document.getElementById("relationName").value='';
+  });
 };
 
-function renderUsers(){
-  const currentUserEmail = auth.currentUser.email.toLowerCase();
-  onValue(dbRef(db,"users"),snap=>{
-    const userListDiv = document.getElementById("userList");
-    userListDiv.innerHTML="";
-    snap.forEach(c=>{
-      const email = c.key.replace(/_dot_/g,".");
-      const div = document.createElement("div");
-      div.className="flex gap-2 items-center";
-      div.innerHTML=`<span class="px-2 py-1 bg-gray-200 rounded">${email}</span>
-      <button class="btn btn-red btn-sm deleteBtn">Delete</button>`;
-      userListDiv.appendChild(div);
-      if(email.toLowerCase()===currentUserEmail){ div.querySelector(".deleteBtn").disabled=true; div.querySelector(".deleteBtn").classList.add("opacity-50","cursor-not-allowed"); }
-      else div.querySelector(".deleteBtn").onclick=()=>{ if(confirm("Delete user "+email+"?")) set(dbRef(db,"users/"+emailToKey(email)),null).then(()=>alert("Deleted")); };
-    });
+// Admin: Add User
+const addUserBtn=document.getElementById("addUserBtn");
+const newUserEmail=document.getElementById("newUserEmail");
+const userList=document.getElementById("userList");
+async function renderUsers(){
+  const snap = await get(dbRef(db,"users"));
+  userList.innerHTML="";
+  snap.forEach(c=>{
+    const email = c.key.replace(/_dot_/g,".");
+    const div=document.createElement("div");
+    div.className="badge bg-gray-400 text-white flex items-center gap-1";
+    div.innerHTML=`${email} <span class="btn btn-sm btn-red">X</span>`;
+    div.querySelector("span").onclick=()=>set(dbRef(db,"users/"+c.key),null).then(()=>renderUsers());
+    userList.appendChild(div);
   });
 }
 
-document.getElementById("addUserBtn").onclick=()=>{
-  if(!isAdmin) return alert("Access Denied");
-  const email=document.getElementById("newUserEmail").value.trim().toLowerCase();
-  if(!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return alert("Enter valid email");
-  const key=emailToKey(email);
-  set(dbRef(db,"users/"+key),{email}).then(()=>{ alert("User added"); document.getElementById("newUserEmail").value=""; }).catch(err=>alert("Failed: "+err.message));
+addUserBtn.onclick=()=>{
+  const email=newUserEmail.value.trim().toLowerCase();
+  if(!email.includes("@")) return alert("Invalid email");
+  set(dbRef(db,"users/"+emailToKey(email)),{email}).then(()=>{ alert("User added"); newUserEmail.value=''; renderUsers(); });
 };
 </script>
 </body>
