@@ -59,7 +59,7 @@
 </div>
 
 <!-- Voter Table -->
-<div id="voterList" class="bg-white rounded shadow overflow-auto max-h-[400px]"></div>
+<div id="voterList" class="bg-white rounded shadow w-full"></div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -81,12 +81,17 @@ const auth = getAuth(app);
 const db = getDatabase(app);
 
 // Admin-only check
-const allowedAdmins = ["admin@example.com"]; // Change to real emails or load from DB
 onAuthStateChanged(auth,user=>{
-  if(!user || !allowedAdmins.includes(user.email)) window.location.href="login.html";
+  if(!user) window.location.href="login.html";
+  // Load admins from DB
+  onValue(ref(db,"admins"),snap=>{
+    const emails = [];
+    snap.forEach(c=>emails.push(c.val().email));
+    if(!emails.includes(user.email)) window.location.href="login.html";
+  });
 });
 
-// Admin emails management
+// Add admin email
 document.getElementById("addAdminBtn").onclick = ()=>{
   const email = document.getElementById("newAdminEmail").value.trim();
   if(!email) return;
@@ -94,12 +99,12 @@ document.getElementById("addAdminBtn").onclick = ()=>{
   document.getElementById("newAdminEmail").value="";
 };
 
-// Load voters
+// Voter management
 let voterData = [];
 const statusCounts = {Available:0, Active:0, Verified:0};
 
 function loadVoters(){
-  onValue(ref(db,"voters"), snapshot=>{
+  onValue(ref(db,"voters"),snapshot=>{
     voterData=[];
     snapshot.forEach(child=> voterData.push({id:child.key, ...child.val()}));
     renderTable();
@@ -109,7 +114,7 @@ function loadVoters(){
 
 function updateCounts(){
   statusCounts.Available=0; statusCounts.Active=0; statusCounts.Verified=0;
-  voterData.forEach(v=> statusCounts[v.status] = (statusCounts[v.status]||0)+1);
+  voterData.forEach(v=> statusCounts[v.status]=(statusCounts[v.status]||0)+1);
   document.getElementById("countAvailable").textContent="Available: "+statusCounts.Available;
   document.getElementById("countActive").textContent="Active: "+statusCounts.Active;
   document.getElementById("countVerified").textContent="Verified: "+statusCounts.Verified;
@@ -128,7 +133,6 @@ document.getElementById("addVoterManual").onclick = ()=>{
 
   if(!name || !epic) return alert("Name & EPIC required!");
   push(ref(db,"voters"),{name,epic,relationType,relationName,booth,part,address,status});
-  // Clear inputs
   ["voterName","voterEPIC","relationType","relationName","booth","part","address","status"].forEach(id=> document.getElementById(id).value='');
 };
 
@@ -137,40 +141,39 @@ function renderTable(){
   const container = document.getElementById("voterList");
   container.innerHTML="";
   voterData.forEach(v=>{
-    const div = document.createElement("div");
+    const div=document.createElement("div");
     div.className=`p-2 mb-1 rounded ${v.status==="Available"?"bg-green-300":v.status==="Active"?"bg-yellow-300":"bg-red-300"}`;
-    div.innerHTML=`
-      <div class="flex justify-between">
-        <span>${v.name} | ${v.epic} | ${v.status}</span>
-        <button class="bg-gray-600 text-white px-1 py-0.5 rounded" onclick="showCard('${v.id}')">View</button>
-      </div>`;
+    div.innerHTML=`<div class="flex justify-between">
+      <span>${v.name} | ${v.epic} | ${v.status}</span>
+      <button class="bg-gray-600 text-white px-1 py-0.5 rounded text-sm" onclick="showCard('${v.id}')">View</button>
+    </div>`;
     container.appendChild(div);
   });
 }
 
 // Show card
-window.showCard = (id)=>{
+window.showCard=(id)=>{
   const v=voterData.find(x=>x.id===id);
   if(!v) return;
+  // Remove existing card for same voter
+  document.querySelectorAll(".card-"+v.id).forEach(c=>c.remove());
   const card=document.createElement("div");
-  card.className=`fixed top-10 left-1/2 -translate-x-1/2 p-4 rounded shadow max-w-md z-50 card-${v.status}`;
-  card.innerHTML=`
-    <h2 class="font-bold text-lg mb-1">${v.name}</h2>
-    <p>EPIC: ${v.epic}</p>
-    <p>${v.relationType}: ${v.relationName}</p>
-    <p>Booth: ${v.booth}</p>
-    <p>Part: ${v.part}</p>
-    <p>Address: ${v.address}</p>
-    <p>Status: ${v.status}</p>
-    <div class="flex gap-1 mt-2">
-      <button onclick="updateStatus('${v.id}','Available')" class="bg-green-600 text-white px-1 py-0.5 rounded text-sm">Available</button>
-      <button onclick="updateStatus('${v.id}','Active')" class="bg-yellow-500 text-white px-1 py-0.5 rounded text-sm">Active</button>
-      <button onclick="updateStatus('${v.id}','Verified')" class="bg-red-600 text-white px-1 py-0.5 rounded text-sm">Verified</button>
-      <button onclick="this.parentElement.parentElement.remove()" class="bg-gray-600 text-white px-1 py-0.5 rounded text-sm">Close</button>
-      <button onclick="sendWhatsApp('${v.id}')" class="bg-blue-600 text-white px-1 py-0.5 rounded text-sm">Send</button>
-      <button onclick="printVoter('${v.id}')" class="bg-green-600 text-white px-1 py-0.5 rounded text-sm">Print</button>
-    </div>
-  `;
+  card.className=`fixed top-10 left-1/2 -translate-x-1/2 p-4 rounded shadow max-w-md z-50 card-${v.status} card-${v.id}`;
+  card.innerHTML=`<h2 class="font-bold text-lg mb-1">${v.name}</h2>
+  <p>EPIC: ${v.epic}</p>
+  <p>${v.relationType}: ${v.relationName}</p>
+  <p>Booth: ${v.booth}</p>
+  <p>Part: ${v.part}</p>
+  <p>Address: ${v.address}</p>
+  <p>Status: ${v.status}</p>
+  <div class="flex gap-1 mt-2">
+    <button onclick="updateStatus('${v.id}','Available')" class="bg-green-600 text-white px-1 py-0.5 rounded text-sm">Available</button>
+    <button onclick="updateStatus('${v.id}','Active')" class="bg-yellow-500 text-white px-1 py-0.5 rounded text-sm">Active</button>
+    <button onclick="updateStatus('${v.id}','Verified')" class="bg-red-600 text-white px-1 py-0.5 rounded text-sm">Verified</button>
+    <button onclick="this.closest('div.fixed').remove()" class="bg-gray-600 text-white px-1 py-0.5 rounded text-sm">Close</button>
+    <button onclick="sendWhatsApp('${v.id}')" class="bg-blue-600 text-white px-1 py-0.5 rounded text-sm">Send</button>
+    <button onclick="printVoter('${v.id}')" class="bg-green-600 text-white px-1 py-0.5 rounded text-sm">Print</button>
+  </div>`;
   document.body.appendChild(card);
 };
 
@@ -178,6 +181,7 @@ window.showCard = (id)=>{
 window.updateStatus=(id,status)=>{
   const v=voterData.find(x=>x.id===id);
   set(ref(db,"voters/"+id),{...v,status});
+  showCard(id); // Refresh card with new color
   loadVoters();
 };
 
@@ -197,12 +201,12 @@ window.sendWhatsApp=(id)=>{
 window.printVoter=(id)=>{
   const v=voterData.find(x=>x.id===id);
   let html=`<h2>${v.name}</h2>
-            <p>EPIC: ${v.epic}</p>
-            <p>${v.relationType}: ${v.relationName}</p>
-            <p>Booth: ${v.booth}</p>
-            <p>Part: ${v.part}</p>
-            <p>Address: ${v.address}</p>
-            <p>Status: ${v.status}</p>`;
+  <p>EPIC: ${v.epic}</p>
+  <p>${v.relationType}: ${v.relationName}</p>
+  <p>Booth: ${v.booth}</p>
+  <p>Part: ${v.part}</p>
+  <p>Address: ${v.address}</p>
+  <p>Status: ${v.status}</p>`;
   const w=window.open();
   w.document.write(html);
   w.print();
