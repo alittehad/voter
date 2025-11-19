@@ -1,21 +1,38 @@
 {
   "name": "Voter Management Panel",
   "short_name": "VoterPanel",
-  "description": "Manage voters and admin users",
-  "start_url": "./index.html",
+  "start_url": "/index.html",
   "display": "standalone",
-  "background_color": "#eef2ff",
+  "background_color": "#ffffff",
   "theme_color": "#2563eb",
+
   "icons": [
     {
-      "src": "icon-192.png",
-      "sizes": "192x192",
+      "src": "icons/icon-72.png",
+      "sizes": "72x72",
       "type": "image/png"
     },
     {
-      "src": "icon-512.png",
-      "sizes": "512x512",
+      "src": "icons/icon-96.png",
+      "sizes": "96x96",
       "type": "image/png"
+    },
+    {
+      "src": "icons/icon-144.png",
+      "sizes": "144x144",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }
