@@ -18,7 +18,8 @@ body, html {
   display:flex; flex-direction:column; justify-content:center; align-items:center;
   background: linear-gradient(to bottom right, #4f46e5, #ec4899, #facc15);
   font-family: sans-serif;
-  gap:1rem; /* space between elements */
+  overflow:hidden; /* scroll disable */
+  position: relative;
 }
 
 #content {
@@ -27,12 +28,11 @@ body, html {
   justify-content:center;
   align-items:center;
   width:100%;
-  max-width:500px; 
+  max-width:500px;
   padding:1rem;
   box-sizing:border-box;
 }
 
-/* Panel Image */
 .panel-img {
   width:100%;
   max-width:400px;
@@ -44,8 +44,9 @@ body, html {
 
 /* Install Button 3D + colorful */
 #installBtn {
-  display:block; /* desktop/mobile testing ke liye default block */
-  margin-bottom: 2rem;
+  position: absolute;
+  top: 10%;       /* thoda niche */
+  right: 8%;      /* thoda left se right distance */
   padding: 0.75rem 2rem;
   background: linear-gradient(45deg, #2563eb, #4ade80, #facc15);
   color: white;
@@ -53,9 +54,9 @@ body, html {
   border-radius: 0.75rem;
   cursor: pointer;
   box-shadow: 0 8px 0 #1e40af;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   transition: all 0.15s ease-in-out;
-  text-align: center;
+  z-index: 1000;
 }
 #installBtn:hover {
   transform: translateY(-3px) scale(1.05);
@@ -138,32 +139,25 @@ onAuthStateChanged(auth, user => {
   if(!user){
     window.location.replace('index.html'); // redirect if not logged in
   } else {
-    document.getElementById('content').style.display = 'flex'; // show panel
+    document.getElementById('content').style.display = 'flex';
   }
 });
 
 // PWA Install Button logic
 let deferredPrompt;
-const installBtn = document.getElementById('installBtn');
-
-// Always show for desktop/mobile testing
-installBtn.style.display = 'block';
-
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   deferredPrompt = e;
-  installBtn.style.display = 'block';
+  document.getElementById('installBtn').style.display = 'block';
 });
 
-installBtn.addEventListener('click', async () => {
-  if(deferredPrompt){
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    console.log('User response:', outcome);
-    deferredPrompt = null;
-  }
-  // optional hide after click
-  installBtn.style.display = 'none';
+document.getElementById('installBtn').addEventListener('click', async () => {
+  if(!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  console.log('User response:', outcome);
+  deferredPrompt = null;
+  document.getElementById('installBtn').style.display = 'none';
 });
 </script>
 
