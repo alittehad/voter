@@ -212,13 +212,18 @@ function renderTable(list){
   });
 }
 
-// Show voter details
+// ====== UPDATED showVoterCard FUNCTION ======
 function showVoterCard(v){
-  let existing=document.getElementById("voterDetailCard"); if(existing) existing.remove();
-  const div=document.createElement("div"); div.id="voterDetailCard"; div.className="card";
+  let existing = document.getElementById("voterDetailCard");
+  if(existing) existing.remove();
+
+  const div = document.createElement("div");
+  div.id = "voterDetailCard";
+  div.className = "card";
+
   const relLine = v.fatherName || v.husbandName || v.relationName || 'N/A';
 
-  div.innerHTML=`
+  div.innerHTML = `
   <div style="display:flex;justify-content:space-between;align-items:center">
     <div style="display:flex;align-items:center;gap:8px">
       <img src="https://i.ibb.co/LhDpnZFn/khatik-imase.jpg" class="img-sender"/>
@@ -237,33 +242,49 @@ function showVoterCard(v){
     <p><strong>Address:</strong> ${v.address||'-'}</p>
   </div>
   <div style="margin-top:8px;display:flex;gap:4px;flex-wrap:wrap">
-    ${isAdmin?`<button class="btn btn-yellow approveBtn">Approve</button>
+    <button class="btn btn-yellow approveBtn">Approve</button>
     <button class="btn btn-yellow opponentBtn">Opponent</button>
-    <button class="btn btn-red antiBtn">Anti</button>`:''}
+    <button class="btn btn-red antiBtn">Anti</button>
     <button class="btn btn-blue sendBtn">Send WhatsApp</button>
     <button class="btn btn-green printBtn">Print</button>
-  </div>`;
+  </div>
+  `;
 
   voterListDiv.prepend(div);
-  div.querySelector("#closeDetailBtn").onclick=()=>div.remove();
 
+  // Close button
+  div.querySelector("#closeDetailBtn").onclick = () => div.remove();
+
+  // Status buttons
   if(isAdmin){
-    function updateStatus(newStatus){ set(dbRef(db,"voters/"+v.id),{...v,status:newStatus}); }
-    div.querySelector(".approveBtn").onclick=()=>updateStatus("approved");
-    div.querySelector(".opponentBtn").onclick=()=>updateStatus("opponent");
-    div.querySelector(".antiBtn").onclick=()=>updateStatus("anti");
+    function updateStatus(newStatus){ 
+      set(dbRef(db,"voters/"+v.id),{...v,status:newStatus}); 
+    }
+    div.querySelector(".approveBtn").onclick = () => updateStatus("approved");
+    div.querySelector(".opponentBtn").onclick = () => updateStatus("opponent");
+    div.querySelector(".antiBtn").onclick = () => updateStatus("anti");
+  } else {
+    div.querySelector(".approveBtn").onclick = 
+    div.querySelector(".opponentBtn").onclick = 
+    div.querySelector(".antiBtn").onclick = () => alert("Only admin can change status");
   }
 
-  div.querySelector(".sendBtn").onclick=()=>{
+  // WhatsApp button
+  div.querySelector(".sendBtn").onclick = () => {
     const msg = `${senderDescEl.value?senderDescEl.value+"\n\n":""}Name: ${v.name||'-'}\nRelation: ${relLine}\nEPIC: ${v.voterID||'-'}\nHouse: ${v.houseNo||'-'}${v.roomNo? ' | Room: '+v.roomNo:''}\nAddress: ${v.address||'-'}\nPart: ${v.partNo||'-'}\nBooth: ${v.booth||'-'}`;
-    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,"_blank");
+    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
-  div.querySelector(".printBtn").onclick=()=>{
+  // Print button
+  div.querySelector(".printBtn").onclick = () => {
     const info = `Name: ${v.name||'-'}\nRelation: ${relLine}\nEPIC: ${v.voterID||'-'}\nHouse: ${v.houseNo||'-'}${v.roomNo? ' | Room: '+v.roomNo:''}\nAddress: ${v.address||'-'}\nPart: ${v.partNo||'-'}\nBooth: ${v.booth||'-'}`;
-    const w = window.open(); w.document.write(`<pre style="font-family:Arial">${info}</pre>`); w.print(); w.close();
+    const w = window.open(); 
+    w.document.write(`<pre style="font-family:Arial">${info}</pre>`); 
+    w.print(); 
+    w.close();
   };
 }
+// ==========================================
 
 // Search
 searchInput.addEventListener("input",e=>{
@@ -297,44 +318,37 @@ document.getElementById("addVoterManual").onclick=async ()=>{
   };
   if(payload.relationType==="Father") payload.fatherName=payload.relationName;
   else if(payload.relationType==="Husband") payload.husbandName=payload.relationName;
-  else if(payload.relationName) payload.fatherName=payload.relationName;
-  push(dbRef(db,"voters"),payload)
-  .then(()=>{ alert("Voter added!"); document.querySelectorAll("#panelDiv input,#panelDiv select,#panelDiv textarea").forEach(x=>x.value=""); })
-  .catch(err=>alert("Add failed: "+err.message));
+  else if(payload.relationName) payload.relationName=payload.relationName;
+  push(dbRef(db,"voters"),payload);
+  alert("Voter added!");
+  document.getElementById("voterName").value='';
+  document.getElementById("voterEPIC").value='';
 };
 
-// Admin: Manage users
-function renderUsers(){
-  const currentUserEmail = auth.currentUser.email.toLowerCase();
-  onValue(dbRef(db,"users"),snap=>{
-    const userListDiv = document.getElementById("userList");
-    userListDiv.innerHTML="";
-    snap.forEach(c=>{
-      const email = c.key.replace(/_dot_/g,".");
-      const div = document.createElement("div");
-      div.className="flex gap-2 items-center";
-      div.innerHTML=`<span class="px-2 py-1 bg-gray-200 rounded">${email}</span>
-      <button class="btn btn-red btn-sm deleteBtn">Delete</button>`;
-      userListDiv.appendChild(div);
+// Admin: Add Users
+document.getElementById("addUserBtn").onclick=async ()=>{
+  if(!isAdmin) return;
+  const email = document.getElementById("newUserEmail").value.trim().toLowerCase();
+  if(!email) return alert("Enter email");
+  await set(dbRef(db,"users/"+emailToKey(email)),{email});
+  alert("User added!");
+  document.getElementById("newUserEmail").value='';
+  renderUsers();
+}
 
-      if(email.toLowerCase()===currentUserEmail || email.toLowerCase()===currentUserEmail){
-        div.querySelector(".deleteBtn").disabled=true;
-        div.querySelector(".deleteBtn").classList.add("opacity-50","cursor-not-allowed");
-      } else {
-        div.querySelector(".deleteBtn").onclick=()=>{ if(confirm("Delete user "+email+"?")) set(dbRef(db,"users/"+emailToKey(email)),null).then(()=>alert("Deleted")); };
-      }
-    });
+async function renderUsers(){
+  const snap = await get(dbRef(db,"users"));
+  const listDiv = document.getElementById("userList");
+  listDiv.innerHTML='';
+  snap.forEach(c=>{
+    const u=c.val();
+    const d=document.createElement("div");
+    d.className="badge bg-gray-200";
+    d.textContent=u.email;
+    listDiv.appendChild(d);
   });
 }
 
-// Admin: Add new user
-document.getElementById("addUserBtn").onclick=()=>{
-  if(!isAdmin) return alert("Access Denied");
-  const email=document.getElementById("newUserEmail").value.trim().toLowerCase();
-  if(!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return alert("Enter valid email");
-  const key=emailToKey(email);
-  set(dbRef(db,"users/"+key),true).then(()=>{ alert("User added"); document.getElementById("newUserEmail").value=""; }).catch(err=>alert("Failed: "+err.message));
-};
 </script>
 </body>
 </html>
