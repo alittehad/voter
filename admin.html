@@ -33,9 +33,9 @@ table{width:100%;border-collapse:collapse;min-width:300px;background:white;borde
 th,td{padding:6px;border:1px solid #e6e9ef;text-align:left;white-space:nowrap;font-size:12px}
 thead tr{background:#ebf8ff;font-weight:700}
 tr:hover{background:#f7f9ff}
-.card-approved{background:#dcfce7} /* green */
-.card-opponent{background:#fef9c3} /* yellow */
-.card-anti{background:#fee2e2} /* red */
+.card-approved{background:#dcfce7} 
+.card-opponent{background:#fef9c3} 
+.card-anti{background:#fee2e2} 
 .badge{display:inline-block;padding:2px 6px;border-radius:6px;font-weight:700;font-size:11px}
 .actions button{margin-right:4px}
 .opacity-50{opacity:0.5;}
@@ -61,17 +61,17 @@ tr:hover{background:#f7f9ff}
     <div>
       <h3 class="font-bold text-blue-700 mb-2 text-sm">Admin: Add Email</h3>
       <div class="flex gap-2">
-        <input id="newAdminEmail" placeholder="Enter new admin email" class="border p-2 rounded flex-1 text-sm"/>
-        <button id="addAdminBtn" class="btn btn-green">Add</button>
+        <input id="newUserEmail" placeholder="Enter user email" class="border p-2 rounded flex-1 text-sm"/>
+        <button id="addUserBtn" class="btn btn-green">Add User</button>
       </div>
     </div>
     <button id="logoutBtn" class="btn btn-red">Logout</button>
   </div>
 
-  <!-- Admin List -->
+  <!-- User List -->
   <div class="card mt-2">
-    <h3 class="font-bold text-blue-700 mb-2 text-sm">Existing Admins</h3>
-    <div id="adminList" class="flex flex-wrap gap-2 text-sm"></div>
+    <h3 class="font-bold text-blue-700 mb-2 text-sm">Existing Users</h3>
+    <div id="userList" class="flex flex-wrap gap-2 text-sm"></div>
   </div>
 
   <!-- Top controls -->
@@ -117,7 +117,7 @@ tr:hover{background:#f7f9ff}
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getDatabase, ref as dbRef, onValue, push, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref as dbRef, onValue, set, push, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
@@ -142,34 +142,36 @@ const voterListDiv = document.getElementById("voterList");
 const searchInput = document.getElementById("searchVoter");
 const senderDescEl = document.getElementById("senderDesc");
 const statusCountDiv = document.getElementById("statusCount");
-const adminListDiv = document.getElementById("adminList");
+const userListDiv = document.getElementById("userList");
 
 let voterData = [];
 
-// Convert email to Firebase-safe key
+// Safe email key
 function emailToKey(email){ return email.replace(/\./g,"_dot_"); }
 
-/* ---------- LOGIN ---------- */
-loginBtn.onclick = () => {
-  signInWithPopup(auth, provider)
-    .then(res => {})
-    .catch(err => { console.error(err); alert("Login failed: "+err.message); });
-};
+// -------- Login --------
+loginBtn.onclick = () => signInWithPopup(auth, provider)
+  .catch(err=>alert("Login failed: "+err.message));
 
-/* ---------- LOGOUT ---------- */
-logoutBtn.onclick = () => { signOut(auth); };
+logoutBtn.onclick = () => signOut(auth);
 
-/* ---------- AUTH STATE ---------- */
-onAuthStateChanged(auth, user => {
+// -------- Admin setup (one admin only) --------
+const adminEmail = "ngogrant454@gmail";
+const adminKey = emailToKey(adminEmail);
+get(dbRef(db,"admins/"+adminKey)).then(snap=>{
+  if(!snap.exists()) set(dbRef(db,"admins/"+adminKey), true);
+});
+
+// -------- Auth state --------
+onAuthStateChanged(auth,user=>{
   if(user){
-    // Check if user is admin
     const emailKey = emailToKey(user.email.toLowerCase());
-    onValue(dbRef(db,"admins/"+emailKey), snap=>{
+    get(dbRef(db,"admins/"+emailKey)).then(snap=>{
       if(!snap.exists()){ alert("Access Denied"); signOut(auth); return; }
       loginDiv.classList.add("hidden"); 
       panelDiv.classList.remove("hidden"); 
-      loadVoters(); 
-      renderAdmins();
+      loadVoters();
+      renderUsers();
     });
   } else {
     loginDiv.classList.remove("hidden"); 
@@ -177,10 +179,10 @@ onAuthStateChanged(auth, user => {
   }
 });
 
-/* ---------- LOAD VOTERS ---------- */
+// -------- Load voters --------
 function loadVoters(){
   onValue(dbRef(db,"voters"),snap=>{
-    voterData = [];
+    voterData=[];
     snap.forEach(c=>voterData.push({id:c.key,...c.val()}));
     renderTable(voterData);
     renderStatusCount();
@@ -199,10 +201,10 @@ function renderStatusCount(){
   <div class="badge" style="background:#fee2e2">Anti: ${anti}</div>`;
 }
 
-/* ---------- RENDER VOTERS ---------- */
+// -------- Render voter table --------
 function renderTable(list){
   voterListDiv.innerHTML=`<table><thead><tr><th>Name</th><th>EPIC</th><th>Status</th></tr></thead><tbody></tbody></table>`;
-  const tbody=voterListDiv.querySelector("tbody");
+  const tbody = voterListDiv.querySelector("tbody");
   list.forEach(v=>{
     const tr=document.createElement("tr");
     tr.innerHTML=`<td>${v.name||''}</td><td>${v.voterID||v.epic||''}</td><td>${v.status||''}</td>`;
@@ -212,6 +214,7 @@ function renderTable(list){
   });
 }
 
+// -------- Show voter details --------
 function showVoterCard(v,tr){
   let existing=document.getElementById("voterDetailCard"); if(existing) existing.remove();
   const div=document.createElement("div"); div.id="voterDetailCard"; div.className="card";
@@ -242,12 +245,10 @@ function showVoterCard(v,tr){
     <button class="btn btn-green printBtn">Print</button>
   </div>`;
   voterListDiv.prepend(div);
-
   div.querySelector("#closeDetailBtn").onclick=()=>div.remove();
 
   function updateStatus(newStatus){
     set(dbRef(db,"voters/"+v.id),{...v,status:newStatus});
-    renderStatusCount(); renderTable(voterData);
   }
   div.querySelector(".approveBtn").onclick=()=>updateStatus("approved");
   div.querySelector(".opponentBtn").onclick=()=>updateStatus("opponent");
@@ -263,20 +264,27 @@ function showVoterCard(v,tr){
   };
 }
 
-/* ---------- Search ---------- */
-searchInput.addEventListener("input",(e)=>{
-  const q=e.target.value.trim().toLowerCase();
+// -------- Search --------
+searchInput.addEventListener("input",e=>{
+  const q = e.target.value.trim().toLowerCase();
   if(!q) renderTable(voterData);
   else renderTable(voterData.filter(v=>{
     return `${v.name||''} ${v.voterID||v.epic||''} ${v.partNo||v.part||''} ${v.houseNo||''}`.toLowerCase().includes(q);
   }));
 });
 
-/* ---------- Add Voter ---------- */
-document.getElementById("addVoterManual").onclick=()=>{
+// -------- Add Voter --------
+document.getElementById("addVoterManual").onclick=async ()=>{
   const name=document.getElementById("voterName").value.trim();
   const epic=document.getElementById("voterEPIC").value.trim();
-  if(!name||!epic)return alert("Name & EPIC required!");
+  if(!name||!epic) return alert("Name & EPIC required!");
+
+  // Check duplicate
+  const snap = await get(dbRef(db,"voters"));
+  let exists = false;
+  snap.forEach(c=>{ if(c.val().voterID===epic) exists=true; });
+  if(exists) return alert("Voter with this EPIC already exists!");
+
   const payload={
     name, voterID:epic, epic,
     relationType:document.getElementById("relationType").value,
@@ -294,63 +302,37 @@ document.getElementById("addVoterManual").onclick=()=>{
   else if(payload.relationType==="Husband") payload.husbandName=payload.relationName;
   else if(payload.relationName) payload.fatherName=payload.relationName;
 
-  push(dbRef(db,"voters"),payload).then(()=>{
-    alert("Voter added!");
-    document.querySelectorAll("#panelDiv input,#panelDiv select,#panelDiv textarea").forEach(x=>x.value="");
-  }).catch(err=>alert("Add failed: "+err.message));
+  push(dbRef(db,"voters"),payload)
+  .then(()=>{ 
+    alert("Voter added!"); 
+    document.querySelectorAll("#panelDiv input,#panelDiv select,#panelDiv textarea").forEach(x=>x.value=""); 
+  })
+  .catch(err=>alert("Add failed: "+err.message));
 };
 
-/* ---------- Admin Management ---------- */
-function renderAdmins() {
-  const currentUserEmail = auth.currentUser?.email?.toLowerCase();
-  onValue(dbRef(db,"admins"), snap => {
-    adminListDiv.innerHTML = "";
-    snap.forEach(child => {
-      const key = child.key;
-      const email = key.replace(/_dot_/g,".");
+// -------- User management (many users) --------
+function renderUsers(){
+  const currentUserEmail = auth.currentUser.email.toLowerCase();
+  onValue(dbRef(db,"users"),snap=>{
+    userListDiv.innerHTML="";
+    snap.forEach(c=>{
+      const email = c.key.replace(/_dot_/g,".");
       const div = document.createElement("div");
-      div.className = "flex gap-2 items-center";
-      div.innerHTML = `
-        <span class="px-2 py-1 bg-gray-200 rounded">${email}</span>
-        <button class="btn btn-yellow btn-sm editBtn">Edit</button>
-        <button class="btn btn-red btn-sm deleteBtn">Delete</button>
-      `;
-      adminListDiv.appendChild(div);
-
-      if(email.toLowerCase() === currentUserEmail){
-        div.querySelector(".editBtn").disabled = true;
-        div.querySelector(".deleteBtn").disabled = true;
-        div.querySelector(".editBtn").classList.add("opacity-50","cursor-not-allowed");
-        div.querySelector(".deleteBtn").classList.add("opacity-50","cursor-not-allowed");
-      } else {
-        div.querySelector(".deleteBtn").onclick = () => {
-          if(confirm("Delete admin "+email+"?")){
-            set(dbRef(db,"admins/"+key), null)
-              .then(()=>{ alert("Admin deleted"); });
-          }
-        };
-        div.querySelector(".editBtn").onclick = () => {
-          const newEmail = prompt("Enter new email", email);
-          if(newEmail && newEmail!==email){
-            const newKey = emailToKey(newEmail);
-            set(dbRef(db,"admins/"+newKey), true)
-              .then(()=> set(dbRef(db,"admins/"+key), null))
-              .then(()=> alert("Admin updated"));
-          }
-        };
-      }
+      div.className="flex gap-2 items-center";
+      div.innerHTML=`<span class="px-2 py-1 bg-gray-200 rounded">${email}</span>`;
+      userListDiv.appendChild(div);
     });
   });
 }
 
-/* ---------- Add Admin ---------- */
-document.getElementById("addAdminBtn").onclick=()=>{
-  const email = document.getElementById("newAdminEmail").value.trim().toLowerCase();
-  if(!email) return alert("Enter valid email");
-  const key = emailToKey(email);
-  set(dbRef(db,"admins/"+key), true)
-    .then(()=> { alert("Admin added"); document.getElementById("newAdminEmail").value=""; })
-    .catch(err=>alert("Add failed: "+err.message));
+// Add new user
+document.getElementById("addUserBtn").onclick=()=>{
+  const email=document.getElementById("newUserEmail").value.trim().toLowerCase();
+  if(!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return alert("Enter valid email");
+  const key=emailToKey(email);
+  set(dbRef(db,"users/"+key),true)
+  .then(()=>{ alert("User added"); document.getElementById("newUserEmail").value=""; })
+  .catch(err=>alert("Failed: "+err.message));
 };
 </script>
 </body>
