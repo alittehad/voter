@@ -32,6 +32,7 @@ tr:hover{background:#f7f9ff}
 .actions button{margin-right:4px}
 .opacity-50{opacity:0.5;}
 .cursor-not-allowed{cursor:not-allowed;}
+.hidden{display:none;}
 @media (max-width:900px){ table{min-width:100%} }
 </style>
 </head>
@@ -48,22 +49,9 @@ tr:hover{background:#f7f9ff}
 <!-- Panel -->
 <div id="panelDiv" class="hidden">
 
-  <!-- Admin add users + logout -->
-  <div id="adminControls" class="card flex justify-between items-center hidden">
-    <div>
-      <h3 class="font-bold text-blue-700 mb-2 text-sm">Admin: Add User</h3>
-      <div class="flex gap-2">
-        <input id="newUserEmail" placeholder="Enter user email" class="border p-2 rounded flex-1 text-sm"/>
-        <button id="addUserBtn" class="btn btn-green">Add User</button>
-      </div>
-    </div>
+  <!-- Admin Logout -->
+  <div id="adminControls" class="card flex justify-end items-center hidden">
     <button id="logoutBtn" class="btn btn-red">Logout</button>
-  </div>
-
-  <!-- User List -->
-  <div id="userListDiv" class="card mt-2 hidden">
-    <h3 class="font-bold text-blue-700 mb-2 text-sm">Existing Users</h3>
-    <div id="userList" class="flex flex-wrap gap-2 text-sm"></div>
   </div>
 
   <!-- Top controls -->
@@ -85,27 +73,6 @@ tr:hover{background:#f7f9ff}
   <!-- Table -->
   <div id="voterList" class="table-container card"></div>
 
-  <!-- Add Voter (admin only) -->
-  <div id="addVoterDiv" class="card mt-4 hidden">
-    <h3 class="text-sm font-bold text-blue-700 mb-2">Add Voter Manually</h3>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
-      <input id="voterName" placeholder="Name" class="border p-2 rounded"/>
-      <input id="voterEPIC" placeholder="EPIC" class="border p-2 rounded"/>
-      <select id="relationType" class="border p-2 rounded">
-        <option value="">Relation Type</option><option value="Father">Father</option><option value="Husband">Husband</option>
-      </select>
-      <input id="relationName" placeholder="Father/Husband Name" class="border p-2 rounded"/>
-      <input id="houseNo" placeholder="House No / Building" class="border p-2 rounded"/>
-      <input id="roomNo" placeholder="Room No" class="border p-2 rounded"/>
-      <input id="voterAddress" placeholder="Address" class="border p-2 rounded"/>
-      <input id="voterPart" placeholder="Part No" class="border p-2 rounded"/>
-      <input id="voterBooth" placeholder="Booth No / Location" class="border p-2 rounded"/>
-    </div>
-    <div class="mt-3">
-      <button id="addVoterManual" class="btn btn-green w-full">Add Voter</button>
-    </div>
-  </div>
-
 </div>
 </div>
 
@@ -113,7 +80,7 @@ tr:hover{background:#f7f9ff}
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getDatabase, ref as dbRef, onValue, set, push, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref as dbRef, onValue, set, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
@@ -139,10 +106,7 @@ const searchInput = document.getElementById("searchVoter");
 const senderDescEl = document.getElementById("senderDesc");
 const statusCountDiv = document.getElementById("statusCount");
 const voterDetailContainer = document.getElementById("voterDetailContainer");
-
 const adminControls = document.getElementById("adminControls");
-const userListDivContainer = document.getElementById("userListDiv");
-const addVoterDiv = document.getElementById("addVoterDiv");
 
 let voterData = [];
 let isAdmin = false;
@@ -158,45 +122,44 @@ onAuthStateChanged(auth, async user=>{
   if(user){
     const emailKey = emailToKey(user.email.toLowerCase());
     const adminSnap = await get(dbRef(db,"admins/"+emailKey));
-    const userSnap = await get(dbRef(db,"users/"+emailKey));
-
-    if(!adminSnap.exists() && !userSnap.exists()){
-      alert("Access Denied"); signOut(auth); return;
-    }
-
-    isAdmin = adminSnap.exists();
+    if(!adminSnap.exists()){ alert("Access Denied"); signOut(auth); return; }
+    isAdmin = true;
 
     loginDiv.classList.add("hidden");
     panelDiv.classList.remove("hidden");
-
-    if(isAdmin){
-      adminControls.classList.remove("hidden");
-      userListDivContainer.classList.remove("hidden");
-      addVoterDiv.classList.remove("hidden");
-    } else {
-      adminControls.classList.add("hidden");
-      userListDivContainer.classList.add("hidden");
-      addVoterDiv.classList.add("hidden");
-    }
+    adminControls.classList.remove("hidden");
 
     loadVoters();
-    if(isAdmin) renderUsers();
   } else {
     loginDiv.classList.remove("hidden");
     panelDiv.classList.add("hidden");
+    adminControls.classList.add("hidden");
   }
 });
 
 // Load voters
 function loadVoters(){
-  onValue(dbRef(db,"voters"),snap=>{
+  onValue(dbRef(db,"voters"), snap => {
     voterData = [];
-    snap.forEach(c=>voterData.push({id:c.key,...c.val()}));
+    snap.forEach(c => {
+      const v = c.val();
+      voterData.push({
+        id: c.key,
+        name: v.name || '',
+        voterID: v.epic || '',
+        epic: v.epic || '',
+        partNo: v.part || '',
+        booth: v.booth || '',
+        address: v.address || '',
+        status: v.status || 'anti'
+      });
+    });
     renderTable(voterData);
     renderStatusCount();
   });
 }
 
+// Render status count
 function renderStatusCount(){
   let approved=0, opponent=0, anti=0;
   voterData.forEach(v=>{ if(v.status==="approved") approved++; else if(v.status==="opponent") opponent++; else anti++; });
@@ -205,24 +168,23 @@ function renderStatusCount(){
   <div class="badge" style="background:#fee2e2">Anti: ${anti}</div>`;
 }
 
+// Render table
 function renderTable(list){
-  voterListDiv.innerHTML=`<table><thead><tr><th>Name</th><th>EPIC</th><th>Status</th></tr></thead><tbody></tbody></table>`;
+  voterListDiv.innerHTML=`<table><thead><tr><th>Name</th><th>EPIC</th><th>Part</th><th>Booth</th><th>Address</th></tr></thead><tbody></tbody></table>`;
   const tbody = voterListDiv.querySelector("tbody");
   list.forEach(v=>{
     const tr=document.createElement("tr");
-    tr.innerHTML=`<td>${v.name||''}</td><td>${v.voterID||v.epic||''}</td><td>${v.status||''}</td>`;
+    tr.innerHTML=`<td>${v.name}</td><td>${v.voterID}</td><td>${v.partNo}</td><td>${v.booth}</td><td>${v.address}</td>`;
     tr.className=v.status==="approved"?"card-approved":v.status==="opponent"?"card-opponent":"card-anti";
     tbody.appendChild(tr);
     tr.onclick=()=>showVoterCard(v);
   });
 }
 
-// Show voter details
+// Show voter card with status update buttons
 function showVoterCard(v){
-  voterDetailContainer.innerHTML=""; // clear previous card
+  voterDetailContainer.innerHTML="";
   const div=document.createElement("div"); div.className="card";
-  const relLine = v.fatherName || v.husbandName || v.relationName || 'N/A';
-
   div.innerHTML=`
   <div style="display:flex;justify-content:space-between;align-items:center">
     <div style="display:flex;align-items:center;gap:8px">
@@ -235,111 +197,39 @@ function showVoterCard(v){
     <button id="closeDetailBtn" class="btn btn-red">Close</button>
   </div>
   <div style="margin-top:8px;font-size:12px">
-    <p><strong>Relation:</strong> ${relLine} | EPIC: ${v.voterID||'-'}</p>
-    <p><strong>House:</strong> ${v.houseNo||'-'}${v.roomNo? ' | Room: '+v.roomNo:''}</p>
-    <p><strong>Booth:</strong> ${v.booth||'-'}</p>
+    <p><strong>EPIC:</strong> ${v.voterID||'-'}</p>
     <p><strong>Part:</strong> ${v.partNo||'-'}</p>
+    <p><strong>Booth:</strong> ${v.booth||'-'}</p>
     <p><strong>Address:</strong> ${v.address||'-'}</p>
   </div>
   <div style="margin-top:8px;display:flex;gap:4px;flex-wrap:wrap">
-    ${isAdmin?`<button class="btn btn-yellow approveBtn">Approve</button>
+    <button class="btn btn-yellow approveBtn">Approve</button>
     <button class="btn btn-yellow opponentBtn">Opponent</button>
-    <button class="btn btn-red antiBtn">Anti</button>`:''}
-    <button class="btn btn-blue sendBtn">Send WhatsApp</button>
-    <button class="btn btn-green printBtn">Print</button>
+    <button class="btn btn-red antiBtn">Anti</button>
   </div>`;
-
   voterDetailContainer.appendChild(div);
   div.querySelector("#closeDetailBtn").onclick=()=>div.remove();
 
-  if(isAdmin){
-    function updateStatus(newStatus){ set(dbRef(db,"voters/"+v.id),{...v,status:newStatus}); }
-    div.querySelector(".approveBtn").onclick=()=>updateStatus("approved");
-    div.querySelector(".opponentBtn").onclick=()=>updateStatus("opponent");
-    div.querySelector(".antiBtn").onclick=()=>updateStatus("anti");
-  }
-
-  div.querySelector(".sendBtn").onclick=()=>{
-    const msg = `${senderDescEl.value?senderDescEl.value+"\n\n":""}Name: ${v.name||'-'}\nRelation: ${relLine}\nEPIC: ${v.voterID||'-'}\nHouse: ${v.houseNo||'-'}${v.roomNo? ' | Room: '+v.roomNo:''}\nAddress: ${v.address||'-'}\nPart: ${v.partNo||'-'}\nBooth: ${v.booth||'-'}`;
-    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,"_blank");
-  };
-
-  div.querySelector(".printBtn").onclick=()=>{
-    const info = `Name: ${v.name||'-'}\nRelation: ${relLine}\nEPIC: ${v.voterID||'-'}\nHouse: ${v.houseNo||'-'}${v.roomNo? ' | Room: '+v.roomNo:''}\nAddress: ${v.address||'-'}\nPart: ${v.partNo||'-'}\nBooth: ${v.booth||'-'}`;
-    const w = window.open(); w.document.write(`<pre style="font-family:Arial">${info}</pre>`); w.print(); w.close();
-  };
+  // Status update
+  div.querySelector(".approveBtn").onclick=()=>updateStatus(v);
+  div.querySelector(".opponentBtn").onclick=()=>updateStatus(v,"opponent");
+  div.querySelector(".antiBtn").onclick=()=>updateStatus(v,"anti");
 }
 
-// Search
+function updateStatus(v,newStatus="approved"){
+  set(dbRef(db,"voters/"+v.id),{...v,status:newStatus})
+  .then(()=>loadVoters());
+}
+
+// Search filter
 searchInput.addEventListener("input",e=>{
   const q = e.target.value.trim().toLowerCase();
   if(!q) renderTable(voterData);
   else renderTable(voterData.filter(v=>{
-    return `${v.name||''} ${v.voterID||v.epic||''} ${v.partNo||v.part||''} ${v.houseNo||''}`.toLowerCase().includes(q);
+    return `${v.name} ${v.voterID} ${v.partNo} ${v.address}`.toLowerCase().includes(q);
   }));
 });
 
-// Admin: Add Voter
-document.getElementById("addVoterManual").onclick=async ()=>{
-  if(!isAdmin) return alert("Access Denied");
-  const name=document.getElementById("voterName").value.trim();
-  const epic=document.getElementById("voterEPIC").value.trim();
-  if(!name||!epic) return alert("Name & EPIC required!");
-  const snap = await get(dbRef(db,"voters"));
-  let exists = false; snap.forEach(c=>{ if(c.val().voterID===epic) exists=true; });
-  if(exists) return alert("Voter with this EPIC already exists!");
-  const payload={
-    name, voterID:epic, epic,
-    relationType:document.getElementById("relationType").value,
-    relationName:document.getElementById("relationName").value.trim(),
-    fatherName:'', husbandName:'',
-    houseNo:document.getElementById("houseNo").value.trim(),
-    roomNo:document.getElementById("roomNo").value.trim(),
-    address:document.getElementById("voterAddress").value.trim(),
-    partNo:document.getElementById("voterPart").value.trim(),
-    booth:document.getElementById("voterBooth").value.trim(),
-    status:"anti", createdAt:Date.now()
-  };
-  if(payload.relationType==="Father") payload.fatherName=payload.relationName;
-  else if(payload.relationType==="Husband") payload.husbandName=payload.relationName;
-  else if(payload.relationName) payload.fatherName=payload.relationName;
-  push(dbRef(db,"voters"),payload)
-  .then(()=>{ alert("Voter added!"); document.querySelectorAll("#panelDiv input,#panelDiv select,#panelDiv textarea").forEach(x=>x.value=""); })
-  .catch(err=>alert("Add failed: "+err.message));
-};
-
-// Admin: Manage users
-function renderUsers(){
-  const currentUserEmail = auth.currentUser.email.toLowerCase();
-  onValue(dbRef(db,"users"),snap=>{
-    const userListDiv = document.getElementById("userList");
-    userListDiv.innerHTML="";
-    snap.forEach(c=>{
-      const email = c.key.replace(/_dot_/g,".");
-      const div = document.createElement("div");
-      div.className="flex gap-2 items-center";
-      div.innerHTML=`<span class="px-2 py-1 bg-gray-200 rounded">${email}</span>
-      <button class="btn btn-red btn-sm deleteBtn">Delete</button>`;
-      userListDiv.appendChild(div);
-
-      if(email.toLowerCase()===currentUserEmail){
-        div.querySelector(".deleteBtn").disabled=true;
-        div.querySelector(".deleteBtn").classList.add("opacity-50","cursor-not-allowed");
-      } else {
-        div.querySelector(".deleteBtn").onclick=()=>{ if(confirm("Delete user "+email+"?")) set(dbRef(db,"users/"+emailToKey(email)),null).then(()=>alert("Deleted")); };
-      }
-    });
-  });
-}
-
-// Admin: Add new user
-document.getElementById("addUserBtn").onclick=()=>{
-  if(!isAdmin) return alert("Access Denied");
-  const email=document.getElementById("newUserEmail").value.trim().toLowerCase();
-  if(!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return alert("Enter valid email");
-  const key=emailToKey(email);
-  set(dbRef(db,"users/"+key),true).then(()=>{ alert("User added"); document.getElementById("newUserEmail").value=""; }).catch(err=>alert("Failed: "+err.message));
-};
 </script>
 </body>
 </html>
