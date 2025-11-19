@@ -46,17 +46,28 @@ img.center-img {
 }
 .login-btn:hover {transform:translateY(-2px);}
 .login-btn:active {transform:translateY(3px); box-shadow:0 2px 0 rgba(0,0,0,0.25);}
+
+/* Install Button 3D Style */
 #installBtn {
   display:none;
-  margin-top:1rem;
-  padding:0.75rem 1.5rem;
+  margin-top: 2rem;
+  padding: 0.75rem 1.5rem;
   background:#2563eb;
   color:white;
   font-weight:bold;
   border-radius:0.75rem;
   cursor:pointer;
+  box-shadow: 0 5px 0 #1e40af;
+  transition: all 0.1s;
 }
-#installBtn:hover {background:#1e40af;}
+#installBtn:hover {
+  background: #1e40af;
+  transform: translateY(-2px);
+}
+#installBtn:active {
+  transform: translateY(3px);
+  box-shadow: 0 2px 0 #1e40af;
+}
 </style>
 </head>
 <body>
