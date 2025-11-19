@@ -19,6 +19,7 @@ body{background:var(--bg);font-family:system-ui,-apple-system,Segoe UI,Roboto,He
   letter-spacing:0.6px;
 }
 .card{background:var(--card);border-radius:12px;padding:12px;margin-bottom:12px;box-shadow:6px 6px 18px rgba(2,6,23,0.06);}
+.img-sender{width:40px;height:40px;border-radius:999px;object-fit:cover;margin-right:8px}
 .btn{cursor:pointer;padding:4px 6px;border-radius:6px;font-weight:600;font-size:12px}
 .btn-blue{background:#2563eb;color:white}
 .btn-green{background:#16a34a;color:white}
@@ -35,7 +36,6 @@ tr:hover{background:#f7f9ff}
 .card-anti{background:#fee2e2} /* red */
 .badge{display:inline-block;padding:2px 6px;border-radius:6px;font-weight:700;font-size:11px}
 .actions button{margin-right:4px}
-.img-sender{width:40px;height:40px;border-radius:999px;object-fit:cover;margin-right:8px}
 /* responsive */
 @media (max-width:900px){ table{min-width:100%} }
 </style>
@@ -135,31 +135,19 @@ let adminEmails = ["ngogrant454@gmail_com"];
 
 /* ---------- LOGIN ---------- */
 loginBtn.onclick = () => {
-  loginBtn.disabled = true;
   signInWithPopup(auth, provider)
     .then(res => {
-      loginBtn.disabled = false;
       const emailKey = res.user.email.replace(/\./g,'_');
       if(!adminEmails.includes(emailKey)){
         alert("Access Denied"); signOut(auth);
       }
     })
-    .catch(err => { 
-      loginBtn.disabled = false; 
-      console.error(err); 
-      alert("Login failed: "+err.message); 
-    });
+    .catch(err => { console.error(err); alert("Login failed: "+err.message); });
 };
 
 onAuthStateChanged(auth, user => {
-  if(user){ 
-    loginDiv.classList.add("hidden"); 
-    panelDiv.classList.remove("hidden"); 
-    loadVoters(); 
-  } else { 
-    loginDiv.classList.remove("hidden"); 
-    panelDiv.classList.add("hidden"); 
-  }
+  if(user){ loginDiv.classList.add("hidden"); panelDiv.classList.remove("hidden"); loadVoters(); }
+  else{ loginDiv.classList.remove("hidden"); panelDiv.classList.add("hidden"); }
 });
 
 /* ---------- LOAD VOTERS ---------- */
@@ -184,6 +172,7 @@ function renderStatusCount(){
   <div class="badge" style="background:#fee2e2">Anti: ${anti}</div>`;
 }
 
+/* ---------- RENDER TABLE ---------- */
 function renderTable(list){
   voterListDiv.innerHTML=`<table><thead><tr><th>Name</th><th>EPIC</th><th>Status</th></tr></thead><tbody></tbody></table>`;
   const tbody=voterListDiv.querySelector("tbody");
@@ -199,7 +188,7 @@ function renderTable(list){
 function showVoterCard(v,tr){
   let existing=document.getElementById("voterDetailCard"); if(existing) existing.remove();
   const div=document.createElement("div"); div.id="voterDetailCard"; div.className="card";
-  const relLine = v.fatherName?v.fatherName:(v.husbandName?v.husbandName:v.relationName||'');
+  const relLine = v.fatherName || v.husbandName || v.relationName || '';
   div.innerHTML=`
   <div style="display:flex;justify-content:space-between;align-items:center">
     <div style="display:flex;align-items:center">
@@ -238,12 +227,31 @@ function showVoterCard(v,tr){
   div.querySelector(".antiBtn").onclick=()=>updateStatus("anti");
 
   div.querySelector(".sendBtn").onclick=()=>{
-    const msg=(senderDescEl.value?senderDescEl.value+"\n\n":"")+`Name:${v.name||''}\nRelation:${relLine}\nEPIC:${v.voterID||v.epic||''}\nHouse:${v.houseNo||''}\nAddress:${v.address||''}\nPart/Booth:${v.partNo||v.part||''}/${v.booth||''}\nPolling:${v.pollingAddress||''}\nImage:https://i.ibb.co/LhDpnZFn/khatik-imase.jpg`;
+    const msg = `${senderDescEl.value || ''}\n\n` +
+      `Name: ${v.name||''}\nRelation: ${relLine}\nEPIC: ${v.voterID||v.epic||''}\n` +
+      `House: ${v.houseNo||''}\nRoom: ${v.roomNo||''}\nAddress: ${v.address||''}\n` +
+      `Part/Booth: ${v.partNo||v.part||''}/${v.booth||''}\nPolling: ${v.pollingAddress||''}\n` +
+      `Image: https://i.ibb.co/LhDpnZFn/khatik-imase.jpg`;
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,"_blank");
   };
 
   div.querySelector(".printBtn").onclick=()=>{
-    const w=window.open(); w.document.write(`<pre style="font-family:Arial">${div.innerText}</pre>`); w.print(); w.close();
+    const content = `
+${senderDescEl.value || ''}
+
+Name: ${v.name||''}
+Relation: ${relLine}
+EPIC: ${v.voterID||v.epic||''}
+House: ${v.houseNo||''}
+Room: ${v.roomNo||''}
+Address: ${v.address||''}
+Part/Booth: ${v.partNo||v.part||''}/${v.booth||''}
+Polling: ${v.pollingAddress||''}
+`;
+    const w=window.open();
+    w.document.write(`<pre style="font-family:Arial">${content}</pre>`);
+    w.print();
+    w.close();
   };
 }
 
@@ -260,7 +268,7 @@ searchInput.addEventListener("input",(e)=>{
 document.getElementById("addVoterManual").onclick=()=>{
   const name=document.getElementById("voterName").value.trim();
   const epic=document.getElementById("voterEPIC").value.trim();
-  if(!name||!epic)return alert("Name & EPIC required!");
+  if(!name||!epic) return alert("Name & EPIC required!");
   const payload={
     name, voterID:epic, epic,
     relationType:document.getElementById("relationType").value,
@@ -285,6 +293,9 @@ document.getElementById("addVoterManual").onclick=()=>{
     document.querySelectorAll("#panelDiv input,#panelDiv select,#panelDiv textarea").forEach(x=>x.value="");
   });
 };
+
+/* ---------- LOGOUT ON REFRESH ---------- */
+window.onload=()=>{ signOut(auth); };
 </script>
 </body>
 </html>
