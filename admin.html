@@ -3,230 +3,183 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Voter Management Panel</title>
+<title>Admin Panel - Voter Management</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
-:root{--bg:#eef2ff;--card:#fff}
-body{background:var(--bg);font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;}
-.container{max-width:1100px;margin:24px auto;padding:12px;}
-.heading {font-size:2rem;font-weight:800;text-align:center;margin-bottom:12px;color:#0f172a;transform: perspective(500px) rotateX(8deg);text-shadow:0 1px 0 rgba(255,255,255,0.5),0 6px 12px rgba(2,6,23,0.12),0 18px 36px rgba(2,6,23,0.10);letter-spacing:0.6px;}
-.subhead{display:none;}
-.card{background:var(--card);border-radius:12px;padding:12px;margin-bottom:12px;box-shadow:6px 6px 18px rgba(2,6,23,0.06);}
-.img-sender{width:40px;height:40px;border-radius:999px;object-fit:cover;margin-right:8px}
-.btn{cursor:pointer;padding:4px 6px;border-radius:6px;font-weight:600;font-size:12px}
-.btn-blue{background:#2563eb;color:white}
-.btn-green{background:#16a34a;color:white}
-.btn-yellow{background:#facc15;color:#111}
-.btn-red{background:#dc2626;color:white}
-.btn-gray{background:#6b7280;color:white}
-.table-container{overflow-x:auto}
-table{width:100%;border-collapse:collapse;min-width:400px;background:white;border-radius:6px;overflow:hidden}
-th,td{padding:6px;border:1px solid #e6e9ef;text-align:left;white-space:nowrap}
-thead tr{background:#ebf8ff;font-weight:700}
-tr:hover{background:#f7f9ff}
-.card-approved{background:#dcfce7}
-.card-opponent{background:#fef9c3}
-.card-anti{background:#fee2e2}
-.badge{display:inline-block;padding:2px 6px;border-radius:6px;font-weight:700;font-size:12px}
-.actions button{margin-right:4px}
-#statusCount{font-weight:700;margin-bottom:6px}
-@media (max-width:900px){table{min-width:300px}}
+  .card-approved{background:#34d399;}
+  .card-active{background:#facc15;}
+  .card-verified{background:#f87171;}
 </style>
 </head>
-<body>
-<div class="container">
-<h1 class="heading">Voter Management Panel</h1>
+<body class="bg-gray-100 p-4">
+<h1 class="text-3xl font-bold text-center mb-4">Voter Management Panel</h1>
 
-<!-- Admin Login -->
-<div id="loginDiv" class="card text-center">
-<h2 class="text-xl font-bold text-blue-700">Login to Access Voter Panel</h2>
-<button id="googleLoginBtn" class="btn btn-blue mt-2">Login with Google</button>
+<!-- Sender description -->
+<div class="mb-4 flex gap-2 items-center">
+  <input id="senderDesc" placeholder="Sender Description" class="border p-2 rounded w-full"/>
 </div>
 
-<!-- Panel -->
-<div id="panelDiv" class="hidden">
-
-<!-- Admin Controls -->
-<div id="adminControls" class="card mb-2 hidden">
-<h3 class="font-bold mb-1">Add Admin Email</h3>
-<input id="newAdminEmail" placeholder="Email" class="border p-1 rounded w-full mb-2" />
-<button id="addAdminEmail" class="btn btn-green">Add Admin</button>
+<!-- Admin Emails -->
+<div class="mb-4 p-4 bg-white rounded shadow">
+  <h2 class="font-bold mb-2">Admin Emails</h2>
+  <input id="newAdminEmail" placeholder="Add admin email" class="border p-2 rounded w-1/2"/>
+  <button id="addAdminBtn" class="bg-blue-600 text-white px-2 py-1 rounded">Add</button>
+  <ul id="adminList" class="mt-2"></ul>
 </div>
-
-<!-- Sender Description -->
-<div class="card flex items-center gap-2 mb-2">
-<textarea id="senderDesc" placeholder="Sender Description (sent above voter info)" class="w-full border p-2 rounded" rows="2"></textarea>
-</div>
-
-<!-- Status Count -->
-<div id="statusCount"></div>
-
-<!-- Table -->
-<div id="voterList" class="table-container card"></div>
 
 <!-- Add Voter -->
-<div id="addVoterForm" class="card mb-2 hidden">
-<h3 class="font-bold mb-2">Add Voter</h3>
-<div class="grid grid-cols-1 md:grid-cols-3 gap-2">
-<input id="voterName" placeholder="Name" class="border p-1 rounded" />
-<input id="voterEPIC" placeholder="EPIC" class="border p-1 rounded" />
-<select id="relationType" class="border p-1 rounded">
-<option value="">Relation</option><option value="Father">Father</option><option value="Husband">Husband</option>
-</select>
-<input id="relationName" placeholder="Father/Husband Name" class="border p-1 rounded" />
-<input id="houseNo" placeholder="House No" class="border p-1 rounded" />
-<input id="roomNo" placeholder="Room No" class="border p-1 rounded" />
-<input id="voterPart" placeholder="Part No" class="border p-1 rounded" />
-<input id="voterBooth" placeholder="Booth" class="border p-1 rounded" />
-<input id="pollingAddress" placeholder="Polling Address" class="border p-1 rounded" />
-<input id="voterMobile" placeholder="Mobile" class="border p-1 rounded" />
-</div>
-<button id="addVoterManual" class="btn btn-green mt-2">Add Voter</button>
+<div class="mb-4 p-4 bg-white rounded shadow">
+  <h2 class="font-bold mb-2">Add Voter</h2>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+    <input id="voterName" placeholder="Name" class="border p-2 rounded"/>
+    <input id="voterEPIC" placeholder="EPIC" class="border p-2 rounded"/>
+    <select id="relationType" class="border p-2 rounded">
+      <option value="">Relation Type</option>
+      <option value="Father">Father</option>
+      <option value="Husband">Husband</option>
+    </select>
+    <input id="relationName" placeholder="Father/Husband Name" class="border p-2 rounded"/>
+  </div>
+  <button id="addVoterManual" class="bg-green-600 text-white px-2 py-1 mt-2 rounded">Add Voter</button>
 </div>
 
+<!-- Status Counts -->
+<div class="mb-2 flex gap-4">
+  <span id="countAvailable">Available: 0</span>
+  <span id="countActive">Active: 0</span>
+  <span id="countVerified">Verified: 0</span>
 </div>
-</div>
+
+<!-- Voter Table -->
+<div id="voterList" class="bg-white rounded shadow overflow-auto max-h-[400px]"></div>
 
 <script type="module">
+// Firebase imports
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getDatabase, ref as dbRef, onValue, push, set, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getDatabase, ref, push, onValue, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
-  authDomain: "voter-25c94.firebaseapp.com",
-  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
-  projectId: "voter-25c94",
-  storageBucket: "voter-25c94.firebasestorage.app",
-  messagingSenderId: "297773534400",
-  appId: "1:297773534400:web:3722c487b8c83e9b787125"
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
+  projectId: "YOUR_PROJECT",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "XXXX",
+  appId: "XXXX"
 };
 const app = initializeApp(firebaseConfig);
-const auth = getAuth();
-const provider = new GoogleAuthProvider();
 const db = getDatabase(app);
 
-const loginDiv = document.getElementById("loginDiv");
-const panelDiv = document.getElementById("panelDiv");
-const loginBtn = document.getElementById("googleLoginBtn");
-const voterListDiv = document.getElementById("voterList");
-const senderDescEl = document.getElementById("senderDesc");
-const adminControls = document.getElementById("adminControls");
-const addVoterForm = document.getElementById("addVoterForm");
-
-const FIXED_SENDER_IMAGE = "https://i.ibb.co/LhDpnZFn/khatik-imase.jpg";
 let voterData = [];
-let adminEmails = ["ngogrant454@gmail_com"]; // initial admin
+const statusCounts = {Available:0, Active:0, Verified:0};
 
-loginBtn.onclick = ()=>{
-  signInWithPopup(auth, provider).then(res=>{
-    const emailKey = res.user.email.replace(/\./g,'_');
-    if(!adminEmails.includes(emailKey) && emailKey!="zarafix3@gmail_com"){ alert('Access Denied'); auth.signOut(); }
-  }).catch(err=>alert('Login Failed'));
-};
+// Add voter
+document.getElementById("addVoterManual").onclick = () => {
+  const name = document.getElementById("voterName").value.trim();
+  const epic = document.getElementById("voterEPIC").value.trim();
+  const relationType = document.getElementById("relationType").value;
+  const relationName = document.getElementById("relationName").value.trim();
+  if(!name || !epic) return alert("Name & EPIC required!");
 
-onAuthStateChanged(auth,user=>{
-  if(user){
-    loginDiv.classList.add("hidden");
-    panelDiv.classList.remove("hidden");
-    loadVoters();
-    const emailKey = user.email.replace(/\./g,'_');
-    if(adminEmails.includes(emailKey)){ adminControls.classList.remove("hidden"); addVoterForm.classList.remove("hidden"); }
-  } else { loginDiv.classList.remove("hidden"); panelDiv.classList.add("hidden"); }
-});
-
-// Add Admin Email
-document.getElementById("addAdminEmail").onclick=()=>{
-  const email = document.getElementById("newAdminEmail").value.trim();
-  if(email){ adminEmails.push(email.replace(/\./g,'_')); alert('Admin added'); document.getElementById("newAdminEmail").value=''; }
+  const payload = {
+    name, epic,
+    relationType, relationName,
+    status: "Available"
+  };
+  push(ref(db,"voters"), payload);
+  document.getElementById("voterName").value='';
+  document.getElementById("voterEPIC").value='';
+  document.getElementById("relationType").value='';
+  document.getElementById("relationName").value='';
 };
 
 // Load voters
 function loadVoters(){
-  onValue(dbRef(db,"voters"),(snap)=>{
+  onValue(ref(db,"voters"), snapshot=>{
     voterData = [];
-    snap.forEach(child=>voterData.push({id:child.key,...child.val()}));
-    renderTable(voterData);
-    updateStatusCount();
+    snapshot.forEach(child => voterData.push({id:child.key, ...child.val()}));
+    renderTable();
+    updateCounts();
   });
 }
 
-function renderTable(list){
-  let html = `<table><thead><tr><th>Name</th><th>EPIC</th><th>Status</th><th>Action</th></tr></thead><tbody></tbody></table>`;
-  voterListDiv.innerHTML = html;
-  const tbody = voterListDiv.querySelector("tbody");
-  list.forEach(v=>{
-    const tr = document.createElement("tr");
-    tr.className = v.status=="approved"?"card-approved":v.status=="opponent"?"card-opponent":"card-anti";
-    tr.innerHTML=`<td>${v.name||''}</td><td>${v.voterID||v.epic||''}</td><td>${v.status||''}</td>
-    <td><button class='btn btn-blue viewBtn'>View</button></td>`;
-    tbody.appendChild(tr);
-    tr.querySelector(".viewBtn").onclick=()=>showCard(v,tr);
+function updateCounts(){
+  statusCounts.Available=0; statusCounts.Active=0; statusCounts.Verified=0;
+  voterData.forEach(v=> statusCounts[v.status] = (statusCounts[v.status]||0)+1);
+  document.getElementById("countAvailable").textContent = "Available: "+statusCounts.Available;
+  document.getElementById("countActive").textContent = "Active: "+statusCounts.Active;
+  document.getElementById("countVerified").textContent = "Verified: "+statusCounts.Verified;
+}
+
+// Render table
+function renderTable(){
+  const container = document.getElementById("voterList");
+  container.innerHTML = "";
+  voterData.forEach(v=>{
+    const div = document.createElement("div");
+    div.className = `p-2 mb-1 rounded ${v.status==="Available"?"bg-green-300":v.status==="Active"?"bg-yellow-300":"bg-red-300"}`;
+    div.innerHTML = `<div class="flex justify-between">
+      <span>${v.name} | ${v.epic} | ${v.status}</span>
+      <button class="bg-gray-600 text-white px-1 py-0.5 rounded" onclick="showCard('${v.id}')">View</button>
+    </div>`;
+    container.appendChild(div);
   });
 }
 
-function updateStatusCount(){
-  const approved = voterData.filter(v=>v.status=="approved").length;
-  const opponent = voterData.filter(v=>v.status=="opponent").length;
-  const anti = voterData.filter(v=>v.status=="anti").length;
-  document.getElementById("statusCount").innerText=`Approved: ${approved} | Opponent: ${opponent} | Anti: ${anti}`;
-}
-
-function showCard(v,tr){
-  const existing = document.getElementById("voterCard"); if(existing) existing.remove();
-  const div = document.createElement("div"); div.id="voterCard"; div.className="card";
-  const rel = v.relationType && v.relationName ? `${v.relationType}: ${v.relationName}` : '';
-  div.innerHTML=`
-  <div style='display:flex;justify-content:space-between;align-items:center'>
-    <div><h3 class='font-bold'>${v.name}</h3><p>${rel} | EPIC: ${v.voterID||v.epic||''}</p></div>
-    <button id='closeCardBtn' class='btn btn-red'>Close</button>
-  </div>
-  <div>House: ${v.houseNo} | Room: ${v.roomNo} | Part: ${v.partNo||v.part} | Booth: ${v.booth} | Polling: ${v.pollingAddress} | Mobile: ${v.mobile}</div>
-  <div class='mt-1 flex gap-1 flex-wrap'>
-    <button class='btn btn-yellow approveBtn'>Approve</button>
-    <button class='btn btn-yellow opponentBtn'>Opponent</button>
-    <button class='btn btn-red antiBtn'>Anti</button>
-    <button class='btn btn-blue sendBtn'>Send WhatsApp</button>
-    <button class='btn btn-green printBtn'>Print</button>
-  </div>`;
-  voterListDiv.prepend(div);
-  document.getElementById("closeCardBtn").onclick=()=>div.remove();
-  const updateStatus = s=>set(dbRef(db,"voters/"+v.id),{...v,status:s});
-  div.querySelector(".approveBtn").onclick=()=>{updateStatus('approved'); div.className='card card-approved'; tr.className='card-approved'; updateStatusCount();};
-  div.querySelector(".opponentBtn").onclick=()=>{updateStatus('opponent'); div.className='card card-opponent'; tr.className='card-opponent'; updateStatusCount();};
-  div.querySelector(".antiBtn").onclick=()=>{updateStatus('anti'); div.className='card card-anti'; tr.className='card-anti'; updateStatusCount();};
-  div.querySelector(".sendBtn").onclick=()=>{
-    let msg=''; if(senderDescEl.value) msg+=senderDescEl.value+'\n\n';
-    msg+=`Name: ${v.name}\n${rel}\nEPIC: ${v.voterID||v.epic}\nHouse: ${v.houseNo}\nRoom: ${v.roomNo}\nPart: ${v.partNo||v.part}\nBooth: ${v.booth}\nPolling: ${v.pollingAddress}\nMobile: ${v.mobile}\n\nImage: ${FIXED_SENDER_IMAGE}`;
-    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,'_blank');
-  };
-  div.querySelector(".printBtn").onclick=()=>{
-    let html=`<div style='font-family:Arial;padding:12px'><h2>${v.name}</h2><p>${rel} | EPIC: ${v.voterID||v.epic}</p><p>House: ${v.houseNo} | Room: ${v.roomNo} | Part: ${v.partNo||v.part} | Booth: ${v.booth}</p><p>Polling: ${v.pollingAddress}</p><p>Mobile: ${v.mobile}</p><img src='${FIXED_SENDER_IMAGE}' style='width:50px;height:50px;border-radius:50%;margin-top:8px'></div>`;
-    const w=window.open(); w.document.write(html); w.print(); w.close();
-  };
-}
-
-// Add voter
-document.getElementById("addVoterManual").onclick=()=>{
-  const payload={
-    name: document.getElementById("voterName").value.trim(),
-    voterID: document.getElementById("voterEPIC").value.trim(),
-    epic: document.getElementById("voterEPIC").value.trim(),
-    relationType: document.getElementById("relationType").value,
-    relationName: document.getElementById("relationName").value.trim(),
-    houseNo: document.getElementById("houseNo").value.trim(),
-    roomNo: document.getElementById("roomNo").value.trim(),
-    partNo: document.getElementById("voterPart").value.trim(),
-    part: document.getElementById("voterPart").value.trim(),
-    booth: document.getElementById("voterBooth").value.trim(),
-    pollingAddress: document.getElementById("pollingAddress").value.trim(),
-    mobile: document.getElementById("voterMobile").value.trim(),
-    status: 'anti'
-  };
-  if(payload.relationType=='Father') payload.fatherName=payload.relationName;
-  else if(payload.relationType=='Husband') payload.husbandName=payload.relationName;
-  push(dbRef(db,"voters"),payload).then(()=>alert('Voter added'));
+// Show card
+window.showCard = (id)=>{
+  const v = voterData.find(x=>x.id===id);
+  if(!v) return;
+  const card = document.createElement("div");
+  card.className = `fixed top-10 left-1/2 -translate-x-1/2 bg-white p-4 rounded shadow max-w-md z-50`;
+  card.innerHTML = `
+    <h2 class="font-bold text-lg mb-1">${v.name}</h2>
+    <p>EPIC: ${v.epic}</p>
+    <p>${v.relationType}: ${v.relationName}</p>
+    <p>Status: ${v.status}</p>
+    <div class="flex gap-1 mt-2">
+      <button onclick="updateStatus('${v.id}','Available')" class="bg-green-600 text-white px-2 py-1 rounded">Available</button>
+      <button onclick="updateStatus('${v.id}','Active')" class="bg-yellow-500 text-white px-2 py-1 rounded">Active</button>
+      <button onclick="updateStatus('${v.id}','Verified')" class="bg-red-600 text-white px-2 py-1 rounded">Verified</button>
+      <button onclick="this.parentElement.parentElement.remove()" class="bg-gray-600 text-white px-2 py-1 rounded">Close</button>
+      <button onclick="sendWhatsApp('${v.id}')" class="bg-blue-600 text-white px-2 py-1 rounded">Send</button>
+      <button onclick="printVoter('${v.id}')" class="bg-green-600 text-white px-2 py-1 rounded">Print</button>
+    </div>
+  `;
+  document.body.appendChild(card);
 };
+
+// Update status
+window.updateStatus = (id,status)=>{
+  const v = voterData.find(x=>x.id===id);
+  set(ref(db,"voters/"+id), {...v,status});
+};
+
+// Send WhatsApp
+window.sendWhatsApp = (id)=>{
+  const v = voterData.find(x=>x.id===id);
+  const desc = document.getElementById("senderDesc").value.trim();
+  let msg = "";
+  if(desc) msg+=desc+"\n\n";
+  msg+=`Name: ${v.name}\n${v.relationType}: ${v.relationName}\nEPIC: ${v.epic}\nStatus: ${v.status}`;
+  const hiddenImage = "https://i.ibb.co/LhDpnZFn/khatik-imase.jpg";
+  msg+=`\nImage: ${hiddenImage}`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,"_blank");
+};
+
+// Print voter
+window.printVoter = (id)=>{
+  const v = voterData.find(x=>x.id===id);
+  let html = `<h2>${v.name}</h2><p>EPIC: ${v.epic}</p><p>${v.relationType}: ${v.relationName}</p><p>Status: ${v.status}</p>`;
+  const w = window.open();
+  w.document.write(html);
+  w.print();
+  w.close();
+};
+
+loadVoters();
+
 </script>
 </body>
 </html>
