@@ -3,20 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Voter Management Panel</title>
+<title>Admin Panel - Voter Management</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
-  .status-Available {background:#34d399;}
-  .status-Active {background:#facc15;}
-  .status-Verified {background:#f87171;}
-  .button-small {padding:0.25rem 0.5rem; font-size:0.8rem;}
+  .card-Available{background:#059669;} /* Dark green */
+  .card-Active{background:#b45309;}   /* Dark yellow/brown */
+  .card-Verified{background:#b91c1c;} /* Dark red */
 </style>
 </head>
 <body class="bg-gray-100 p-4">
+<h1 class="text-3xl font-bold text-center mb-4">Voter Management Panel</h1>
 
-<h1 class="text-2xl font-bold text-center mb-4">Voter Management Panel</h1>
-
-<!-- Sender description -->
+<!-- Sender Description -->
 <div class="mb-4 flex gap-2 items-center">
   <input id="senderDesc" placeholder="Sender Description" class="border p-2 rounded w-full"/>
 </div>
@@ -25,7 +23,7 @@
 <div class="mb-4 p-4 bg-white rounded shadow">
   <h2 class="font-bold mb-2">Admin Emails</h2>
   <input id="newAdminEmail" placeholder="Add admin email" class="border p-2 rounded w-1/2"/>
-  <button id="addAdminBtn" class="bg-blue-600 text-white button-small rounded">Add</button>
+  <button id="addAdminBtn" class="bg-blue-600 text-white px-2 py-1 rounded">Add</button>
   <ul id="adminList" class="mt-2"></ul>
 </div>
 
@@ -41,15 +39,20 @@
       <option value="Husband">Husband</option>
     </select>
     <input id="relationName" placeholder="Father/Husband Name" class="border p-2 rounded"/>
-    <input id="address" placeholder="Address" class="border p-2 rounded"/>
     <input id="booth" placeholder="Booth" class="border p-2 rounded"/>
     <input id="part" placeholder="Part" class="border p-2 rounded"/>
+    <input id="address" placeholder="Address" class="border p-2 rounded"/>
+    <select id="status" class="border p-2 rounded">
+      <option value="Available">Available</option>
+      <option value="Active">Active</option>
+      <option value="Verified">Verified</option>
+    </select>
   </div>
-  <button id="addVoterManual" class="bg-green-600 text-white button-small mt-2 rounded">Add Voter</button>
+  <button id="addVoterManual" class="bg-green-600 text-white px-2 py-1 mt-2 rounded">Add Voter</button>
 </div>
 
 <!-- Status Counts -->
-<div class="mb-2 flex gap-4 font-bold">
+<div class="mb-2 flex gap-4">
   <span id="countAvailable">Available: 0</span>
   <span id="countActive">Active: 0</span>
   <span id="countVerified">Verified: 0</span>
@@ -59,8 +62,8 @@
 <div id="voterList" class="bg-white rounded shadow overflow-auto max-h-[400px]"></div>
 
 <script type="module">
-// Firebase imports
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getDatabase, ref, push, onValue, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 const firebaseConfig = {
@@ -74,37 +77,31 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 const db = getDatabase(app);
 
-let voterData = [];
-const statusCounts = {Available:0, Active:0, Verified:0};
+// Admin-only check
+const allowedAdmins = ["admin@example.com"]; // Change to real emails or load from DB
+onAuthStateChanged(auth,user=>{
+  if(!user || !allowedAdmins.includes(user.email)) window.location.href="login.html";
+});
 
-// Add voter
-document.getElementById("addVoterManual").onclick = () => {
-  const name = document.getElementById("voterName").value.trim();
-  const epic = document.getElementById("voterEPIC").value.trim();
-  const relationType = document.getElementById("relationType").value;
-  const relationName = document.getElementById("relationName").value.trim();
-  const address = document.getElementById("address").value.trim();
-  const booth = document.getElementById("booth").value.trim();
-  const part = document.getElementById("part").value.trim();
-  if(!name || !epic) return alert("Name & EPIC required!");
-  const payload = {name, epic, relationType, relationName, address, booth, part, status:"Available"};
-  push(ref(db,"voters"), payload);
-  document.getElementById("voterName").value='';
-  document.getElementById("voterEPIC").value='';
-  document.getElementById("relationType").value='';
-  document.getElementById("relationName").value='';
-  document.getElementById("address").value='';
-  document.getElementById("booth").value='';
-  document.getElementById("part").value='';
+// Admin emails management
+document.getElementById("addAdminBtn").onclick = ()=>{
+  const email = document.getElementById("newAdminEmail").value.trim();
+  if(!email) return;
+  push(ref(db,"admins"),{email});
+  document.getElementById("newAdminEmail").value="";
 };
 
 // Load voters
+let voterData = [];
+const statusCounts = {Available:0, Active:0, Verified:0};
+
 function loadVoters(){
   onValue(ref(db,"voters"), snapshot=>{
-    voterData = [];
-    snapshot.forEach(child => voterData.push({id:child.key, ...child.val()}));
+    voterData=[];
+    snapshot.forEach(child=> voterData.push({id:child.key, ...child.val()}));
     renderTable();
     updateCounts();
   });
@@ -113,86 +110,100 @@ function loadVoters(){
 function updateCounts(){
   statusCounts.Available=0; statusCounts.Active=0; statusCounts.Verified=0;
   voterData.forEach(v=> statusCounts[v.status] = (statusCounts[v.status]||0)+1);
-  document.getElementById("countAvailable").textContent = "Available: "+statusCounts.Available;
-  document.getElementById("countActive").textContent = "Active: "+statusCounts.Active;
-  document.getElementById("countVerified").textContent = "Verified: "+statusCounts.Verified;
+  document.getElementById("countAvailable").textContent="Available: "+statusCounts.Available;
+  document.getElementById("countActive").textContent="Active: "+statusCounts.Active;
+  document.getElementById("countVerified").textContent="Verified: "+statusCounts.Verified;
 }
+
+// Add voter manually
+document.getElementById("addVoterManual").onclick = ()=>{
+  const name = document.getElementById("voterName").value.trim();
+  const epic = document.getElementById("voterEPIC").value.trim();
+  const relationType = document.getElementById("relationType").value;
+  const relationName = document.getElementById("relationName").value.trim();
+  const booth = document.getElementById("booth").value.trim();
+  const part = document.getElementById("part").value.trim();
+  const address = document.getElementById("address").value.trim();
+  const status = document.getElementById("status").value;
+
+  if(!name || !epic) return alert("Name & EPIC required!");
+  push(ref(db,"voters"),{name,epic,relationType,relationName,booth,part,address,status});
+  // Clear inputs
+  ["voterName","voterEPIC","relationType","relationName","booth","part","address","status"].forEach(id=> document.getElementById(id).value='');
+};
 
 // Render table
 function renderTable(){
   const container = document.getElementById("voterList");
-  container.innerHTML = "";
+  container.innerHTML="";
   voterData.forEach(v=>{
     const div = document.createElement("div");
-    div.className = `p-2 mb-1 rounded ${v.status==="Available"?"bg-green-300":v.status==="Active"?"bg-yellow-300":"bg-red-300"} flex justify-between`;
-    div.innerHTML = `
-      <span>${v.name} | ${v.epic} | ${v.status}</span>
-      <button class="bg-gray-600 text-white button-small rounded" onclick="showCard('${v.id}')">View</button>
-    `;
+    div.className=`p-2 mb-1 rounded ${v.status==="Available"?"bg-green-300":v.status==="Active"?"bg-yellow-300":"bg-red-300"}`;
+    div.innerHTML=`
+      <div class="flex justify-between">
+        <span>${v.name} | ${v.epic} | ${v.status}</span>
+        <button class="bg-gray-600 text-white px-1 py-0.5 rounded" onclick="showCard('${v.id}')">View</button>
+      </div>`;
     container.appendChild(div);
   });
 }
 
 // Show card
 window.showCard = (id)=>{
-  const v = voterData.find(x=>x.id===id);
+  const v=voterData.find(x=>x.id===id);
   if(!v) return;
-  const existing = document.getElementById("voterCard");
-  if(existing) existing.remove();
-  const card = document.createElement("div");
-  card.id = "voterCard";
-  card.className = `fixed top-10 left-1/2 -translate-x-1/2 p-4 rounded shadow max-w-md z-50 ${v.status==="Available"?"bg-green-300":v.status==="Active"?"bg-yellow-300":"bg-red-300"}`;
-  card.innerHTML = `
+  const card=document.createElement("div");
+  card.className=`fixed top-10 left-1/2 -translate-x-1/2 p-4 rounded shadow max-w-md z-50 card-${v.status}`;
+  card.innerHTML=`
     <h2 class="font-bold text-lg mb-1">${v.name}</h2>
     <p>EPIC: ${v.epic}</p>
     <p>${v.relationType}: ${v.relationName}</p>
-    <p>Address: ${v.address}</p>
     <p>Booth: ${v.booth}</p>
     <p>Part: ${v.part}</p>
+    <p>Address: ${v.address}</p>
     <p>Status: ${v.status}</p>
-    <div class="flex gap-1 mt-2 flex-wrap">
-      <button onclick="updateStatus('${v.id}','Available')" class="bg-green-600 text-white button-small rounded">Available</button>
-      <button onclick="updateStatus('${v.id}','Active')" class="bg-yellow-500 text-white button-small rounded">Active</button>
-      <button onclick="updateStatus('${v.id}','Verified')" class="bg-red-600 text-white button-small rounded">Verified</button>
-      <button onclick="this.parentElement.parentElement.remove()" class="bg-gray-600 text-white button-small rounded">Close</button>
-      <button onclick="sendWhatsApp('${v.id}')" class="bg-blue-600 text-white button-small rounded">Send</button>
-      <button onclick="printVoter('${v.id}')" class="bg-green-600 text-white button-small rounded">Print</button>
+    <div class="flex gap-1 mt-2">
+      <button onclick="updateStatus('${v.id}','Available')" class="bg-green-600 text-white px-1 py-0.5 rounded text-sm">Available</button>
+      <button onclick="updateStatus('${v.id}','Active')" class="bg-yellow-500 text-white px-1 py-0.5 rounded text-sm">Active</button>
+      <button onclick="updateStatus('${v.id}','Verified')" class="bg-red-600 text-white px-1 py-0.5 rounded text-sm">Verified</button>
+      <button onclick="this.parentElement.parentElement.remove()" class="bg-gray-600 text-white px-1 py-0.5 rounded text-sm">Close</button>
+      <button onclick="sendWhatsApp('${v.id}')" class="bg-blue-600 text-white px-1 py-0.5 rounded text-sm">Send</button>
+      <button onclick="printVoter('${v.id}')" class="bg-green-600 text-white px-1 py-0.5 rounded text-sm">Print</button>
     </div>
   `;
   document.body.appendChild(card);
 };
 
 // Update status
-window.updateStatus = (id,status)=>{
-  const v = voterData.find(x=>x.id===id);
-  set(ref(db,"voters/"+id), {...v,status});
+window.updateStatus=(id,status)=>{
+  const v=voterData.find(x=>x.id===id);
+  set(ref(db,"voters/"+id),{...v,status});
+  loadVoters();
 };
 
 // Send WhatsApp
-window.sendWhatsApp = (id)=>{
-  const v = voterData.find(x=>x.id===id);
-  const desc = document.getElementById("senderDesc").value.trim();
-  let msg = "";
+window.sendWhatsApp=(id)=>{
+  const v=voterData.find(x=>x.id===id);
+  const desc=document.getElementById("senderDesc").value.trim();
+  let msg="";
   if(desc) msg+=desc+"\n\n";
-  msg+=`Name: ${v.name}\n${v.relationType}: ${v.relationName}\nAddress: ${v.address}\nBooth: ${v.booth}\nPart: ${v.part}\nEPIC: ${v.epic}\nStatus: ${v.status}`;
-  const hiddenImage = "https://i.ibb.co/LhDpnZFn/khatik-imase.jpg";
+  msg+=`Name: ${v.name}\n${v.relationType}: ${v.relationName}\nEPIC: ${v.epic}\nBooth: ${v.booth}\nPart: ${v.part}\nAddress: ${v.address}\nStatus: ${v.status}`;
+  const hiddenImage="https://i.ibb.co/LhDpnZFn/khatik-imase.jpg";
   msg+=`\nImage: ${hiddenImage}`;
   window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,"_blank");
 };
 
 // Print voter
-window.printVoter = (id)=>{
-  const v = voterData.find(x=>x.id===id);
-  let html = `
-    <h2>${v.name}</h2>
-    <p>EPIC: ${v.epic}</p>
-    <p>${v.relationType}: ${v.relationName}</p>
-    <p>Address: ${v.address}</p>
-    <p>Booth: ${v.booth}</p>
-    <p>Part: ${v.part}</p>
-    <p>Status: ${v.status}</p>
-  `;
-  const w = window.open();
+window.printVoter=(id)=>{
+  const v=voterData.find(x=>x.id===id);
+  let html=`<h2>${v.name}</h2>
+            <p>EPIC: ${v.epic}</p>
+            <p>${v.relationType}: ${v.relationName}</p>
+            <p>Booth: ${v.booth}</p>
+            <p>Part: ${v.part}</p>
+            <p>Address: ${v.address}</p>
+            <p>Status: ${v.status}</p>`;
+  const w=window.open();
   w.document.write(html);
   w.print();
   w.close();
