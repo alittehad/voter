@@ -182,6 +182,39 @@ onAuthStateChanged(auth, async user=>{
   }
 });
 
+// ======= Render Users with Delete Button =========
+async function renderUsers(){
+  const usersSnap = await get(dbRef(db,"users"));
+  const container = document.getElementById("userList");
+  container.innerHTML = '';
+  
+  usersSnap.forEach(u=>{
+    const emailKey = u.key;
+    const email = u.val().email;
+    
+    const div = document.createElement("div");
+    div.className = "flex items-center gap-2 bg-gray-100 p-2 rounded";
+
+    const span = document.createElement("span");
+    span.textContent = email;
+    span.className = "flex-1";
+
+    const delBtn = document.createElement("button");
+    delBtn.textContent = "Delete";
+    delBtn.className = "btn btn-red btn-sm";
+    delBtn.onclick = async () => {
+      if(confirm(`Delete user ${email}?`)){
+        await set(dbRef(db,"users/"+emailKey), null);
+        renderUsers();
+      }
+    };
+
+    div.appendChild(span);
+    div.appendChild(delBtn);
+    container.appendChild(div);
+  });
+}
+
 // Load voters
 function loadVoters(){
   onValue(dbRef(db,"voters"),snap=>{
@@ -212,7 +245,7 @@ function renderTable(list){
   });
 }
 
-// ====== UPDATED showVoterCard FUNCTION ======
+// ====== showVoterCard FUNCTION ======
 function showVoterCard(v){
   let existing = document.getElementById("voterDetailCard");
   if(existing) existing.remove();
@@ -252,10 +285,8 @@ function showVoterCard(v){
 
   voterListDiv.prepend(div);
 
-  // Close button
   div.querySelector("#closeDetailBtn").onclick = () => div.remove();
 
-  // Status buttons - ALL users can now update
   function updateStatus(newStatus){ 
     set(dbRef(db,"voters/"+v.id),{...v,status:newStatus}); 
   }
@@ -263,13 +294,11 @@ function showVoterCard(v){
   div.querySelector(".opponentBtn").onclick = () => updateStatus("opponent");
   div.querySelector(".antiBtn").onclick = () => updateStatus("anti");
 
-  // WhatsApp button
   div.querySelector(".sendBtn").onclick = () => {
     const msg = `${senderDescEl.value?senderDescEl.value+"\n\n":""}Name: ${v.name||'-'}\nRelation: ${relLine}\nEPIC: ${v.voterID||'-'}\nHouse: ${v.houseNo||'-'}${v.roomNo? ' | Room: '+v.roomNo:''}\nAddress: ${v.address||'-'}\nPart: ${v.partNo||'-'}\nBooth: ${v.booth||'-'}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
-  // Print button
   div.querySelector(".printBtn").onclick = () => {
     const info = `Name: ${v.name||'-'}\nRelation: ${relLine}\nEPIC: ${v.voterID||'-'}\nHouse: ${v.houseNo||'-'}${v.roomNo? ' | Room: '+v.roomNo:''}\nAddress: ${v.address||'-'}\nPart: ${v.partNo||'-'}\nBooth: ${v.booth||'-'}`;
     const w = window.open(); 
@@ -328,9 +357,6 @@ document.getElementById("addUserBtn").onclick=async ()=>{
   document.getElementById("newUserEmail").value='';
   renderUsers();
 }
-
-
-
 </script>
 </body>
 </html>
