@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -324,6 +323,13 @@ function renderUsers(){
       } else {
         div.querySelector(".deleteBtn").onclick=()=>{ if(confirm("Delete user "+email+"?")) set(dbRef(db,"users/"+emailToKey(email)),null).then(()=>alert("Deleted")); };
       }
+
+
+
+
+
+
+      
     });
   });
 }
