@@ -23,6 +23,7 @@ body {
   margin:0;
   background: linear-gradient(to bottom right, #4f46e5, #ec4899, #facc15);
   padding:1rem;
+  gap:1rem; /* elements ke beech thoda space */
 }
 img.center-img {
   max-width:90%;
@@ -47,26 +48,27 @@ img.center-img {
 .login-btn:hover {transform:translateY(-2px);}
 .login-btn:active {transform:translateY(3px); box-shadow:0 2px 0 rgba(0,0,0,0.25);}
 
-/* Install Button 3D Style */
+/* Install Button 3D + Colorful */
 #installBtn {
   display:none;
-  margin-top: 5rem;
-  padding: 0.75rem 1.5rem;
-  background:#2563eb;
-  color:white;
-  font-weight:bold;
-  border-radius:0.75rem;
-  cursor:pointer;
-  box-shadow: 0 5px 0 #1e40af;
-  transition: all 0.1s;
+  margin-bottom: 2rem; /* login button ke upar space */
+  padding: 0.75rem 1.8rem;
+  background: linear-gradient(45deg, #2563eb, #4ade80, #facc15);
+  color: white;
+  font-weight: bold;
+  border-radius: 0.75rem;
+  cursor: pointer;
+  box-shadow: 0 8px 0 #1e40af; /* 3D effect */
+  font-size: 1.1rem;
+  transition: all 0.15s ease-in-out;
 }
 #installBtn:hover {
-  background: #1e40af;
-  transform: translateY(-2px);
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 10px 0 #1e40af;
 }
 #installBtn:active {
-  transform: translateY(3px);
-  box-shadow: 0 2px 0 #1e40af;
+  transform: translateY(4px) scale(0.98);
+  box-shadow: 0 4px 0 #1e40af;
 }
 </style>
 </head>
