@@ -54,6 +54,19 @@ img.center-img {
 </head>
 <body>
 
+
+
+<!-- Install App Button -->
+<button id="installBtn" style="display:none; margin-top:1rem; padding:0.75rem 1.5rem; background:#2563eb; color:white; font-weight:bold; border-radius:0.75rem; cursor:pointer;">
+  Install App
+</button>
+
+
+
+
+
+
+  
 <!-- Center Image -->
 <img src="https://i.postimg.cc/8kysF6DQ/Numeral-20-with-Bold-Ward.png" class="center-img">
 
@@ -87,26 +100,21 @@ onAuthStateChanged(auth, user => {
     window.location.replace('panel.html');
   }
 });
+let deferredPrompt;
 
-// Login button click
-document.getElementById('loginBtn').addEventListener('click', async ()=>{
-  try{
-    await signInWithPopup(auth, provider);
-    window.location.replace('panel.html');
-  }catch(e){
-    alert("Login failed");
-    console.error(e);
-  }
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault(); // automatic prompt ko rok do
+  deferredPrompt = e; // save karo
+  document.getElementById('installBtn').style.display = 'block'; // button show karo
 });
-</script>
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js')
-        .then(reg => console.log('Service Worker registered', reg))
-        .catch(err => console.log('SW registration failed', err));
-    });
-  }
+
+document.getElementById('installBtn').addEventListener('click', async () => {
+  deferredPrompt.prompt(); // prompt show karo
+  const { outcome } = await deferredPrompt.userChoice;
+  console.log('User response:', outcome); // accepted / dismissed
+  deferredPrompt = null;
+  document.getElementById('installBtn').style.display = 'none'; // button hide karo
+});
 </script>
 
 </body>
