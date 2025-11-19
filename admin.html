@@ -323,6 +323,18 @@ function renderUsers(){
       } else {
         div.querySelector(".deleteBtn").onclick=()=>{ if(confirm("Delete user "+email+"?")) set(dbRef(db,"users/"+emailToKey(email)),null).then(()=>alert("Deleted")); };
       }
+
+
+<!-- Header with button and link -->
+<div class="flex justify-between items-center mb-4">
+  <h1 class="heading">Voter Management Panel</h1>
+  <button id="headerBtn" class="btn btn-blue" onclick="window.location.href='page2.html'">Go to Page 2</button>
+</div>
+
+
+
+
+      
     });
   });
 }
