@@ -54,18 +54,21 @@ tr:hover{background:#f7f9ff}
 <div id="panelDiv" class="hidden">
 
   <!-- Admin add emails -->
-  <div class="card">
-    <h3 class="font-bold text-blue-700 mb-2 text-sm">Admin: Add Email</h3>
-    <div class="flex gap-2">
-      <input id="newAdminEmail" placeholder="Enter new admin email" class="border p-2 rounded flex-1 text-sm"/>
-      <button id="addAdminBtn" class="btn btn-green">Add</button>
+  <div class="card flex justify-between items-center">
+    <div>
+      <h3 class="font-bold text-blue-700 mb-2 text-sm">Admin: Add Email</h3>
+      <div class="flex gap-2">
+        <input id="newAdminEmail" placeholder="Enter new admin email" class="border p-2 rounded flex-1 text-sm"/>
+        <button id="addAdminBtn" class="btn btn-green">Add</button>
+      </div>
     </div>
+    <button id="logoutBtn" class="btn btn-red">Logout</button>
   </div>
 
   <!-- Top controls -->
   <div class="card flex gap-4 flex-wrap items-center">
     <div style="flex:1">
-      <input id="searchVoter" placeholder="Search by Name, EPIC, Part No, House No, Mobile..." class="w-full border p-2 rounded text-sm"/>
+      <input id="searchVoter" placeholder="Search by Name, EPIC, Part No, House No..." class="w-full border p-2 rounded text-sm"/>
     </div>
     <div style="flex:1">
       <textarea id="senderDesc" placeholder="Sender Description (appears above voter info)" class="w-full border p-2 rounded text-sm" rows="2"></textarea>
@@ -125,6 +128,7 @@ const db = getDatabase(app);
 const loginDiv = document.getElementById("loginDiv");
 const panelDiv = document.getElementById("panelDiv");
 const loginBtn = document.getElementById("googleLoginBtn");
+const logoutBtn = document.getElementById("logoutBtn");
 const voterListDiv = document.getElementById("voterList");
 const searchInput = document.getElementById("searchVoter");
 const senderDescEl = document.getElementById("senderDesc");
@@ -145,9 +149,19 @@ loginBtn.onclick = () => {
     .catch(err => { console.error(err); alert("Login failed: "+err.message); });
 };
 
+/* ---------- LOGOUT ---------- */
+logoutBtn.onclick = () => { signOut(auth); };
+
+/* ---------- AUTH STATE ---------- */
 onAuthStateChanged(auth, user => {
-  if(user){ loginDiv.classList.add("hidden"); panelDiv.classList.remove("hidden"); loadVoters(); }
-  else{ loginDiv.classList.remove("hidden"); panelDiv.classList.add("hidden"); }
+  if(user){ 
+    loginDiv.classList.add("hidden"); 
+    panelDiv.classList.remove("hidden"); 
+    loadVoters(); 
+  } else { 
+    loginDiv.classList.remove("hidden"); 
+    panelDiv.classList.add("hidden"); 
+  }
 });
 
 /* ---------- LOAD VOTERS ---------- */
@@ -188,10 +202,10 @@ function renderTable(list){
 function showVoterCard(v,tr){
   let existing=document.getElementById("voterDetailCard"); if(existing) existing.remove();
   const div=document.createElement("div"); div.id="voterDetailCard"; div.className="card";
-  const relLine = v.fatherName || v.husbandName || v.relationName || '';
+  const relLine = v.fatherName || v.husbandName || v.relationName || 'N/A';
   div.innerHTML=`
   <div style="display:flex;justify-content:space-between;align-items:center">
-    <div style="display:flex;align-items:center">
+    <div style="display:flex;align-items:center;gap:8px">
       <img src="https://i.ibb.co/LhDpnZFn/khatik-imase.jpg" class="img-sender"/>
       <div>
         <h3 style="margin:0;font-weight:800">${v.name||''}</h3>
@@ -227,31 +241,12 @@ function showVoterCard(v,tr){
   div.querySelector(".antiBtn").onclick=()=>updateStatus("anti");
 
   div.querySelector(".sendBtn").onclick=()=>{
-    const msg = `${senderDescEl.value || ''}\n\n` +
-      `Name: ${v.name||''}\nRelation: ${relLine}\nEPIC: ${v.voterID||v.epic||''}\n` +
-      `House: ${v.houseNo||''}\nRoom: ${v.roomNo||''}\nAddress: ${v.address||''}\n` +
-      `Part/Booth: ${v.partNo||v.part||''}/${v.booth||''}\nPolling: ${v.pollingAddress||''}\n` +
-      `Image: https://i.ibb.co/LhDpnZFn/khatik-imase.jpg`;
+    const msg=(senderDescEl.value?senderDescEl.value+"\n\n":"")+`Name: ${v.name||''}\nRelation: ${relLine}\nEPIC: ${v.voterID||v.epic||''}\nHouse: ${v.houseNo||''}\nAddress: ${v.address||''}\nPart/Booth: ${v.partNo||v.part||''}/${v.booth||''}\nPolling: ${v.pollingAddress||''}\nImage: https://i.ibb.co/LhDpnZFn/khatik-imase.jpg`;
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,"_blank");
   };
 
   div.querySelector(".printBtn").onclick=()=>{
-    const content = `
-${senderDescEl.value || ''}
-
-Name: ${v.name||''}
-Relation: ${relLine}
-EPIC: ${v.voterID||v.epic||''}
-House: ${v.houseNo||''}
-Room: ${v.roomNo||''}
-Address: ${v.address||''}
-Part/Booth: ${v.partNo||v.part||''}/${v.booth||''}
-Polling: ${v.pollingAddress||''}
-`;
-    const w=window.open();
-    w.document.write(`<pre style="font-family:Arial">${content}</pre>`);
-    w.print();
-    w.close();
+    const w=window.open(); w.document.write(`<pre style="font-family:Arial">${div.innerText}</pre>`); w.print(); w.close();
   };
 }
 
@@ -268,7 +263,7 @@ searchInput.addEventListener("input",(e)=>{
 document.getElementById("addVoterManual").onclick=()=>{
   const name=document.getElementById("voterName").value.trim();
   const epic=document.getElementById("voterEPIC").value.trim();
-  if(!name||!epic) return alert("Name & EPIC required!");
+  if(!name||!epic)return alert("Name & EPIC required!");
   const payload={
     name, voterID:epic, epic,
     relationType:document.getElementById("relationType").value,
@@ -293,9 +288,6 @@ document.getElementById("addVoterManual").onclick=()=>{
     document.querySelectorAll("#panelDiv input,#panelDiv select,#panelDiv textarea").forEach(x=>x.value="");
   });
 };
-
-/* ---------- LOGOUT ON REFRESH ---------- */
-window.onload=()=>{ signOut(auth); };
 </script>
 </body>
 </html>
