@@ -145,34 +145,33 @@ const statusCountDiv = document.getElementById("statusCount");
 const userListDiv = document.getElementById("userList");
 
 let voterData = [];
+let isAdmin = false;
 
 function emailToKey(email){ return email.replace(/\./g,"_dot_"); }
 
-// Login / Logout
 loginBtn.onclick = () => signInWithPopup(auth, provider).catch(err=>alert("Login failed: "+err.message));
 logoutBtn.onclick = () => signOut(auth);
 
-// Admin
-const adminEmail = "ngogrant454@gmail";
-const adminKey = emailToKey(adminEmail);
-get(dbRef(db,"admins/"+adminKey)).then(snap=>{ if(!snap.exists()) set(dbRef(db,"admins/"+adminKey), true); });
-
-onAuthStateChanged(auth,user=>{
+// Auth check
+onAuthStateChanged(auth, user => {
   if(user){
     const emailKey = emailToKey(user.email.toLowerCase());
-    get(dbRef(db,"admins/"+emailKey)).then(snap=>{
-      get(dbRef(db,"users/"+emailKey)).then(userSnap=>{
-        // Admin or allowed user
-        if(!snap.exists() && !userSnap.exists()){
+    get(dbRef(db,"admins/"+emailKey)).then(snap => {
+      isAdmin = snap.exists();
+      get(dbRef(db,"users/"+emailKey)).then(userSnap => {
+        if(!isAdmin && !userSnap.exists()){
           alert("Access Denied"); signOut(auth); return;
         }
-        loginDiv.classList.add("hidden"); 
-        panelDiv.classList.remove("hidden"); 
+        loginDiv.classList.add("hidden");
+        panelDiv.classList.remove("hidden");
         loadVoters();
         renderUsers();
       });
     });
-  } else { loginDiv.classList.remove("hidden"); panelDiv.classList.add("hidden"); }
+  } else {
+    loginDiv.classList.remove("hidden");
+    panelDiv.classList.add("hidden");
+  }
 });
 
 // Load voters
@@ -211,8 +210,7 @@ function showVoterCard(v){
   const div=document.createElement("div"); div.id="voterDetailCard"; div.className="card";
   const relLine = v.fatherName || v.husbandName || v.relationName || 'N/A';
   
-  div.innerHTML=`
-  <div style="display:flex;justify-content:space-between;align-items:center">
+  div.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center">
     <div style="display:flex;align-items:center;gap:8px">
       <img src="https://i.ibb.co/LhDpnZFn/khatik-imase.jpg" class="img-sender"/>
       <div>
@@ -230,9 +228,9 @@ function showVoterCard(v){
     <p><strong>Address:</strong> ${v.address||'-'}</p>
   </div>
   <div style="margin-top:8px;display:flex;gap:4px;flex-wrap:wrap">
-    <button class="btn btn-yellow approveBtn">Approve</button>
+    ${isAdmin ? `<button class="btn btn-yellow approveBtn">Approve</button>
     <button class="btn btn-yellow opponentBtn">Opponent</button>
-    <button class="btn btn-red antiBtn">Anti</button>
+    <button class="btn btn-red antiBtn">Anti</button>` : ''}
     <button class="btn btn-blue sendBtn">Send WhatsApp</button>
     <button class="btn btn-green printBtn">Print</button>
   </div>`;
@@ -241,9 +239,11 @@ function showVoterCard(v){
   div.querySelector("#closeDetailBtn").onclick=()=>div.remove();
 
   function updateStatus(newStatus){ set(dbRef(db,"voters/"+v.id),{...v,status:newStatus}); }
-  div.querySelector(".approveBtn").onclick=()=>updateStatus("approved");
-  div.querySelector(".opponentBtn").onclick=()=>updateStatus("opponent");
-  div.querySelector(".antiBtn").onclick=()=>updateStatus("anti");
+  if(isAdmin){
+    div.querySelector(".approveBtn").onclick = () => updateStatus("approved");
+    div.querySelector(".opponentBtn").onclick = () => updateStatus("opponent");
+    div.querySelector(".antiBtn").onclick = () => updateStatus("anti");
+  }
 
   div.querySelector(".sendBtn").onclick=()=>{
     const msg = `${senderDescEl.value?senderDescEl.value+"\n\n":""}Name: ${v.name||'-'}\nRelation: ${relLine}\nEPIC: ${v.voterID||'-'}\nHouse: ${v.houseNo||'-'}${v.roomNo? ' | Room: '+v.roomNo:''}\nAddress: ${v.address||'-'}\nPart: ${v.partNo||'-'}\nBooth: ${v.booth||'-'}`;
@@ -267,14 +267,13 @@ searchInput.addEventListener("input",e=>{
 
 // Add Voter
 document.getElementById("addVoterManual").onclick=async ()=>{
+  if(!isAdmin) return alert("Only admin can add voter!");
   const name=document.getElementById("voterName").value.trim();
   const epic=document.getElementById("voterEPIC").value.trim();
   if(!name||!epic) return alert("Name & EPIC required!");
-
   const snap = await get(dbRef(db,"voters"));
   let exists = false; snap.forEach(c=>{ if(c.val().voterID===epic) exists=true; });
   if(exists) return alert("Voter with this EPIC already exists!");
-
   const payload={
     name, voterID:epic, epic,
     relationType:document.getElementById("relationType").value,
@@ -292,10 +291,7 @@ document.getElementById("addVoterManual").onclick=async ()=>{
   else if(payload.relationName) payload.fatherName=payload.relationName;
 
   push(dbRef(db,"voters"),payload)
-  .then(()=>{ 
-    alert("Voter added!"); 
-    document.querySelectorAll("#panelDiv input,#panelDiv select,#panelDiv textarea").forEach(x=>x.value=""); 
-  })
+  .then(()=>{ alert("Voter added!"); document.querySelectorAll("#panelDiv input,#panelDiv select,#panelDiv textarea").forEach(x=>x.value=""); })
   .catch(err=>alert("Add failed: "+err.message));
 };
 
@@ -312,7 +308,7 @@ function renderUsers(){
       <button class="btn btn-red btn-sm deleteBtn">Delete</button>`;
       userListDiv.appendChild(div);
 
-      if(email.toLowerCase()===adminEmail){
+      if(email.toLowerCase()===currentUserEmail) {
         div.querySelector(".deleteBtn").disabled=true;
         div.querySelector(".deleteBtn").classList.add("opacity-50","cursor-not-allowed");
       } else {
@@ -324,6 +320,7 @@ function renderUsers(){
 
 // Add new user
 document.getElementById("addUserBtn").onclick=()=>{
+  if(!isAdmin) return alert("Only admin can add users!");
   const email=document.getElementById("newUserEmail").value.trim().toLowerCase();
   if(!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return alert("Enter valid email");
   const key=emailToKey(email);
