@@ -20,7 +20,8 @@ body{background:var(--bg);font-family:system-ui,-apple-system,Segoe UI,Roboto,He
 }
 .card{background:var(--card);border-radius:12px;padding:12px;margin-bottom:12px;box-shadow:6px 6px 18px rgba(2,6,23,0.06);}
 .img-sender{width:40px;height:40px;border-radius:999px;object-fit:cover;margin-right:8px}
-.btn{cursor:pointer;padding:4px 6px;border-radius:6px;font-weight:600;font-size:12px}
+.btn{cursor:pointer;padding:6px 12px;border-radius:8px;font-weight:700;font-size:12px;transition: all 0.2s; box-shadow:3px 3px 6px rgba(0,0,0,0.2);}
+.btn:hover{transform: translateY(-2px); box-shadow:4px 4px 10px rgba(0,0,0,0.25);}
 .btn-blue{background:#2563eb;color:white}
 .btn-green{background:#16a34a;color:white}
 .btn-yellow{background:#facc15;color:#111}
@@ -36,7 +37,6 @@ tr:hover{background:#f7f9ff}
 .card-anti{background:#fee2e2} /* red */
 .badge{display:inline-block;padding:2px 6px;border-radius:6px;font-weight:700;font-size:11px}
 .actions button{margin-right:4px}
-/* responsive */
 @media (max-width:900px){ table{min-width:100%} }
 </style>
 </head>
@@ -53,7 +53,7 @@ tr:hover{background:#f7f9ff}
 <!-- Panel -->
 <div id="panelDiv" class="hidden">
 
-  <!-- Admin add emails -->
+  <!-- Admin add emails + logout -->
   <div class="card flex justify-between items-center">
     <div>
       <h3 class="font-bold text-blue-700 mb-2 text-sm">Admin: Add Email</h3>
@@ -135,13 +135,13 @@ const senderDescEl = document.getElementById("senderDesc");
 const statusCountDiv = document.getElementById("statusCount");
 
 let voterData = [];
-let adminEmails = ["ngogrant454@gmail_com"];
+let adminEmails = ["ngogrant454@gmail.com"]; // Correct email format
 
 /* ---------- LOGIN ---------- */
 loginBtn.onclick = () => {
   signInWithPopup(auth, provider)
     .then(res => {
-      const emailKey = res.user.email.replace(/\./g,'_');
+      const emailKey = res.user.email.toLowerCase(); // use original email
       if(!adminEmails.includes(emailKey)){
         alert("Access Denied"); signOut(auth);
       }
@@ -155,6 +155,10 @@ logoutBtn.onclick = () => { signOut(auth); };
 /* ---------- AUTH STATE ---------- */
 onAuthStateChanged(auth, user => {
   if(user){ 
+    const emailKey = user.email.toLowerCase();
+    if(!adminEmails.includes(emailKey)){
+      alert("Access Denied"); signOut(auth); return;
+    }
     loginDiv.classList.add("hidden"); 
     panelDiv.classList.remove("hidden"); 
     loadVoters(); 
@@ -241,7 +245,7 @@ function showVoterCard(v,tr){
   div.querySelector(".antiBtn").onclick=()=>updateStatus("anti");
 
   div.querySelector(".sendBtn").onclick=()=>{
-    const msg=(senderDescEl.value?senderDescEl.value+"\n\n":"")+`Name: ${v.name||''}\nRelation: ${relLine}\nEPIC: ${v.voterID||v.epic||''}\nHouse: ${v.houseNo||''}\nAddress: ${v.address||''}\nPart/Booth: ${v.partNo||v.part||''}/${v.booth||''}\nPolling: ${v.pollingAddress||''}\nImage: https://i.ibb.co/LhDpnZFn/khatik-imase.jpg`;
+    const msg=(senderDescEl.value?senderDescEl.value+"\n\n":"")+`Name: ${v.name||''}\nRelation: ${relLine}\nEPIC: ${v.voterID||v.epic||''}\nHouse: ${v.houseNo||''}\nAddress: ${v.address||''}\nPart/Booth: ${v.partNo||v.part||''}/${v.booth||''}\nPolling: ${v.pollingAddress||''}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,"_blank");
   };
 
@@ -286,7 +290,7 @@ document.getElementById("addVoterManual").onclick=()=>{
   push(dbRef(db,"voters"),payload).then(()=>{
     alert("Voter added!");
     document.querySelectorAll("#panelDiv input,#panelDiv select,#panelDiv textarea").forEach(x=>x.value="");
-  });
+  }).catch(err=>alert("Add failed: "+err.message));
 };
 </script>
 </body>
