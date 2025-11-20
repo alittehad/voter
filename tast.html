@@ -33,42 +33,15 @@ tr:nth-child(even) { background: #f9f9f9; }
   <tbody></tbody>
 </table>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script>
-const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT8hv0c8CPDBHksZbD4igmVelXV_tEp01HiYVnDvbx3D8VbqzCJtQvF2Fl7HeO92ysrjuCqIR8VQpJc/pub?output=csv";
-const headers = ["State","District","AC No","Part No","EPIC","Name"];
-
-fetch(csvUrl)
-  .then(response => response.text())
-  .then(csvText => {
-    // Remove first 2 metadata rows
-    const rows = csvText.split("\n").slice(2).join("\n");
-
-    const results = Papa.parse(rows, {
-      header: true,
-      skipEmptyLines: true,
-      transformHeader: h => h.trim()
-    });
-
-    let data = results.data;
-
-    // Ensure correct headers
-    data = data.map(row => {
-      const fixed = {};
-      headers.forEach(h => fixed[h] = row[h] || "");
-      return fixed;
-    });
-
-    // Remove duplicates based on EPIC
-    const epicSet = new Set();
-    data = data.filter(row => {
-      if (!epicSet.has(row.EPIC)) { epicSet.add(row.EPIC); return true; }
-      return false;
-    });
-
+fetch("voters.json")
+  .then(res => res.json())
+  .then(data => {
     const table = document.getElementById('voterTable');
     const thead = table.querySelector('thead');
     const tbody = table.querySelector('tbody');
+
+    const headers = ["State","District","AC_No","Part_No","EPIC","Name"];
 
     // Header
     let headerRow = "<tr>";
@@ -77,7 +50,7 @@ fetch(csvUrl)
     thead.innerHTML = headerRow;
 
     // Rows
-    data.forEach(row => {
+    Object.values(data).forEach(row => {
       let rowHtml = "<tr>";
       headers.forEach(h => rowHtml += `<td>${row[h]}</td>`);
       rowHtml += "</tr>";
@@ -114,9 +87,8 @@ fetch(csvUrl)
       const url = "https://api.whatsapp.com/send?text=" + encodeURIComponent(text);
       window.open(url, "_blank");
     });
-
   })
-  .catch(err => console.error("Error loading CSV:", err));
+  .catch(err => console.error("Error loading JSON:", err));
 </script>
 
 </body>
