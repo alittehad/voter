@@ -7,13 +7,14 @@
 body { font-family: Arial, sans-serif; padding: 20px; background: #f0f0f0; }
 h1 { text-align: center; }
 #controls { margin-bottom: 10px; display: flex; flex-wrap: wrap; gap: 10px; }
-#senderName, #search { padding: 8px; flex: 1; min-width: 200px; }
+#senderName, #senderImg, #search { padding: 8px; flex: 1; min-width: 200px; }
 button { padding: 8px 12px; cursor: pointer; }
 table { width: 100%; border-collapse: collapse; background: #fff; margin-top: 10px; }
 th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
 th { background: #007BFF; color: #fff; }
 tr:nth-child(even) { background: #f9f9f9; }
 .highlight { background-color: yellow; }
+.sender-img-print { width: 60px; height: 60px; border-radius: 50%; vertical-align: middle; margin-right: 10px; }
 </style>
 </head>
 <body>
@@ -21,6 +22,7 @@ tr:nth-child(even) { background: #f9f9f9; }
 <h1>Voter List</h1>
 <div id="controls">
   <input type="text" id="senderName" placeholder="Enter your name / description">
+  <input type="text" id="senderImg" placeholder="Enter sender image URL">
   <input type="text" id="search" placeholder="Search by Name, EPIC, etc...">
   <button id="printBtn">Print</button>
   <button id="whatsappBtn">Send via WhatsApp</button>
@@ -71,7 +73,6 @@ function renderTable(searchText="") {
     headers.forEach(h => {
       let val = row[h];
       if(searchText && val.toLowerCase().includes(searchText.toLowerCase())){
-        // Highlight search term
         const regex = new RegExp(`(${searchText})`, "gi");
         val = val.replace(regex, '<span class="highlight">$1</span>');
       }
@@ -82,7 +83,7 @@ function renderTable(searchText="") {
   });
 }
 
-// Search filter with highlight
+// Search filter
 document.getElementById('search').addEventListener('keyup', function() {
   const filter = this.value.toLowerCase();
   filteredData = allData.filter(row =>
@@ -91,10 +92,14 @@ document.getElementById('search').addEventListener('keyup', function() {
   renderTable(filter);
 });
 
-// Print filtered rows with sender info
+// Print filtered rows with sender info + image
 document.getElementById('printBtn').addEventListener('click', function() {
   const sender = document.getElementById('senderName').value || "Unknown Sender";
-  let tableHtml = `<p>Sender: ${sender}</p>`;
+  const senderImg = document.getElementById('senderImg').value || "";
+  let senderHtml = senderImg ? `<img src="${senderImg}" class="sender-img-print">` : "";
+  senderHtml += `<strong>${sender}</strong>`;
+
+  let tableHtml = `<p>${senderHtml}</p>`;
   tableHtml += `<table border="1" style="border-collapse:collapse; width:100%"><thead>${document.querySelector('#voterTable thead').innerHTML}</thead><tbody>`;
   filteredData.forEach(row => {
     tableHtml += "<tr>" + Object.values(row).map(v => `<td>${v}</td>`).join('') + "</tr>";
@@ -109,14 +114,19 @@ document.getElementById('printBtn').addEventListener('click', function() {
   printWindow.print();
 });
 
-// WhatsApp filtered rows with sender info
+// WhatsApp filtered rows with sender info + image URL
 document.getElementById('whatsappBtn').addEventListener('click', function() {
   const sender = document.getElementById('senderName').value || "Unknown Sender";
-  let text = `Sender: ${sender}\n\nVoter List:\n\n`;
+  const senderImg = document.getElementById('senderImg').value || "";
+  let text = `Sender: ${sender}\n`;
+  if(senderImg) text += `Image: ${senderImg}\n`;
+  text += `\nVoter List:\n\n`;
+  
   filteredData.forEach(row => {
     const pollingInfo = `State: ${row["State"] || ""}, District: ${row["District"] || ""}, AC No: ${row["AC No"] || ""}, Part No: ${row["Part No"] || ""}`;
     text += `${row["Name"] || ""} | EPIC: ${row["EPIC"] || ""} | ${pollingInfo}\n`;
   });
+
   const url = "https://api.whatsapp.com/send?text=" + encodeURIComponent(text);
   window.open(url, "_blank");
 });
