@@ -68,22 +68,26 @@ fetch(csvUrl)
       });
     });
 
-    // Print button
+    // Print button (filtered rows only)
     document.getElementById('printBtn').addEventListener('click', function() {
+      const visibleRows = Array.from(tbody.querySelectorAll('tr')).filter(r => r.style.display !== 'none');
+      const tableHtml = `<table border="1" style="border-collapse:collapse; width:100%">${thead.innerHTML}${visibleRows.map(r => r.outerHTML).join('')}</table>`;
+      
       const printWindow = window.open('', '', 'height=600,width=800');
-      printWindow.document.write('<html><head><title>Voter List</title>');
-      printWindow.document.write('</head><body>');
-      printWindow.document.write(table.outerHTML);
+      printWindow.document.write('<html><head><title>Voter List</title></head><body>');
+      printWindow.document.write(tableHtml);
       printWindow.document.write('</body></html>');
       printWindow.document.close();
       printWindow.print();
     });
 
-    // WhatsApp share button
+    // WhatsApp share button (filtered rows only)
     document.getElementById('whatsappBtn').addEventListener('click', function() {
+      const visibleRows = Array.from(tbody.querySelectorAll('tr')).filter(r => r.style.display !== 'none');
       let text = "Voter List:\n\n";
-      data.forEach(row => {
-        text += Object.values(row).join(" | ") + "\n";
+      visibleRows.forEach(r => {
+        const cells = Array.from(r.querySelectorAll('td')).map(c => c.innerText);
+        text += cells.join(" | ") + "\n";
       });
       const url = "https://api.whatsapp.com/send?text=" + encodeURIComponent(text);
       window.open(url, "_blank");
