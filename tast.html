@@ -37,29 +37,16 @@ tr:nth-child(even) { background: #f9f9f9; }
 <script>
 const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT8hv0c8CPDBHksZbD4igmVelXV_tEp01HiYVnDvbx3D8VbqzCJtQvF2Fl7HeO92ysrjuCqIR8VQpJc/pub?output=csv";
 
-// Define proper headers manually
-const headers = ["State","District","AC No","Part No","EPIC","Name"];
-
 fetch(csvUrl)
   .then(response => response.text())
   .then(csvText => {
-    // Remove first 2 extra rows
-    const rows = csvText.split("\n").slice(2).join("\n");
-
-    const results = Papa.parse(rows, {
-      header: true,
+    const results = Papa.parse(csvText, { 
+      header: true, 
       skipEmptyLines: true,
       transformHeader: h => h.trim()
     });
-
     let data = results.data;
-
-    // Ensure correct headers
-    data = data.map(row => {
-      const fixed = {};
-      headers.forEach(h => fixed[h] = row[h] || "");
-      return fixed;
-    });
+    console.log(data); // Debugging
 
     // Remove duplicates based on EPIC
     const epicSet = new Set();
@@ -74,19 +61,23 @@ fetch(csvUrl)
 
     // Header
     let headerRow = "<tr>";
-    headers.forEach(h => headerRow += `<th>${h}</th>`);
+    Object.keys(data[0]).forEach(key => {
+      headerRow += `<th>${key}</th>`;
+    });
     headerRow += "</tr>";
     thead.innerHTML = headerRow;
 
     // Rows
     data.forEach(row => {
       let rowHtml = "<tr>";
-      headers.forEach(h => rowHtml += `<td>${row[h]}</td>`);
+      Object.values(row).forEach(val => {
+        rowHtml += `<td>${val}</td>`;
+      });
       rowHtml += "</tr>";
       tbody.innerHTML += rowHtml;
     });
 
-    // Search
+    // Search functionality
     const searchInput = document.getElementById('search');
     searchInput.addEventListener('keyup', function() {
       const filter = this.value.toLowerCase();
@@ -96,7 +87,7 @@ fetch(csvUrl)
       });
     });
 
-    // Print
+    // Print button
     document.getElementById('printBtn').addEventListener('click', function() {
       const printWindow = window.open('', '', 'height=600,width=800');
       printWindow.document.write('<html><head><title>Voter List</title></head><body>');
@@ -106,7 +97,7 @@ fetch(csvUrl)
       printWindow.print();
     });
 
-    // WhatsApp
+    // WhatsApp share button (only visible rows)
     document.getElementById('whatsappBtn').addEventListener('click', function() {
       let text = "Voter List:\n\n";
       const rows = tbody.querySelectorAll('tr');
