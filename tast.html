@@ -7,12 +7,13 @@
 body { font-family: Arial, sans-serif; padding: 20px; background: #f0f0f0; }
 h1 { text-align: center; }
 #controls { margin-bottom: 10px; display: flex; flex-wrap: wrap; gap: 10px; }
-#search, #senderName { padding: 8px; flex: 1; min-width: 200px; }
+#senderName, #search { padding: 8px; flex: 1; min-width: 200px; }
 button { padding: 8px 12px; cursor: pointer; }
 table { width: 100%; border-collapse: collapse; background: #fff; margin-top: 10px; }
 th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
 th { background: #007BFF; color: #fff; }
 tr:nth-child(even) { background: #f9f9f9; }
+.highlight { background-color: yellow; }
 </style>
 </head>
 <body>
@@ -51,7 +52,7 @@ fetch(csvUrl)
   })
   .catch(err => console.error("Error loading CSV:", err));
 
-function renderTable() {
+function renderTable(searchText="") {
   const table = document.getElementById('voterTable');
   const thead = table.querySelector('thead');
   const tbody = table.querySelector('tbody');
@@ -67,19 +68,27 @@ function renderTable() {
 
   filteredData.forEach(row => {
     let rowHtml = "<tr>";
-    headers.forEach(h => rowHtml += `<td>${row[h]}</td>`);
+    headers.forEach(h => {
+      let val = row[h];
+      if(searchText && val.toLowerCase().includes(searchText.toLowerCase())){
+        // Highlight search term
+        const regex = new RegExp(`(${searchText})`, "gi");
+        val = val.replace(regex, '<span class="highlight">$1</span>');
+      }
+      rowHtml += `<td>${val}</td>`;
+    });
     rowHtml += "</tr>";
     tbody.innerHTML += rowHtml;
   });
 }
 
-// Search filter
+// Search filter with highlight
 document.getElementById('search').addEventListener('keyup', function() {
   const filter = this.value.toLowerCase();
   filteredData = allData.filter(row =>
     Object.values(row).some(val => val.toLowerCase().includes(filter))
   );
-  renderTable();
+  renderTable(filter);
 });
 
 // Print filtered rows with sender info
@@ -105,7 +114,6 @@ document.getElementById('whatsappBtn').addEventListener('click', function() {
   const sender = document.getElementById('senderName').value || "Unknown Sender";
   let text = `Sender: ${sender}\n\nVoter List:\n\n`;
   filteredData.forEach(row => {
-    // Include voter name + polling info
     const pollingInfo = `State: ${row["State"] || ""}, District: ${row["District"] || ""}, AC No: ${row["AC No"] || ""}, Part No: ${row["Part No"] || ""}`;
     text += `${row["Name"] || ""} | EPIC: ${row["EPIC"] || ""} | ${pollingInfo}\n`;
   });
