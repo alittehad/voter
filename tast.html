@@ -40,13 +40,8 @@ const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT8hv0c8CPDBHksZ
 fetch(csvUrl)
   .then(response => response.text())
   .then(csvText => {
-    const results = Papa.parse(csvText, { 
-      header: true, 
-      skipEmptyLines: true,
-      transformHeader: h => h.trim()
-    });
+    const results = Papa.parse(csvText, { header: true, skipEmptyLines: true });
     let data = results.data;
-    console.log(data); // Debugging
 
     // Remove duplicates based on EPIC
     const epicSet = new Set();
@@ -97,7 +92,7 @@ fetch(csvUrl)
       printWindow.print();
     });
 
-    // WhatsApp share button (only visible rows)
+    // WhatsApp share button (all visible rows)
     document.getElementById('whatsappBtn').addEventListener('click', function() {
       let text = "Voter List:\n\n";
       const rows = tbody.querySelectorAll('tr');
