@@ -7,7 +7,8 @@
 body { font-family: Arial, sans-serif; padding: 20px; background: #f0f0f0; }
 h1 { text-align: center; }
 #search { margin-bottom: 10px; padding: 8px; width: 100%; max-width: 400px; }
-table { width: 100%; border-collapse: collapse; background: #fff; }
+button { padding: 8px 12px; margin-right: 5px; cursor: pointer; }
+table { width: 100%; border-collapse: collapse; background: #fff; margin-top: 10px; }
 th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
 th { background: #007BFF; color: #fff; }
 tr:nth-child(even) { background: #f9f9f9; }
@@ -17,6 +18,9 @@ tr:nth-child(even) { background: #f9f9f9; }
 
 <h1>Voter List</h1>
 <input type="text" id="search" placeholder="Search by Name, EPIC, etc...">
+<button id="printBtn">Print</button>
+<button id="whatsappBtn">Send via WhatsApp</button>
+
 <table id="voterTable">
   <thead></thead>
   <tbody></tbody>
@@ -29,7 +33,6 @@ const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT8hv0c8CPDBHksZ
 fetch(csvUrl)
   .then(response => response.text())
   .then(csvText => {
-    // CSV को JSON में convert करें
     const results = Papa.parse(csvText, { header: true, skipEmptyLines: true });
     const data = results.data;
 
@@ -63,6 +66,27 @@ fetch(csvUrl)
       rows.forEach(r => {
         r.style.display = r.innerText.toLowerCase().includes(filter) ? '' : 'none';
       });
+    });
+
+    // Print button
+    document.getElementById('printBtn').addEventListener('click', function() {
+      const printWindow = window.open('', '', 'height=600,width=800');
+      printWindow.document.write('<html><head><title>Voter List</title>');
+      printWindow.document.write('</head><body>');
+      printWindow.document.write(table.outerHTML);
+      printWindow.document.write('</body></html>');
+      printWindow.document.close();
+      printWindow.print();
+    });
+
+    // WhatsApp share button
+    document.getElementById('whatsappBtn').addEventListener('click', function() {
+      let text = "Voter List:\n\n";
+      data.forEach(row => {
+        text += Object.values(row).join(" | ") + "\n";
+      });
+      const url = "https://api.whatsapp.com/send?text=" + encodeURIComponent(text);
+      window.open(url, "_blank");
     });
 
   })
