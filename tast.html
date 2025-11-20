@@ -7,14 +7,14 @@
 body { font-family: Arial, sans-serif; padding: 20px; background: #f0f0f0; }
 h1 { text-align: center; }
 #controls { margin-bottom: 10px; display: flex; flex-wrap: wrap; gap: 10px; }
-#senderName, #senderImg, #search { padding: 8px; flex: 1; min-width: 200px; }
+#senderName, #search { padding: 8px; flex: 1; min-width: 200px; }
 button { padding: 8px 12px; cursor: pointer; }
 table { width: 100%; border-collapse: collapse; background: #fff; margin-top: 10px; }
 th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
 th { background: #007BFF; color: #fff; }
 tr:nth-child(even) { background: #f9f9f9; }
 .highlight { background-color: yellow; }
-.sender-img-print { width: 60px; height: 60px; border-radius: 50%; vertical-align: middle; margin-right: 10px; }
+.sender-img-print { width: 60px; height: 60px; border-radius: 50%; vertical-align: middle; margin-right: 10px; object-fit: cover; }
 </style>
 </head>
 <body>
@@ -22,7 +22,7 @@ tr:nth-child(even) { background: #f9f9f9; }
 <h1>Voter List</h1>
 <div id="controls">
   <input type="text" id="senderName" placeholder="Enter your name / description">
-  <input type="text" id="senderImg" placeholder="Enter sender image URL">
+  <input type="file" id="senderImgFile" accept="image/*">
   <input type="text" id="search" placeholder="Search by Name, EPIC, etc...">
   <button id="printBtn">Print</button>
   <button id="whatsappBtn">Send via WhatsApp</button>
@@ -39,6 +39,7 @@ const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT8hv0c8CPDBHksZ
 
 let allData = [];
 let filteredData = [];
+let senderImgDataUrl = "";
 
 fetch(csvUrl)
   .then(res => res.text())
@@ -92,11 +93,21 @@ document.getElementById('search').addEventListener('keyup', function() {
   renderTable(filter);
 });
 
-// Print filtered rows with sender info + image
+// Handle image upload
+document.getElementById('senderImgFile').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(evt) {
+    senderImgDataUrl = evt.target.result;
+  };
+  reader.readAsDataURL(file);
+});
+
+// Print filtered rows with sender info + uploaded image
 document.getElementById('printBtn').addEventListener('click', function() {
   const sender = document.getElementById('senderName').value || "Unknown Sender";
-  const senderImg = document.getElementById('senderImg').value || "";
-  let senderHtml = senderImg ? `<img src="${senderImg}" class="sender-img-print">` : "";
+  let senderHtml = senderImgDataUrl ? `<img src="${senderImgDataUrl}" class="sender-img-print">` : "";
   senderHtml += `<strong>${sender}</strong>`;
 
   let tableHtml = `<p>${senderHtml}</p>`;
@@ -114,12 +125,10 @@ document.getElementById('printBtn').addEventListener('click', function() {
   printWindow.print();
 });
 
-// WhatsApp filtered rows with sender info + image URL
+// WhatsApp filtered rows with sender info (image URL cannot be sent in text)
 document.getElementById('whatsappBtn').addEventListener('click', function() {
   const sender = document.getElementById('senderName').value || "Unknown Sender";
-  const senderImg = document.getElementById('senderImg').value || "";
   let text = `Sender: ${sender}\n`;
-  if(senderImg) text += `Image: ${senderImg}\n`;
   text += `\nVoter List:\n\n`;
   
   filteredData.forEach(row => {
