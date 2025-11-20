@@ -30,67 +30,78 @@ tr:nth-child(even) { background: #f9f9f9; }
 <script>
 const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT8hv0c8CPDBHksZbD4igmVelXV_tEp01HiYVnDvbx3D8VbqzCJtQvF2Fl7HeO92ysrjuCqIR8VQpJc/pub?output=csv";
 
+let allData = [];
+let filteredData = [];
+
 fetch(csvUrl)
-  .then(response => response.text())
+  .then(res => res.text())
   .then(csvText => {
     const results = Papa.parse(csvText, { header: true, skipEmptyLines: true });
-    const data = results.data;
-
-    const table = document.getElementById('voterTable');
-    const thead = table.querySelector('thead');
-    const tbody = table.querySelector('tbody');
-
-    // Header
-    let headerRow = "<tr>";
-    Object.keys(data[0]).forEach(key => {
-      headerRow += `<th>${key}</th>`;
+    allData = results.data.map(row => {
+      const obj = {};
+      Object.keys(row).forEach(k => obj[k.trim()] = row[k].trim());
+      return obj;
     });
-    headerRow += "</tr>";
-    thead.innerHTML = headerRow;
-
-    // Rows
-    data.forEach(row => {
-      let rowHtml = "<tr>";
-      Object.values(row).forEach(val => {
-        rowHtml += `<td>${val}</td>`;
-      });
-      rowHtml += "</tr>";
-      tbody.innerHTML += rowHtml;
-    });
-
-    // Search functionality
-    const searchInput = document.getElementById('search');
-    searchInput.addEventListener('keyup', function() {
-      const filter = this.value.toLowerCase();
-      const rows = tbody.querySelectorAll('tr');
-      rows.forEach(r => {
-        r.style.display = r.innerText.toLowerCase().includes(filter) ? '' : 'none';
-      });
-    });
-
-    // Print button
-    document.getElementById('printBtn').addEventListener('click', function() {
-      const printWindow = window.open('', '', 'height=600,width=800');
-      printWindow.document.write('<html><head><title>Voter List</title>');
-      printWindow.document.write('</head><body>');
-      printWindow.document.write(table.outerHTML);
-      printWindow.document.write('</body></html>');
-      printWindow.document.close();
-      printWindow.print();
-    });
-
-    // WhatsApp share button
-    document.getElementById('whatsappBtn').addEventListener('click', function() {
-      let text = "Voter List:\n\n";
-      data.forEach(row => {
-        text += Object.values(row).join(" | ") + "\n";
-      });
-      const url = "https://api.whatsapp.com/send?text=" + encodeURIComponent(text);
-      window.open(url, "_blank");
-    });
-
+    filteredData = [...allData];
+    renderTable();
   })
   .catch(err => console.error("Error loading CSV:", err));
+
+function renderTable() {
+  const table = document.getElementById('voterTable');
+  const thead = table.querySelector('thead');
+  const tbody = table.querySelector('tbody');
+  tbody.innerHTML = '';
+
+  if(filteredData.length === 0) return;
+
+  const headers = Object.keys(filteredData[0]);
+  let headerRow = "<tr>";
+  headers.forEach(h => headerRow += `<th>${h}</th>`);
+  headerRow += "</tr>";
+  thead.innerHTML = headerRow;
+
+  filteredData.forEach(row => {
+    let rowHtml = "<tr>";
+    headers.forEach(h => rowHtml += `<td>${row[h]}</td>`);
+    rowHtml += "</tr>";
+    tbody.innerHTML += rowHtml;
+  });
+}
+
+// Search filter
+document.getElementById('search').addEventListener('keyup', function() {
+  const filter = this.value.toLowerCase();
+  filteredData = allData.filter(row =>
+    Object.values(row).some(val => val.toLowerCase().includes(filter))
+  );
+  renderTable();
+});
+
+// Print filtered rows
+document.getElementById('printBtn').addEventListener('click', function() {
+  const tableHtml = `<table border="1" style="border-collapse:collapse; width:100%"><thead>${document.querySelector('#voterTable thead').innerHTML}</thead><tbody>`;
+  filteredData.forEach(row => {
+    tableHtml += "<tr>" + Object.values(row).map(v => `<td>${v}</td>`).join('') + "</tr>";
+  });
+  const finalHtml = tableHtml + "</tbody></table>";
+  const printWindow = window.open('', '', 'height=600,width=800');
+  printWindow.document.write('<html><head><title>Voter List</title></head><body>');
+  printWindow.document.write(finalHtml);
+  printWindow.document.write('</body></html>');
+  printWindow.document.close();
+  printWindow.print();
+});
+
+// WhatsApp filtered rows
+document.getElementById('whatsappBtn').addEventListener('click', function() {
+  let text = "Voter List:\n\n";
+  filteredData.forEach(row => {
+    text += Object.values(row).join(" | ") + "\n";
+  });
+  const url = "https://api.whatsapp.com/send?text=" + encodeURIComponent(text);
+  window.open(url, "_blank");
+});
 </script>
 
 </body>
