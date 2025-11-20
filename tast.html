@@ -6,8 +6,9 @@
 <style>
 body { font-family: Arial, sans-serif; padding: 20px; background: #f0f0f0; }
 h1 { text-align: center; }
-#search { margin-bottom: 10px; padding: 8px; width: 100%; max-width: 400px; }
-button { padding: 8px 12px; margin-right: 5px; cursor: pointer; }
+#controls { margin-bottom: 10px; display: flex; flex-wrap: wrap; gap: 10px; }
+#search, #senderName { padding: 8px; flex: 1; min-width: 200px; }
+button { padding: 8px 12px; cursor: pointer; }
 table { width: 100%; border-collapse: collapse; background: #fff; margin-top: 10px; }
 th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
 th { background: #007BFF; color: #fff; }
@@ -17,9 +18,12 @@ tr:nth-child(even) { background: #f9f9f9; }
 <body>
 
 <h1>Voter List</h1>
-<input type="text" id="search" placeholder="Search by Name, EPIC, etc...">
-<button id="printBtn">Print</button>
-<button id="whatsappBtn">Send via WhatsApp</button>
+<div id="controls">
+  <input type="text" id="senderName" placeholder="Enter your name / description">
+  <input type="text" id="search" placeholder="Search by Name, EPIC, etc...">
+  <button id="printBtn">Print</button>
+  <button id="whatsappBtn">Send via WhatsApp</button>
+</div>
 
 <table id="voterTable">
   <thead></thead>
@@ -78,26 +82,32 @@ document.getElementById('search').addEventListener('keyup', function() {
   renderTable();
 });
 
-// Print filtered rows
+// Print filtered rows with sender info
 document.getElementById('printBtn').addEventListener('click', function() {
-  const tableHtml = `<table border="1" style="border-collapse:collapse; width:100%"><thead>${document.querySelector('#voterTable thead').innerHTML}</thead><tbody>`;
+  const sender = document.getElementById('senderName').value || "Unknown Sender";
+  let tableHtml = `<p>Sender: ${sender}</p>`;
+  tableHtml += `<table border="1" style="border-collapse:collapse; width:100%"><thead>${document.querySelector('#voterTable thead').innerHTML}</thead><tbody>`;
   filteredData.forEach(row => {
     tableHtml += "<tr>" + Object.values(row).map(v => `<td>${v}</td>`).join('') + "</tr>";
   });
-  const finalHtml = tableHtml + "</tbody></table>";
+  tableHtml += "</tbody></table>";
+
   const printWindow = window.open('', '', 'height=600,width=800');
   printWindow.document.write('<html><head><title>Voter List</title></head><body>');
-  printWindow.document.write(finalHtml);
+  printWindow.document.write(tableHtml);
   printWindow.document.write('</body></html>');
   printWindow.document.close();
   printWindow.print();
 });
 
-// WhatsApp filtered rows
+// WhatsApp filtered rows with sender info
 document.getElementById('whatsappBtn').addEventListener('click', function() {
-  let text = "Voter List:\n\n";
+  const sender = document.getElementById('senderName').value || "Unknown Sender";
+  let text = `Sender: ${sender}\n\nVoter List:\n\n`;
   filteredData.forEach(row => {
-    text += Object.values(row).join(" | ") + "\n";
+    // Include voter name + polling info
+    const pollingInfo = `State: ${row["State"] || ""}, District: ${row["District"] || ""}, AC No: ${row["AC No"] || ""}, Part No: ${row["Part No"] || ""}`;
+    text += `${row["Name"] || ""} | EPIC: ${row["EPIC"] || ""} | ${pollingInfo}\n`;
   });
   const url = "https://api.whatsapp.com/send?text=" + encodeURIComponent(text);
   window.open(url, "_blank");
