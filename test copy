@@ -6,95 +6,147 @@
 <style>
 body { font-family: Arial, sans-serif; padding: 20px; background: #f0f0f0; }
 h1 { text-align: center; }
-#search { margin-bottom: 10px; padding: 8px; width: 100%; max-width: 400px; }
-button { padding: 8px 12px; margin-right: 5px; cursor: pointer; }
+#controls { margin-bottom: 10px; display: flex; flex-wrap: wrap; gap: 10px; }
+#search { padding: 8px; flex: 1; min-width: 200px; }
+button { padding: 8px 12px; cursor: pointer; }
 table { width: 100%; border-collapse: collapse; background: #fff; margin-top: 10px; }
 th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-th { background: #007BFF; color: #fff; }
+th { background: #007BFF; color: #fff; cursor: pointer; }
 tr:nth-child(even) { background: #f9f9f9; }
+mark { background: yellow; }
+#pagination { margin-top: 10px; }
+#pagination button { padding: 5px 10px; margin-right: 5px; }
 </style>
 </head>
 <body>
 
 <h1>Voter List</h1>
-<input type="text" id="search" placeholder="Search by Name, EPIC, etc...">
-<button id="printBtn">Print</button>
-<button id="whatsappBtn">Send via WhatsApp</button>
+<div id="controls">
+  <input type="text" id="search" placeholder="Search by Name, EPIC, etc...">
+  <button id="printBtn">Print</button>
+  <button id="whatsappBtn">Send via WhatsApp</button>
+</div>
 
 <table id="voterTable">
   <thead></thead>
   <tbody></tbody>
 </table>
+<div id="pagination"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script>
 const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT8hv0c8CPDBHksZbD4igmVelXV_tEp01HiYVnDvbx3D8VbqzCJtQvF2Fl7HeO92ysrjuCqIR8VQpJc/pub?output=csv";
 
+let allData = [];
+let filteredData = [];
+let currentPage = 1;
+const rowsPerPage = 100;
+
 fetch(csvUrl)
-  .then(response => response.text())
+  .then(res => res.text())
   .then(csvText => {
     const results = Papa.parse(csvText, { header: true, skipEmptyLines: true });
-    const data = results.data;
-
-    const table = document.getElementById('voterTable');
-    const thead = table.querySelector('thead');
-    const tbody = table.querySelector('tbody');
-
-    // Header
-    let headerRow = "<tr>";
-    Object.keys(data[0]).forEach(key => {
-      headerRow += `<th>${key}</th>`;
+    allData = results.data.map(row => {
+      // trim all fields
+      const obj = {};
+      Object.keys(row).forEach(k => obj[k.trim()] = row[k].trim());
+      return obj;
     });
-    headerRow += "</tr>";
-    thead.innerHTML = headerRow;
-
-    // Rows
-    data.forEach(row => {
-      let rowHtml = "<tr>";
-      Object.values(row).forEach(val => {
-        rowHtml += `<td>${val}</td>`;
-      });
-      rowHtml += "</tr>";
-      tbody.innerHTML += rowHtml;
-    });
-
-    // Search functionality
-    const searchInput = document.getElementById('search');
-    searchInput.addEventListener('keyup', function() {
-      const filter = this.value.toLowerCase();
-      const rows = tbody.querySelectorAll('tr');
-      rows.forEach(r => {
-        r.style.display = r.innerText.toLowerCase().includes(filter) ? '' : 'none';
-      });
-    });
-
-    // Print button (filtered rows only)
-    document.getElementById('printBtn').addEventListener('click', function() {
-      const visibleRows = Array.from(tbody.querySelectorAll('tr')).filter(r => r.style.display !== 'none');
-      const tableHtml = `<table border="1" style="border-collapse:collapse; width:100%">${thead.innerHTML}${visibleRows.map(r => r.outerHTML).join('')}</table>`;
-      
-      const printWindow = window.open('', '', 'height=600,width=800');
-      printWindow.document.write('<html><head><title>Voter List</title></head><body>');
-      printWindow.document.write(tableHtml);
-      printWindow.document.write('</body></html>');
-      printWindow.document.close();
-      printWindow.print();
-    });
-
-    // WhatsApp share button (filtered rows only)
-    document.getElementById('whatsappBtn').addEventListener('click', function() {
-      const visibleRows = Array.from(tbody.querySelectorAll('tr')).filter(r => r.style.display !== 'none');
-      let text = "Voter List:\n\n";
-      visibleRows.forEach(r => {
-        const cells = Array.from(r.querySelectorAll('td')).map(c => c.innerText);
-        text += cells.join(" | ") + "\n";
-      });
-      const url = "https://api.whatsapp.com/send?text=" + encodeURIComponent(text);
-      window.open(url, "_blank");
-    });
-
+    filteredData = [...allData];
+    renderTable();
+    renderPagination();
   })
   .catch(err => console.error("Error loading CSV:", err));
+
+function renderTable() {
+  const table = document.getElementById('voterTable');
+  const thead = table.querySelector('thead');
+  const tbody = table.querySelector('tbody');
+  tbody.innerHTML = '';
+
+  if(filteredData.length === 0) return;
+
+  // Header
+  const headers = Object.keys(filteredData[0]);
+  let headerRow = "<tr>";
+  headers.forEach(h => headerRow += `<th onclick="sortTable('${h}')">${h}</th>`);
+  headerRow += "</tr>";
+  thead.innerHTML = headerRow;
+
+  // Rows for current page
+  const start = (currentPage-1)*rowsPerPage;
+  const end = start + rowsPerPage;
+  const pageData = filteredData.slice(start, end);
+
+  pageData.forEach(row => {
+    let rowHtml = "<tr>";
+    headers.forEach(h => rowHtml += `<td>${row[h]}</td>`);
+    rowHtml += "</tr>";
+    tbody.innerHTML += rowHtml;
+  });
+}
+
+// Search
+document.getElementById('search').addEventListener('keyup', function() {
+  const filter = this.value.toLowerCase();
+  filteredData = allData.filter(row =>
+    Object.values(row).some(val => val.toLowerCase().includes(filter))
+  );
+  currentPage = 1;
+  renderTable();
+  renderPagination();
+});
+
+// Sorting
+let sortDirection = {};
+function sortTable(column) {
+  sortDirection[column] = !sortDirection[column];
+  filteredData.sort((a,b) => {
+    if(a[column] < b[column]) return sortDirection[column] ? -1 : 1;
+    if(a[column] > b[column]) return sortDirection[column] ? 1 : -1;
+    return 0;
+  });
+  renderTable();
+}
+
+// Print filtered rows
+document.getElementById('printBtn').addEventListener('click', function() {
+  const tableHtml = `<table border="1" style="border-collapse:collapse; width:100%"><thead>${document.querySelector('#voterTable thead').innerHTML}</thead><tbody>`;
+  filteredData.forEach(row => {
+    tableHtml += "<tr>" + Object.values(row).map(v => `<td>${v}</td>`).join('') + "</tr>";
+  });
+  const finalHtml = tableHtml + "</tbody></table>";
+  const printWindow = window.open('', '', 'height=600,width=800');
+  printWindow.document.write('<html><head><title>Voter List</title></head><body>');
+  printWindow.document.write(finalHtml);
+  printWindow.document.write('</body></html>');
+  printWindow.document.close();
+  printWindow.print();
+});
+
+// WhatsApp filtered
+document.getElementById('whatsappBtn').addEventListener('click', function() {
+  let text = "Voter List:\n\n";
+  filteredData.forEach(row => {
+    text += Object.values(row).join(" | ") + "\n";
+  });
+  const url = "https://api.whatsapp.com/send?text=" + encodeURIComponent(text);
+  window.open(url, "_blank");
+});
+
+// Pagination
+function renderPagination() {
+  const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+  const container = document.getElementById('pagination');
+  container.innerHTML = '';
+  for(let i=1;i<=totalPages;i++){
+    const btn = document.createElement('button');
+    btn.textContent = i;
+    if(i === currentPage) btn.style.fontWeight = 'bold';
+    btn.addEventListener('click', () => { currentPage = i; renderTable(); });
+    container.appendChild(btn);
+  }
+}
 </script>
 
 </body>
