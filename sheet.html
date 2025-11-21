@@ -1,0 +1,72 @@
+<!doctype html>
+// update sheet: find row with epic and set pdf_link column
+const ss = getSheet(); const sh = ss.getSheetByName(VOTER_SHEET);
+const data = sh.getDataRange().getValues(); const headers = data.shift().map(h=>String(h));
+const colIndex = headers.indexOf('pdf_link');
+if(colIndex === -1){ sh.getRange(1, headers.length+1).setValue('pdf_link'); }
+const newHeaders = sh.getDataRange().getValues()[0].map(String);
+const pdfCol = newHeaders.indexOf('pdf_link');
+for(let i=1;i<sh.getLastRow();i++){
+const rowEpic = String(sh.getRange(i+1, newHeaders.indexOf('epic')+1).getValue());
+if(rowEpic === String(epic)){
+sh.getRange(i+1, pdfCol+1).setValue(url);
+return {success:true, url};
+}
+}
+return {success:false, message:'Epic not found'};
+}catch(e){ return {success:false, message: e.message}; }
+}
+
+
+
+
+==================== Google Sheet layout ====================
+
+
+Create a Google Sheet with two sheets (tabs):
+
+
+1) Voters (first row = headers):
+voter_id, name, epic, house, part_no, ac_no, district, state, status, pdf_link
+
+
+2) Users (first row = headers):
+username, password, role
+
+
+Add two admin users:
+admin1@example.com | 12345 | admin
+admin2@example.com | 12345 | admin
+
+
+Add other users as needed (role = user)
+
+
+==================== Deployment steps (short) ====================
+
+
+1) Create Google Sheet -> add headers above -> add admins in Users sheet.
+2) Open Extensions > Apps Script -> create new project -> paste Code.gs -> replace SHEET_ID (or leave blank if bound) -> Save.
+3) Deploy > New deployment > Select type: Web app
+- Execute as: Me
+- Who has access: Anyone
+4) Copy Web app URL and paste into index.html variable WEB_APP_URL.
+5) Host index.html (open locally in browser) or put on static hosting. The frontend calls Apps Script API.
+6) Login using admin credentials in Users sheet. Admins can add/edit/delete voters. Select a voter and click Save PDF to Drive.
+
+
+
+
+================================================================================
+
+
+Notes & Security:
+- This example sets "Who has access: Anyone" for ease of demo. For production, use OAuth or restrict access.
+- Passwords in Google Sheet are plaintext in this demo; consider hashing or using Google Accounts for production.
+- Apps Script quotas apply (Drive file creation, URL fetch limits).
+
+
+
+
+End of document
+-->
