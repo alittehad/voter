@@ -1,20 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Voter Management Panel</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
 :root{--bg:#eef2ff;--card:#fff}
 body{background:var(--bg);font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;}
 .container{max-width:1100px;margin:12px auto;padding:12px;}
-.heading{font-size:clamp(1.4rem,3vw,1.8rem);font-weight:800;text-align:center;margin-bottom:12px;color:#0f172a;text-shadow:0 1px 0 rgba(255,255,255,0.5),0 6px 12px rgba(2,6,23,0.12),0 18px 36px rgba(2,6,23,0.10);}
+.heading {font-size:clamp(1.4rem,3vw,1.8rem);font-weight:800;text-align:center;margin-bottom:12px;color:#0f172a;transform: perspective(500px) rotateX(8deg);text-shadow:0 1px 0 rgba(255,255,255,0.5),0 6px 12px rgba(2,6,23,0.12),0 18px 36px rgba(2,6,23,0.10);letter-spacing:0.6px;}
 .card{background:var(--card);border-radius:12px;padding:12px;margin-bottom:12px;box-shadow:6px 6px 18px rgba(2,6,23,0.06);}
 .img-sender-small{width:30px;height:30px;border-radius:999px;object-fit:cover;margin-right:6px;}
 .img-sender{width:40px;height:40px;border-radius:999px;object-fit:cover;margin-right:8px}
-.btn{cursor:pointer;padding:4px 8px;border-radius:6px;font-weight:700;font-size:12px;transition:all 0.2s;box-shadow:3px 3px 6px rgba(0,0,0,0.2);}
-.btn:hover{transform:translateY(-2px);box-shadow:4px 4px 10px rgba(0,0,0,0.25);}
+.btn{cursor:pointer;padding:4px 8px;border-radius:6px;font-weight:700;font-size:12px;transition: all 0.2s; box-shadow:3px 3px 6px rgba(0,0,0,0.2);}
+.btn:hover{transform: translateY(-2px); box-shadow:4px 4px 10px rgba(0,0,0,0.25);}
 .btn-blue{background:#2563eb;color:white}
 .btn-green{background:#16a34a;color:white}
 .btn-yellow{background:#facc15;color:#111}
@@ -34,10 +34,11 @@ tr:hover{background:#f7f9ff}
 .opacity-50{opacity:0.5;}
 .cursor-not-allowed{cursor:not-allowed;}
 .hidden{display:none;}
-@media(max-width:900px){ table{min-width:100%} }
+@media (max-width:900px){ table{min-width:100%} }
 </style>
 </head>
 <body>
+
 <div class="container">
 <h1 class="heading">Voter Management Panel</h1>
 
@@ -50,23 +51,24 @@ tr:hover{background:#f7f9ff}
 <!-- Panel -->
 <div id="panelDiv" class="hidden">
 
-  <!-- Admin Logout -->
-  <div id="adminControls" class="card flex justify-end items-center hidden">
+  <!-- Admin Logout & Admin Management -->
+  <div id="adminControls" class="card flex justify-between items-center hidden">
+    <div id="adminMgmt" class="hidden">
+      <button id="addAdminBtn" class="btn btn-green btn-sm">Add New Admin</button>
+    </div>
     <button id="logoutBtn" class="btn btn-red">Logout</button>
   </div>
 
   <!-- Top controls -->
   <div class="card flex gap-4 flex-wrap items-center">
     <div style="flex:1">
-      <input id="searchVoter" placeholder="Search by Name, EPIC, Part No, Booth..." class="w-full border p-2 rounded text-sm"/>
+      <input id="searchVoter" placeholder="Search by Name, EPIC, Part, Booth..." class="w-full border p-2 rounded text-sm"/>
     </div>
     <div style="flex:1">
       <textarea id="senderDesc" placeholder="Sender Description (appears above voter info)" class="w-full border p-2 rounded text-sm" rows="2"></textarea>
     </div>
     <div>
       <button id="addVoterBtn" class="btn btn-green btn-sm">Add New Voter</button>
-      <button id="printBtn" class="btn btn-yellow btn-sm">Print Selected</button>
-      <button id="whatsappBtn" class="btn btn-green btn-sm">WhatsApp Selected</button>
     </div>
   </div>
 
@@ -78,6 +80,7 @@ tr:hover{background:#f7f9ff}
 
   <!-- Table -->
   <div id="voterList" class="table-container card"></div>
+
 </div>
 
 <!-- Edit/Add Modal -->
@@ -93,6 +96,19 @@ tr:hover{background:#f7f9ff}
     <div class="flex justify-end gap-2">
       <button id="saveEditBtn" class="btn btn-green btn-sm">Save</button>
       <button id="cancelEditBtn" class="btn btn-red btn-sm">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Admin Modal -->
+<div id="adminModal" class="hidden fixed top-0 left-0 w-full h-full bg-black/50 flex justify-center items-center">
+  <div class="bg-white p-4 rounded w-11/12 max-w-md">
+    <h2 class="text-lg font-bold mb-2">Add New Admin</h2>
+    <input id="newAdminEmail" placeholder="Admin Email" class="w-full border p-2 mb-2 rounded"/>
+    <label><input type="checkbox" id="fullControl"/> Full Control</label>
+    <div class="flex justify-end gap-2 mt-2">
+      <button id="saveAdminBtn" class="btn btn-green btn-sm">Save</button>
+      <button id="cancelAdminBtn" class="btn btn-red btn-sm">Cancel</button>
     </div>
   </div>
 </div>
@@ -132,15 +148,21 @@ const adminControls = document.getElementById("adminControls");
 const addVoterBtn = document.getElementById("addVoterBtn");
 const editModal = document.getElementById("editModal");
 const modalTitle = document.getElementById("modalTitle");
-const printBtn = document.getElementById("printBtn");
-const whatsappBtn = document.getElementById("whatsappBtn");
+
+const adminMgmt = document.getElementById("adminMgmt");
+const addAdminBtn = document.getElementById("addAdminBtn");
+const adminModal = document.getElementById("adminModal");
+const cancelAdminBtn = document.getElementById("cancelAdminBtn");
+const saveAdminBtn = document.getElementById("saveAdminBtn");
+const newAdminEmail = document.getElementById("newAdminEmail");
+const fullControlCheckbox = document.getElementById("fullControl");
 
 let voterData = [];
 let selectedVoter = null;
-let selectedRows = new Set();
 let isAdmin = false;
 let isFullAdmin = false;
 
+// Helpers
 function emailToKey(email){ return email.replace(/\./g,"_dot_"); }
 
 // Login / Logout
@@ -159,12 +181,14 @@ onAuthStateChanged(auth, async user=>{
     loginDiv.classList.add("hidden");
     panelDiv.classList.remove("hidden");
     adminControls.classList.remove("hidden");
+    if(isFullAdmin) adminMgmt.classList.remove("hidden");
 
     loadVoters();
   } else {
     loginDiv.classList.remove("hidden");
     panelDiv.classList.add("hidden");
     adminControls.classList.add("hidden");
+    adminMgmt.classList.add("hidden");
   }
 });
 
@@ -202,14 +226,11 @@ function renderStatusCount(){
 
 // Render table
 function renderTable(list){
-  voterListDiv.innerHTML=`<table><thead><tr>
-  <th>Select</th><th>Name</th><th>EPIC</th><th>Part</th><th>Booth</th><th>Address</th><th>Actions</th>
-  </tr></thead><tbody></tbody></table>`;
+  voterListDiv.innerHTML=`<table><thead><tr><th>Name</th><th>EPIC</th><th>Part</th><th>Booth</th><th>Address</th><th>Actions</th></tr></thead><tbody></tbody></table>`;
   const tbody = voterListDiv.querySelector("tbody");
   list.forEach(v=>{
     const tr=document.createElement("tr");
     tr.innerHTML=`
-      <td><input type="checkbox" class="selectRow"/></td>
       <td><img src="${v.photoURL||'https://i.ibb.co/LhDpnZFn/khatik-imase.jpg'}" class="img-sender-small"/> ${v.name}</td>
       <td>${v.voterID}</td>
       <td>${v.partNo}</td>
@@ -226,40 +247,7 @@ function renderTable(list){
     if(isFullAdmin){
       tr.querySelector(".delBtn").onclick=()=>{if(confirm("Delete voter?")) remove(dbRef(db,"voters/"+v.id));};
     }
-
-    tr.querySelector(".selectRow").onchange = (e)=>{
-      if(e.target.checked) selectedRows.add(v.id);
-      else selectedRows.delete(v.id);
-    };
-
-    tr.onclick=(e)=>{
-      if(e.target.tagName!=="INPUT" && e.target.tagName!=="BUTTON") showVoterCard(v);
-    };
   });
-}
-
-// Show voter card
-function showVoterCard(v){
-  voterDetailContainer.innerHTML="";
-  const div=document.createElement("div"); div.className="card";
-  div.innerHTML=`
-  <div style="display:flex;justify-content:space-between;align-items:center">
-    <div style="display:flex;align-items:center;gap:8px">
-      <img src="${v.photoURL||'https://i.ibb.co/LhDpnZFn/khatik-imase.jpg'}" class="img-sender"/>
-      <div>
-        <h3 style="margin:0;font-weight:800">${v.name||'-'}</h3>
-        <div style="color:#475569;font-size:13px">${senderDescEl.value||''}</div>
-      </div>
-    </div>
-    <button onclick="this.parentElement.parentElement.remove()" class="btn btn-red btn-sm">Close</button>
-  </div>
-  <div style="margin-top:8px;font-size:12px">
-    <p><strong>EPIC:</strong> ${v.voterID||'-'}</p>
-    <p><strong>Part:</strong> ${v.partNo||'-'}</p>
-    <p><strong>Booth:</strong> ${v.booth||'-'}</p>
-    <p><strong>Address:</strong> ${v.address||'-'}</p>
-  </div>`;
-  voterDetailContainer.appendChild(div);
 }
 
 // Edit Modal
@@ -306,6 +294,7 @@ document.getElementById("saveEditBtn").onclick = async ()=>{
   editModal.classList.add("hidden");
 };
 
+// Add new voter
 addVoterBtn.onclick=()=>showEditModal(null);
 
 // Search filter
@@ -317,25 +306,18 @@ searchInput.addEventListener("input", e=>{
   }));
 });
 
-// Print selected
-printBtn.onclick = ()=>{
-  if(selectedRows.size===0){ alert("Select voters first!"); return; }
-  const html = voterData.filter(v=>selectedRows.has(v.id)).map(v=>{
-    return `<p>${v.name} | ${v.voterID} | ${v.partNo} | ${v.booth} | ${v.address}</p>`;
-  }).join("");
-  const w = window.open("","Print","width=800,height=600");
-  w.document.write(html);
-  w.print();
-};
-
-// WhatsApp selected
-whatsappBtn.onclick = ()=>{
-  if(selectedRows.size===0){ alert("Select voters first!"); return; }
-  const msg = voterData.filter(v=>selectedRows.has(v.id)).map(v=>{
-    return `${v.name} | ${v.voterID} | ${v.partNo} | ${v.booth} | ${v.address}`;
-  }).join("\n");
-  const url = `https://wa.me/?text=${encodeURIComponent(msg)}`;
-  window.open(url,"_blank");
+// Admin Modal
+addAdminBtn.onclick=()=>{adminModal.classList.remove("hidden");};
+cancelAdminBtn.onclick=()=>{adminModal.classList.add("hidden");};
+saveAdminBtn.onclick=async ()=>{
+  const email = newAdminEmail.value.trim();
+  if(!email) return alert("Enter email");
+  const key = emailToKey(email.toLowerCase());
+  await set(dbRef(db,"admins/"+key), {fullControl: fullControlCheckbox.checked});
+  alert("Admin added");
+  adminModal.classList.add("hidden");
+  newAdminEmail.value = '';
+  fullControlCheckbox.checked = false;
 };
 </script>
 </body>
