@@ -1,38 +1,36 @@
 {
-  "name": "Voter Management Panel",
-  "short_name": "VoterPanel",
-  "start_url": "/index.html",
+  "name": "Ward 20 Voter Panel",
+  "short_name": "Ward 20",
+  "start_url": "index.html",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#2563eb",
+  "orientation": "portrait",
+  "description": "Ward 20 Voter Management Login Panel (PWA Install Supported)",
 
   "icons": [
     {
-      "src": "icons/icon-72.png",
-      "sizes": "72x72",
-      "type": "image/png"
-    },
-    {
-      "src": "icons/icon-96.png",
-      "sizes": "96x96",
-      "type": "image/png"
-    },
-    {
-      "src": "icons/icon-144.png",
-      "sizes": "144x144",
-      "type": "image/png"
-    },
-    {
-      "src": "icons/icon-192.png",
+      "src": "icon-192.png",
       "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
+      "type": "image/png"
     },
     {
-      "src": "icons/icon-512.png",
+      "src": "icon-256.png",
+      "sizes": "256x256",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-384.png",
+      "sizes": "384x384",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
       "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
+      "type": "image/png"
     }
-  ]
+  ],
+
+  "prefer_related_applications": false
 }
