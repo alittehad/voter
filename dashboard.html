@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Voter Dashboard</title>
+<script src="https://cdn.tailwindcss.com"></script>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getDatabase, ref, get, set } 
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
+  authDomain: "voter-25c94.firebaseapp.com",
+  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
+  projectId: "voter-25c94",
+  storageBucket: "voter-25c94.firebasestorage.app",
+  messagingSenderId: "297773534400",
+  appId: "1:297773534400:web:3722c487b8c83e9b787125"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth();
+const db = getDatabase();
+
+let loggedUser = sessionStorage.getItem("loggedUser");
+
+if (!loggedUser) {
+  window.location.href = "index.html";
+}
+
+// ----------------------
+// LOGOUT
+// ----------------------
+window.logoutNow = function () {
+  signOut(auth).then(() => {
+    sessionStorage.removeItem("loggedUser");
+    window.location.href = "index.html";
+  });
+}
+
+// ----------------------
+// VOTER LIST LOAD
+// ----------------------
+async function loadVoters() {
+  const snap = await get(ref(db, "voters"));
+  if (snap.exists()) {
+    const data = snap.val();
+    let html = "";
+
+    Object.keys(data).forEach(k => {
+      let v = data[k];
+      html += `
+        <tr class="border-b">
+          <td class="p-2">${v.name || ""}</td>
+          <td class="p-2">${v.epic || ""}</td>
+          <td class="p-2">${v.house || ""}</td>
+          <td class="p-2">${v.booth || ""}</td>
+        </tr>
+      `;
+    });
+
+    document.getElementById("voterTable").innerHTML = html;
+  }
+}
+loadVoters();
+
+// ----------------------
+// MANUAL UPLOAD
+// ----------------------
+window.uploadData = async function () {
+  let name = document.getElementById("vname").value;
+  let epic = document.getElementById("vepic").value;
+  let house = document.getElementById("vhouse").value;
+  let booth = document.getElementById("vbooth").value;
+
+  if (!name || !epic) {
+    alert("नाम और EPIC जरूरी है");
+    return;
+  }
+
+  let id = "voter_" + Date.now();
+
+  await set(ref(db, "voters/" + id), {
+    name, epic, house, booth
+  });
+
+  alert("Voter Added Successfully!");
+  loadVoters();
+
+  document.getElementById("vname").value = "";
+  document.getElementById("vepic").value = "";
+  document.getElementById("vhouse").value = "";
+  document.getElementById("vbooth").value = "";
+}
+
+// ----------------------
+// SEARCH
+// ----------------------
+window.searchNow = function () {
+  const text = document.getElementById("searchBox").value.toLowerCase();
+  const rows = document.querySelectorAll("#voterTable tr");
+
+  rows.forEach(r => {
+    r.style.display = r.innerText.toLowerCase().includes(text)
+                      ? ""
+                      : "none";
+  });
+}
+
+</script>
+
+</head>
+<body class="bg-gray-100">
+
+<div class="p-4 bg-white shadow flex justify-between items-center">
+  <h2 class="text-xl font-bold">Voter Management Dashboard</h2>
+  <button onclick="logoutNow()" class="bg-red-500 text-white px-4 py-2 rounded-lg">Logout</button>
+</div>
+
+<div class="p-4 grid md:grid-cols-2 gap-4">
+
+  <!-- Upload Box -->
+  <div class="bg-white p-4 rounded-xl shadow">
+    <h3 class="font-bold mb-3 text-lg">नया Voter जोड़ें (Manual Upload)</h3>
+
+    <input id="vname" type="text" placeholder="नाम" class="w-full p-2 border rounded mb-2">
+    <input id="vepic" type="text" placeholder="EPIC नंबर" class="w-full p-2 border rounded mb-2">
+    <input id="vhouse" type="text" placeholder="House नंबर" class="w-full p-2 border rounded mb-2">
+    <input id="vbooth" type="text" placeholder="Booth नंबर" class="w-full p-2 border rounded mb-2">
+
+    <button onclick="uploadData()" class="bg-blue-600 text-white px-4 py-2 rounded w-full">Upload</button>
+  </div>
+
+  <!-- List + Search -->
+  <div class="bg-white p-4 rounded-xl shadow overflow-auto">
+    <h3 class="font-bold mb-3 text-lg">Voter List</h3>
+
+    <input id="searchBox" onkeyup="searchNow()" type="text" placeholder="Search EPIC / Name" class="w-full p-2 border rounded mb-3">
+
+    <table class="w-full border">
+      <thead>
+        <tr class="bg-gray-200 font-bold">
+          <th class="p-2">नाम</th>
+          <th class="p-2">EPIC</th>
+          <th class="p-2">House</th>
+          <th class="p-2">Booth</th>
+        </tr>
+      </thead>
+      <tbody id="voterTable"></tbody>
+    </table>
+
+  </div>
+
+</div>
+
+</body>
+</html>
