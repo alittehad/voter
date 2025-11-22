@@ -1,22 +1,17 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hi">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Login - Voter Management</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Voter Panel Login</title>
 <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-blue-50 flex items-center justify-center h-screen">
-  <div class="bg-white p-8 rounded-xl shadow-lg w-80 text-center">
-    <h1 class="text-2xl font-bold mb-4">Voter Management Panel</h1>
-    <button id="googleLoginBtn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-      Login with Google
-    </button>
-  </div>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup } 
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getDatabase, ref, get, child } 
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
@@ -30,23 +25,34 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth();
+const db = getDatabase();
 const provider = new GoogleAuthProvider();
 
-const admins = ["admin_email@gmail_com"]; // Admin emails (add more later)
+window.loginNow = function () {
+  signInWithPopup(auth, provider).then(async (result) => {
+    const email = result.user.email.replace(/\./g, "_");
 
-document.getElementById("googleLoginBtn").onclick = async () => {
-  try {
-    const result = await signInWithPopup(auth, provider);
-    const emailKey = result.user.email.replace(/\./g,'_');
-    if (admins.includes(emailKey)) {
-      window.location.href = "admin.html";
+    const snap = await get(child(ref(db), "admins/" + email));
+
+    if (snap.exists()) {
+      sessionStorage.setItem("loggedUser", email);
+      window.location.href = "dashboard.html";
     } else {
-      window.location.href = "user.html";
+      alert("आप Admin नहीं हैं!");
     }
-  } catch(err) {
-    alert("Login failed: " + err.message);
-  }
-};
+  });
+}
 </script>
+
+</head>
+<body class="flex items-center justify-center h-screen bg-gray-200">
+
+<div class="bg-white p-8 rounded-2xl shadow-lg text-center">
+  <h1 class="text-2xl font-bold mb-4">Voter Management Login</h1>
+  <button onclick="loginNow()" class="px-6 py-2 bg-blue-600 text-white rounded-xl shadow-lg active:scale-95">
+    Login with Google
+  </button>
+</div>
+
 </body>
 </html>
