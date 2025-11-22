@@ -1,528 +1,254 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta charset="utf-8">
 <title>Voter Management Panel</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- TAILWIND CSS -->
 <script src="https://cdn.tailwindcss.com"></script>
+
 <style>
-:root{--bg:#eef2ff;--card:#fff}
-body{background:var(--bg);font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;margin:0}
-.container{max-width:1100px;margin:12px auto;padding:12px}
-.heading{font-size:clamp(1.2rem,3vw,1.6rem);font-weight:800;text-align:center;margin-bottom:12px;color:#0f172a}
-.card{background:var(--card);border-radius:10px;padding:12px;margin-bottom:12px;box-shadow:6px 6px 12px rgba(2,6,23,0.06)}
-.img-sender-small{width:34px;height:34px;border-radius:999px;object-fit:cover;margin-right:8px;vertical-align:middle}
-.btn{cursor:pointer;padding:6px 10px;border-radius:8px;font-weight:700;font-size:13px;transition:all .15s}
-.btn:hover{transform:translateY(-2px)}
-.btn-blue{background:#2563eb;color:#fff}
-.btn-green{background:#16a34a;color:#fff}
-.btn-yellow{background:#facc15;color:#111}
-.btn-red{background:#dc2626;color:#fff}
-.btn-sm{padding:4px 8px;font-size:12px;border-radius:6px}
-.table-container{overflow:auto}
-table{width:100%;border-collapse:collapse;min-width:600px;background:#fff;border-radius:6px;overflow:hidden}
-th,td{padding:8px;border:1px solid #e6e9ef;text-align:left;font-size:13px}
-thead tr{background:#f0f9ff;font-weight:700}
-tr:hover{background:#f7fbff}
-.badge{display:inline-block;padding:4px 8px;border-radius:8px;font-weight:700;font-size:12px}
-.hidden{display:none}
-.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center}
-.modal{background:white;padding:16px;border-radius:10px;width:96%;max-width:520px}
-@media (max-width:760px){ .img-sender-small{width:28px;height:28px} th,td{font-size:12px;padding:6px} .btn{padding:6px 8px;font-size:12px} }
+td, th { border: 1px solid #ddd; padding: 6px; }
+img.photo { width: 55px; height: 55px; object-fit: cover; border-radius: 6px; }
 </style>
 </head>
-<body>
-<div class="container">
-  <h1 class="heading">Voter Management Panel</h1>
 
-  <!-- Login -->
-  <div id="loginDiv" class="card text-center">
-    <div style="font-weight:800;color:#0ea5e9">Login to Manage Voters</div>
-    <div style="margin-top:12px">
-      <button id="googleLoginBtn" class="btn btn-blue">Login with Google</button>
-    </div>
-    <div style="margin-top:8px;font-size:13px;color:#475569">Only admins listed in the database can access the panel.</div>
-  </div>
+<body class="bg-gray-100">
 
-  <!-- Panel -->
-  <div id="panelDiv" class="hidden">
-
-    <!-- Admin top controls -->
-    <div class="card flex gap-2 flex-wrap items-center">
-      <div style="flex:1">
-        <input id="searchVoter" placeholder="Search (Name, EPIC, Part, Booth, Address, Sender, State, District)" class="w-full border p-2 rounded text-sm"/>
-      </div>
-
-      <div style="min-width:200px">
-        <textarea id="senderDesc" placeholder="Sender description (will be applied on CSV upload or can be added per voter)" class="w-full border p-2 rounded text-sm" rows="2"></textarea>
-      </div>
-
-      <div class="flex gap-2 items-center">
-        <input id="csvUrlInput" placeholder="CSV URL (pub?output=csv)" class="border p-2 rounded text-sm" style="min-width:250px"/>
-        <button id="uploadCsvBtn" class="btn btn-blue btn-sm">Upload CSV</button>
-        <button id="addVoterBtn" class="btn btn-green btn-sm">Add Voter</button>
-        <button id="logoutBtn" class="btn btn-red btn-sm">Logout</button>
-      </div>
-    </div>
-
-    <!-- Admin management (full admin only) -->
-    <div id="adminPanel" class="card hidden">
-      <div style="display:flex;align-items:center;justify-content:space-between">
-        <div style="font-weight:800">Admin Management</div>
-        <div style="font-size:13px;color:#475569">Full admin can add/remove/toggle fullControl</div>
-      </div>
-      <div style="margin-top:8px;display:flex;gap:8px">
-        <input id="adminEmailInput" placeholder="newadmin@example.com" class="border p-2 rounded flex-1"/>
-        <button id="addAdminBtn" class="btn btn-green btn-sm">Add Admin</button>
-      </div>
-      <div id="adminList" style="margin-top:10px"></div>
-    </div>
-
-    <!-- Status counts -->
-    <div id="statusCount" class="card flex gap-3 items-center"></div>
-
-    <!-- Voter table -->
-    <div id="voterList" class="table-container card"></div>
-  </div>
+<!-- LOGIN PAGE -->
+<div id="loginBox" class="flex flex-col justify-center items-center h-screen">
+    <h1 class="text-3xl font-bold mb-2">Voter Management Panel</h1>
+    <p class="mb-4">Login to Manage Voters</p>
+    <button onclick="login()" class="bg-blue-600 text-white px-5 py-2 rounded">
+        Login with Google
+    </button>
+    <p class="mt-3 text-sm text-gray-600">Only admins listed in database can access the panel.</p>
 </div>
 
-<!-- Edit/Add Modal -->
-<div id="editModalWrap" class="hidden">
-  <div class="modal-bg">
-    <div class="modal">
-      <div style="font-weight:800;margin-bottom:8px" id="modalTitle">Edit Voter</div>
-      <div style="display:grid;gap:8px">
-        <input id="editState" placeholder="State" class="border p-2 rounded"/>
-        <input id="editDistrict" placeholder="District" class="border p-2 rounded"/>
-        <input id="editACNo" placeholder="AC No" class="border p-2 rounded"/>
-        <input id="editName" placeholder="Name" class="border p-2 rounded"/>
-        <input id="editEPIC" placeholder="EPIC (unique)" class="border p-2 rounded"/>
-        <input id="editPart" placeholder="Part No" class="border p-2 rounded"/>
-        <input id="editBooth" placeholder="Booth" class="border p-2 rounded"/>
-        <input id="editAddress" placeholder="Address" class="border p-2 rounded"/>
-        <input id="editSender" placeholder="Sender" class="border p-2 rounded"/>
-        <input id="editPhoto" type="file" accept="image/*" class="border p-2 rounded"/>
-      </div>
-      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px">
-        <button id="saveEditBtn" class="btn btn-blue">Save</button>
-        <button id="cancelEditBtn" class="btn btn-red">Cancel</button>
-      </div>
+<!-- MAIN PANEL -->
+<div id="panel" class="hidden p-5">
+
+    <div class="flex justify-between mb-3">
+        <input id="searchInput" placeholder="Search" class="px-3 py-2 border rounded w-1/3">
+
+        <div class="flex gap-2">
+            <button onclick="logout()" class="bg-red-500 text-white px-4 py-2 rounded">Logout</button>
+        </div>
     </div>
-  </div>
+
+    <table class="w-full bg-white">
+        <thead class="bg-blue-600 text-white">
+            <tr>
+                <th>Photo</th>
+                <th>Name</th>
+                <th>EPIC</th>
+                <th>State</th>
+                <th>District</th>
+                <th>AC</th>
+                <th>Part</th>
+                <th>Booth</th>
+                <th>Address</th>
+                <th>Approve</th>
+                <th>Opponent</th>
+                <th>Anti</th>
+                <th>WhatsApp</th>
+                <th>Edit</th>
+            </tr>
+        </thead>
+        <tbody id="voterTable"></tbody>
+    </table>
 </div>
 
+
+<!-- ------------ EDIT POPUP ------------ -->
+<div id="editBox" class="hidden fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center">
+    <div class="bg-white p-5 rounded w-96">
+        <h2 class="text-xl font-bold mb-3">Edit Voter</h2>
+
+        <input id="editName" placeholder="Name" class="w-full border p-2 mb-2">
+        <input id="editEpic" placeholder="EPIC" class="w-full border p-2 mb-2">
+        <input id="editPart" placeholder="Part No" class="w-full border p-2 mb-2">
+        <input id="editBooth" placeholder="Booth" class="w-full border p-2 mb-2">
+        <input id="editAddress" placeholder="Address" class="w-full border p-2 mb-2">
+
+        <label>Photo Upload:</label>
+        <input type="file" id="editPhoto" class="mb-3">
+
+        <div class="flex justify-between">
+            <button onclick="saveEdit()" class="bg-green-600 text-white px-4 py-2 rounded">Save</button>
+            <button onclick="closeEdit()" class="bg-gray-400 px-4 py-2 rounded">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- --------- FIREBASE ---------- -->
 <script type="module">
-/* ------------- Firebase SDKs ------------- */
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getDatabase, ref as dbRef, onValue, get, set, update, push, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } 
+    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getDatabase, ref, get, update, set, onValue }
+    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { getStorage, ref as sRef, uploadBytes, getDownloadURL }
+    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
-/* ---------- Firebase config (yours) ---------- */
+
+// ⭐⭐ CHANGE THIS ⭐⭐
 const firebaseConfig = {
-  apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
-  authDomain: "voter-25c94.firebaseapp.com",
-  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
-  projectId: "voter-25c94",
-  storageBucket: "voter-25c94.appspot.com",
-  messagingSenderId: "297773534400",
-  appId: "1:297773534400:web:3722c487b8c83e9b787125"
+    apiKey: "...",
+    authDomain: "...",
+    databaseURL: "...",
+    projectId: "...",
+    storageBucket: "...",
+    messagingSenderId: "...",
+    appId: "..."
 };
 
+
+// INIT
 const app = initializeApp(firebaseConfig);
-const auth = getAuth();
-const provider = new GoogleAuthProvider();
+const auth = getAuth(app);
 const db = getDatabase(app);
 const storage = getStorage(app);
 
-/* ---------- UI refs ---------- */
-const loginDiv = document.getElementById("loginDiv");
-const panelDiv = document.getElementById("panelDiv");
-const googleLoginBtn = document.getElementById("googleLoginBtn");
-const logoutBtn = document.getElementById("logoutBtn");
-const csvUrlInput = document.getElementById("csvUrlInput");
-const uploadCsvBtn = document.getElementById("uploadCsvBtn");
-const senderDescEl = document.getElementById("senderDesc");
-const searchInput = document.getElementById("searchVoter");
-const voterListDiv = document.getElementById("voterList");
-const statusCountDiv = document.getElementById("statusCount");
-const addVoterBtn = document.getElementById("addVoterBtn");
-
-const adminPanel = document.getElementById("adminPanel");
-const adminListDiv = document.getElementById("adminList");
-const adminEmailInput = document.getElementById("adminEmailInput");
-const addAdminBtn = document.getElementById("addAdminBtn");
-
-/* Edit modal */
-const editModalWrap = document.getElementById("editModalWrap");
-const cancelEditBtn = document.getElementById("cancelEditBtn");
-const saveEditBtn = document.getElementById("saveEditBtn");
-
-/* modal fields */
-const editState = document.getElementById("editState");
-const editDistrict = document.getElementById("editDistrict");
-const editACNo = document.getElementById("editACNo");
-const editName = document.getElementById("editName");
-const editEPIC = document.getElementById("editEPIC");
-const editPart = document.getElementById("editPart");
-const editBooth = document.getElementById("editBooth");
-const editAddress = document.getElementById("editAddress");
-const editSender = document.getElementById("editSender");
-const editPhoto = document.getElementById("editPhoto");
-const modalTitle = document.getElementById("modalTitle");
-
-/* ---------- state ---------- */
 let voterData = [];
-let selectedVoter = null;
-let isFullAdmin = false;
+let editKey = "";
 
-/* ---------- helpers ---------- */
-function emailToKey(email){ return email.replace(/\./g,"_dot_"); }
-function keyToEmail(key){ return key.replace(/_dot_/g,"."); }
-function show(el){ el.classList.remove("hidden"); }
-function hide(el){ el.classList.add("hidden"); }
 
-/* ---------- Auth ---------- */
-googleLoginBtn.onclick = () => signInWithPopup(auth, provider).catch(e=>alert("Login failed: "+e.message));
-logoutBtn.onclick = () => signOut(auth);
+// -------- LOGIN ----------
+window.login = async () => {
+    const provider = new GoogleAuthProvider();
+    const result = await signInWithPopup(auth, provider);
+    const user = result.user;
 
-onAuthStateChanged(auth, async user => {
-  if(!user){
-    hide(panelDiv); show(loginDiv);
-    hide(adminPanel);
-    return;
-  }
-
-  const emailKey = emailToKey(user.email.toLowerCase());
-  const adminSnap = await get(dbRef(db, "admins/" + emailKey));
-
-  if(!adminSnap.exists()){
-    alert("Access Denied — you are not an admin.");
-    signOut(auth);
-    return;
-  }
-
-  // user is admin
-  const adminInfo = adminSnap.val();
-  isFullAdmin = !!adminInfo.fullControl;
-
-  hide(loginDiv); show(panelDiv);
-  adminPanel.classList.toggle("hidden", !isFullAdmin);
-
-  // show admin panel list only if full admin
-  if(isFullAdmin) loadAdmins();
-
-  loadVoters();
-});
-
-/* ---------- Load admins (for full admin) ---------- */
-async function loadAdmins(){
-  const snap = await get(dbRef(db, "admins"));
-  if(!snap.exists()){ adminListDiv.innerHTML = "<div>No admins</div>"; return; }
-
-  const obj = snap.val();
-  let html = `<table style="width:100%;border-collapse:collapse"><thead><tr style="background:#f3f4f6"><th style="padding:6px">Email</th><th style="padding:6px">Full</th><th style="padding:6px">Actions</th></tr></thead><tbody>`;
-  for(const key in obj){
-    const email = keyToEmail(key);
-    const full = obj[key].fullControl ? "Yes" : "No";
-    html += `<tr><td style="padding:6px">${email}</td><td style="padding:6px">${full}</td>
-      <td style="padding:6px">
-        <button class="btn btn-sm btn-blue" data-toggle="${key}">Toggle Full</button>
-        <button class="btn btn-sm btn-red" data-remove="${key}">Remove</button>
-      </td></tr>`;
-  }
-  html += "</tbody></table>";
-  adminListDiv.innerHTML = html;
-
-  // attach events
-  adminListDiv.querySelectorAll("[data-toggle]").forEach(b=>{
-    b.onclick = async ()=> {
-      const key = b.getAttribute("data-toggle");
-      const cur = (await get(dbRef(db,"admins/"+key))).val();
-      await update(dbRef(db,"admins/"+key), { fullControl: !cur.fullControl });
-      loadAdmins();
-    };
-  });
-  adminListDiv.querySelectorAll("[data-remove]").forEach(b=>{
-    b.onclick = async ()=> {
-      const key = b.getAttribute("data-remove");
-      if(!confirm("Remove admin "+keyToEmail(key)+" ?")) return;
-      await remove(dbRef(db,"admins/"+key));
-      loadAdmins();
-    };
-  });
-}
-
-/* Add Admin button */
-addAdminBtn.onclick = async ()=>{
-  const email = adminEmailInput.value.trim().toLowerCase();
-  if(!email){ alert("Enter email"); return; }
-  const key = emailToKey(email);
-  await set(dbRef(db,"admins/"+key), { fullControl:false });
-  adminEmailInput.value = "";
-  alert(email + " added as admin (no full control)");
-  loadAdmins();
-};
-
-/* ---------- Load Voters ---------- */
-function loadVoters(){
-  onValue(dbRef(db,"voters"), snap=>{
-    voterData = [];
-    snap.forEach(ch=>{
-      const v = ch.val(); v._key = ch.key;
-      voterData.push(v);
-    });
-    renderStatusCount();
-    renderTable(voterData);
-  });
-}
-
-/* ---------- Render status count ---------- */
-function renderStatusCount(){
-  let ap=0,op=0,an=0;
-  voterData.forEach(v=>{ if(v.status==="approved") ap++; else if(v.status==="opponent") op++; else an++; });
-  statusCountDiv.innerHTML = `<div class="badge" style="background:#dcfce7">Approved: ${ap}</div>
-    <div class="badge" style="background:#fef3c7;color:#111">Opponent: ${op}</div>
-    <div class="badge" style="background:#fee2e2">Anti: ${an}</div>`;
-}
-
-/* ---------- Render Table ---------- */
-function renderTable(list){
-  let html = `<table><thead><tr>
-    <th>Name</th><th>EPIC</th><th>Part</th><th>Booth</th><th>Address</th><th>Sender</th><th>Actions</th>
-  </tr></thead><tbody>`;
-
-  list.forEach(v=>{
-    const photo = v.photoURL || 'https://i.ibb.co/LhDpnZFn/khatik-imase.jpg';
-    html += `<tr>
-      <td><img src="${photo}" class="img-sender-small"/> ${escapeHtml(v.name||'')}</td>
-      <td>${escapeHtml(v.epic||'')}</td>
-      <td>${escapeHtml(v.partNo||'')}</td>
-      <td>${escapeHtml(v.booth||'')}</td>
-      <td>${escapeHtml(v.address||'')}</td>
-      <td>${escapeHtml(v.sender||'')}</td>
-      <td>
-        <button class="btn btn-sm btn-blue" data-edit="${v._key}">Edit</button>
-        <button class="btn btn-sm btn-yellow" data-photo="${v._key}">Photo</button>
-        <button class="btn btn-sm btn-green" data-print="${v._key}">Print</button>
-        <button class="btn btn-sm btn-blue" data-wa="${v._key}">WhatsApp</button>
-        ${isFullAdmin?`<button class="btn btn-sm btn-red" data-delete="${v._key}">Delete</button>`:''}
-      </td>
-    </tr>`;
-  });
-
-  html += `</tbody></table>`;
-  voterListDiv.innerHTML = html;
-
-  // wire buttons
-  voterListDiv.querySelectorAll("[data-edit]").forEach(b=> b.onclick = ()=> openEdit(b.getAttribute("data-edit")));
-  voterListDiv.querySelectorAll("[data-photo]").forEach(b=> b.onclick = ()=> openPhotoPicker(b.getAttribute("data-photo")));
-  voterListDiv.querySelectorAll("[data-print]").forEach(b=> b.onclick = ()=> printCard(b.getAttribute("data-print")));
-  voterListDiv.querySelectorAll("[data-wa]").forEach(b=> b.onclick = ()=> sendWhatsApp(b.getAttribute("data-wa")));
-  if(isFullAdmin) voterListDiv.querySelectorAll("[data-delete]").forEach(b=> b.onclick = ()=> deleteVoter(b.getAttribute("data-delete")));
-}
-
-/* ---------- Helpers ---------- */
-function escapeHtml(s){ if(!s) return ''; return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
-
-/* ---------- Edit / Add ---------- */
-addVoterBtn.onclick = ()=> openEdit(null);
-
-function openEdit(key){
-  selectedVoter = voterData.find(x=>x._key===key) || null;
-  modalTitle.innerText = selectedVoter ? "Edit Voter" : "Add Voter";
-  editState.value = selectedVoter?.state||'';
-  editDistrict.value = selectedVoter?.district||'';
-  editACNo.value = selectedVoter?.acNo||'';
-  editName.value = selectedVoter?.name||'';
-  editEPIC.value = selectedVoter?.epic||'';
-  editPart.value = selectedVoter?.partNo||'';
-  editBooth.value = selectedVoter?.booth||'';
-  editAddress.value = selectedVoter?.address||'';
-  editSender.value = selectedVoter?.sender||senderDescEl.value||'';
-  editPhoto.value = '';
-  show(editModalWrap);
-}
-
-cancelEditBtn.onclick = ()=> hide(editModalWrap);
-
-saveEditBtn.onclick = async ()=>{
-  const data = {
-    state: editState.value||'',
-    district: editDistrict.value||'',
-    acNo: editACNo.value||'',
-    name: editName.value||'',
-    epic: editEPIC.value||'',
-    partNo: editPart.value||'',
-    booth: editBooth.value||'',
-    address: editAddress.value||'',
-    sender: editSender.value||'',
-    status: selectedVoter?.status || 'anti',
-    photoURL: selectedVoter?.photoURL || ''
-  };
-
-  // photo
-  const file = editPhoto.files[0];
-  if(file){
-    const refPath = 'voter_photos/' + (selectedVoter?selectedVoter._key:Date.now() + '_' + (data.epic||''));
-    const sRef = storageRef(storage, refPath);
-    await uploadBytes(sRef, file);
-    data.photoURL = await getDownloadURL(sRef);
-  }
-
-  if(selectedVoter){
-    await set(dbRef(db, "voters/" + selectedVoter._key), data);
-  } else {
-    // If EPIC provided use as key, else push new key
-    if(data.epic){
-      await set(dbRef(db, "voters/" + data.epic), data);
-    } else {
-      const newRef = push(dbRef(db,"voters"));
-      await set(newRef, data);
-    }
-  }
-
-  hide(editModalWrap);
-};
-
-/* ---------- Photo quick picker (open same edit modal with that voter) ---------- */
-function openPhotoPicker(key){
-  openEdit(key);
-  // focus photo input after small delay
-  setTimeout(()=> editPhoto.click(), 300);
-}
-
-/* ---------- Delete voter ---------- */
-async function deleteVoter(key){
-  if(!confirm("Delete this voter?")) return;
-  await remove(dbRef(db,"voters/"+key));
-  alert("Deleted.");
-}
-
-/* ---------- CSV Upload (URL) with header mapping + sender apply ---------- */
-uploadCsvBtn.onclick = async ()=>{
-  const url = csvUrlInput.value.trim();
-  if(!url){ alert("Enter CSV URL"); return; }
-  try{
-    const res = await fetch(url);
-    const txt = await res.text();
-    // robust split for CRLF and remove empty trailing lines
-    const rows = txt.trim().split(/\r?\n/).map(r=> r.split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/).map(c => c.replace(/^"|"$/g,'')));
-    if(rows.length < 2){ alert("CSV empty or invalid"); return; }
-    const header = rows[0].map(h=>h.trim());
-    // find likely indexes (case-insensitive)
-    const idx = {
-      state: findHeader(header, ["state"]),
-      district: findHeader(header, ["district"]),
-      acNo: findHeader(header, ["ac no","ac","ac_no","acno"]),
-      partNo: findHeader(header, ["part no","partno","part"]),
-      epic: findHeader(header, ["epic","epic no","epic_no"]),
-      name: findHeader(header, ["name"]),
-      booth: findHeader(header, ["booth"]),
-      address: findHeader(header, ["address"]),
-      sender: findHeader(header, ["sender"])
-    };
-    if(idx.name === -1 || idx.epic === -1){
-      if(idx.epic===-1 && idx.name!==-1){
-        if(!confirm("EPIC column not found — continue importing using auto-generated keys?")) return;
-      } else {
-        alert("CSV must include at least Name and EPIC (or allow auto keys).");
+    const adminSnap = await get(ref(db, "admins/" + user.uid));
+    if (!adminSnap.exists()) {
+        alert("Not an admin");
+        await signOut(auth);
         return;
-      }
     }
-    const senderText = senderDescEl.value.trim();
-    // loop rows
-    for(let i=1;i<rows.length;i++){
-      const row = rows[i];
-      if(!row || row.length===0) continue;
-      const epicVal = idx.epic>=0? (row[idx.epic]||'').trim() : '';
-      const nameVal = idx.name>=0? (row[idx.name]||'').trim() : '';
-      if(!epicVal && !nameVal) continue; // skip empty row
-      const voter = {
-        state: idx.state>=0? (row[idx.state]||'').trim() : '',
-        district: idx.district>=0? (row[idx.district]||'').trim() : '',
-        acNo: idx.acNo>=0? (row[idx.acNo]||'').trim() : '',
-        partNo: idx.partNo>=0? (row[idx.partNo]||'').trim() : '',
-        epic: epicVal || '',
-        name: nameVal || '',
-        booth: idx.booth>=0? (row[idx.booth]||'').trim() : '',
-        address: idx.address>=0? (row[idx.address]||'').trim() : '',
-        sender: (idx.sender>=0? (row[idx.sender]||'').trim() : '') || senderText || '',
-        status: "anti",
-        photoURL: ""
-      };
-      // write: if epic present use as key, else push
-      if(voter.epic){
-        await set(dbRef(db,"voters/"+voter.epic), voter);
-      } else {
-        const newRef = push(dbRef(db,"voters"));
-        await set(newRef, voter);
-      }
-    }
-    alert("CSV upload complete.");
-  }catch(err){ alert("CSV upload failed: "+err.message); }
+    loadPanel();
 };
 
-function findHeader(headers, variants){
-  for(let i=0;i<headers.length;i++){
-    const h = headers[i].toLowerCase().replace(/\s+/g,"");
-    for(const v of variants){
-      if(h === v.replace(/\s+/g,"")) return i;
+
+// -------- LOGOUT ----------
+window.logout = async () => {
+    await signOut(auth);
+    location.reload();
+};
+
+
+// -------- LOAD PANEL ----------
+async function loadPanel() {
+    loginBox.classList.add("hidden");
+    panel.classList.remove("hidden");
+
+    onValue(ref(db, "voters"), snap => {
+        if (snap.exists()) {
+            const obj = snap.val();
+            voterData = Object.keys(obj).map(k => ({ _key: k, ...obj[k] }));
+            renderTable(voterData);
+        }
+    });
+}
+
+
+// -------- TABLE RENDER ----------
+function renderTable(list) {
+    voterTable.innerHTML = "";
+    list.forEach(v => {
+        voterTable.innerHTML += `
+        <tr>
+            <td><img class="photo" src="${v.photoURL || ''}"></td>
+            <td>${v.name || ''}</td>
+            <td>${v.epic || ''}</td>
+            <td>${v.state || ''}</td>
+            <td>${v.district || ''}</td>
+            <td>${v.acNo || ''}</td>
+            <td>${v.partNo || ''}</td>
+            <td>${v.booth || ''}</td>
+            <td>${v.address || ''}</td>
+
+            <td><button onclick="mark('${v._key}','approved')" class="px-2 bg-green-600 text-white">+</button></td>
+            <td><button onclick="mark('${v._key}','opponent')" class="px-2 bg-yellow-600 text-white">O</button></td>
+            <td><button onclick="mark('${v._key}','anti')" class="px-2 bg-red-600 text-white">X</button></td>
+
+            <td><button onclick="sendWhatsApp('${v._key}')" class="px-3 bg-blue-600 text-white">WA</button></td>
+
+            <td><button onclick="openEdit('${v._key}')" class="px-3 bg-black text-white">Edit</button></td>
+        </tr>`;
+    });
+}
+
+
+// -------- MARK STATUS ----------
+window.mark = (key, field) => {
+    update(ref(db, "voters/" + key), { [field]: Date.now() });
+};
+
+
+// -------- WHATSAPP SHARE ----------
+window.sendWhatsApp = (key) => {
+    const v = voterData.find(x => x._key === key);
+    if (!v) return;
+
+    const text = `Name: ${v.name}
+EPIC: ${v.epic}
+Part: ${v.partNo}
+Booth: ${v.booth}
+Address: ${v.address}`;
+
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`);
+};
+
+
+// -------- EDIT FORM ----------
+window.openEdit = (key) => {
+    editKey = key;
+    const v = voterData.find(x => x._key === key);
+    editName.value = v.name;
+    editEpic.value = v.epic;
+    editPart.value = v.partNo;
+    editBooth.value = v.booth;
+    editAddress.value = v.address;
+    editBox.classList.remove("hidden");
+};
+
+window.closeEdit = () => editBox.classList.add("hidden");
+
+
+// -------- SAVE EDIT ----------
+window.saveEdit = async () => {
+    const data = {
+        name: editName.value,
+        epic: editEpic.value,
+        partNo: editPart.value,
+        booth: editBooth.value,
+        address: editAddress.value
+    };
+
+    const file = editPhoto.files[0];
+    if (file) {
+        const storageRef = sRef(storage, "voter_photos/" + editKey + ".jpg");
+        await uploadBytes(storageRef, file);
+        data.photoURL = await getDownloadURL(storageRef);
     }
-  }
-  return -1;
-}
 
-/* ---------- Print card ---------- */
-function printCard(key){
-  const v = voterData.find(x=>x._key === key);
-  if(!v) return alert("Voter not found");
-  const html = `
-    <html><head><title>Print - ${escapeHtml(v.name)}</title>
-      <style>body{font-family:Arial;padding:20px} .card{border:1px solid #ddd;padding:16px;border-radius:8px}</style>
-    </head><body>
-    <div class="card">
-      <h2>${escapeHtml(v.name)}</h2>
-      <p><strong>Sender:</strong> ${escapeHtml(v.sender||'')}</p>
-      <p><strong>EPIC:</strong> ${escapeHtml(v.epic)}</p>
-      <p><strong>Part:</strong> ${escapeHtml(v.partNo)}</p>
-      <p><strong>Booth:</strong> ${escapeHtml(v.booth)}</p>
-      <p><strong>Address:</strong> ${escapeHtml(v.address)}</p>
-    </div>
-    <script>window.print();</script>
-    </body></html>`;
-  const w = window.open();
-  w.document.write(html);
-  w.document.close();
-}
+    await update(ref(db, "voters/" + editKey), data);
+    closeEdit();
+};
 
-/* ---------- WhatsApp share ---------- */
-function sendWhatsApp(key){
-  const v = voterData.find(x=>x._key===key);
-  if(!v) return alert("Voter not found");
-  const text = `Name: ${v.name}\nEPIC: ${v.epic}\nPart: ${v.partNo}\nBooth: ${v.booth}\nAddress: ${v.address}\nSender: ${v.sender||''}`;
-  // open whatsapp web or mobile
-  const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
-  window.open(url, "_blank");
-}
 
-/* ---------- Delete utility already above ---------- */
-
-/* ---------- Search ---------- */
-searchInput.addEventListener("input", ()=>{
-  const q = searchInput.value.trim().toLowerCase();
-  if(!q){ renderTable(voterData); return; }
-  const filtered = voterData.filter(v=>{
-    const s = `${v.name} ${v.epic} ${v.partNo} ${v.booth} ${v.address} ${v.sender} ${v.state} ${v.district}`.toLowerCase();
-    return s.includes(q);
-  });
-  renderTable(filtered);
+// -------- SEARCH ----------
+searchInput.addEventListener("input", () => {
+    const q = searchInput.value.toLowerCase();
+    const res = voterData.filter(v =>
+        (v.name + v.epic + v.address + v.state + v.district).toLowerCase().includes(q)
+    );
+    renderTable(res);
 });
 
-/* ---------- Utility escape for attribute safe output ---------- */
-
-/* ---------- Initial note: ensure admin is present in RTDB ---------- */
-console.log("Panel loaded. Ensure admin exists at /admins/<email_dot_com> with fullControl:true for full admin.");
 </script>
+
 </body>
 </html>
