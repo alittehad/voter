@@ -283,7 +283,7 @@ searchInput.addEventListener("input", e=>{
   }));
 });
 
-// CSV Upload
+// CSV Upload with sender auto-assign
 uploadCsvBtn.onclick = async () => {
   const url = csvUrlInput.value.trim();
   if(!url){ alert("Enter CSV URL"); return; }
@@ -300,12 +300,13 @@ uploadCsvBtn.onclick = async () => {
     const idxEPIC = header.indexOf("EPIC");
     const idxAddress = header.indexOf("Address");
     const idxSender = header.indexOf("Sender");
+    const senderDesc = senderDescEl.value.trim();
 
-    if(idxName === -1 || idxEPIC === -1){ alert("CSV headers Name and EPIC required"); return; }
+    if(idxName===-1 || idxEPIC===-1){ alert("CSV must have Name and EPIC"); return; }
 
     for(let i=1;i<rows.length;i++){
       const row = rows[i];
-      if(!row[idxEPIC]) continue;
+      if(!row[idxEPIC] && !row[idxName]) continue;
 
       const voter = {
         name: row[idxName]||"",
@@ -313,9 +314,9 @@ uploadCsvBtn.onclick = async () => {
         partNo: row[idxPart]||"",
         epic: row[idxEPIC]||"",
         address: row[idxAddress]||"",
-        sender: row[idxSender]||"",
+        sender: row[idxSender] || senderDesc || "",
         status: "anti",
-        photoURL: ""
+        photoURL: 'https://i.ibb.co/LhDpnZFn/khatik-imase.jpg'
       };
 
       await fetch(`https://voter-25c94-default-rtdb.firebaseio.com/voters/${voter.epic}.json`,{
@@ -326,6 +327,7 @@ uploadCsvBtn.onclick = async () => {
     }
 
     alert("CSV uploaded successfully!");
+    loadVoters();
   }catch(e){
     alert("Error uploading CSV: "+e.message);
   }
