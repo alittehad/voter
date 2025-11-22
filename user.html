@@ -2,24 +2,23 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Voter Management Panel</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
 :root{--bg:#eef2ff;--card:#fff}
 body{background:var(--bg);font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;}
 .container{max-width:1100px;margin:12px auto;padding:12px;}
-.heading {font-size:clamp(1.4rem,3vw,1.8rem);font-weight:800;text-align:center;margin-bottom:12px;color:#0f172a;transform: perspective(500px) rotateX(8deg);text-shadow:0 1px 0 rgba(255,255,255,0.5),0 6px 12px rgba(2,6,23,0.12),0 18px 36px rgba(2,6,23,0.10);letter-spacing:0.6px;}
+.heading {font-size:clamp(1.4rem,3vw,1.8rem);font-weight:800;text-align:center;margin-bottom:12px;color:#0f172a;letter-spacing:0.6px;}
 .card{background:var(--card);border-radius:12px;padding:12px;margin-bottom:12px;box-shadow:6px 6px 18px rgba(2,6,23,0.06);}
 .img-sender-small{width:30px;height:30px;border-radius:999px;object-fit:cover;margin-right:6px;}
-.img-sender{width:40px;height:40px;border-radius:999px;object-fit:cover;margin-right:8px}
-.btn{cursor:pointer;padding:4px 8px;border-radius:6px;font-weight:700;font-size:12px;transition: all 0.2s; box-shadow:3px 3px 6px rgba(0,0,0,0.2);}
+.btn{cursor:pointer;padding:4px 8px;border-radius:6px;font-weight:700;font-size:12px;transition: all 0.2s;box-shadow:3px 3px 6px rgba(0,0,0,0.2);}
 .btn:hover{transform: translateY(-2px); box-shadow:4px 4px 10px rgba(0,0,0,0.25);}
-.btn-blue{background:#2563eb;color:white}
-.btn-green{background:#16a34a;color:white}
-.btn-yellow{background:#facc15;color:#111}
-.btn-red{background:#dc2626;color:white}
-.btn-gray{background:#6b7280;color:white}
+.btn-blue{background:#2563eb;color:white;}
+.btn-green{background:#16a34a;color:white;}
+.btn-yellow{background:#facc15;color:#111;}
+.btn-red{background:#dc2626;color:white;}
+.btn-gray{background:#6b7280;color:white;}
 .btn-sm{padding:2px 6px;font-size:10px;}
 .table-container{overflow:auto;width:100%}
 table{width:100%;border-collapse:collapse;min-width:300px;background:white;border-radius:6px;overflow:hidden}
@@ -30,9 +29,6 @@ tr:hover{background:#f7f9ff}
 .card-opponent{background:#fef9c3} 
 .card-anti{background:#fee2e2} 
 .badge{display:inline-block;padding:2px 6px;border-radius:6px;font-weight:700;font-size:11px}
-.actions button{margin-right:4px}
-.opacity-50{opacity:0.5;}
-.cursor-not-allowed{cursor:not-allowed;}
 .hidden{display:none;}
 @media (max-width:900px){ table{min-width:100%} }
 </style>
@@ -51,25 +47,16 @@ tr:hover{background:#f7f9ff}
 <!-- Panel -->
 <div id="panelDiv" class="hidden">
 
-  <!-- Admin Logout & Admin Management -->
-  <div id="adminControls" class="card flex justify-between items-center hidden">
-    <div id="adminMgmt" class="hidden">
-      <button id="addAdminBtn" class="btn btn-green btn-sm">Add New Admin</button>
-    </div>
+  <!-- Admin Logout -->
+  <div id="adminControls" class="card flex justify-end items-center hidden">
     <button id="logoutBtn" class="btn btn-red">Logout</button>
   </div>
 
-  <!-- Top controls -->
-  <div class="card flex gap-4 flex-wrap items-center">
-    <div style="flex:1">
-      <input id="searchVoter" placeholder="Search by Name, EPIC, Part, Booth..." class="w-full border p-2 rounded text-sm"/>
-    </div>
-    <div style="flex:1">
-      <textarea id="senderDesc" placeholder="Sender Description (appears above voter info)" class="w-full border p-2 rounded text-sm" rows="2"></textarea>
-    </div>
-    <div>
-      <button id="addVoterBtn" class="btn btn-green btn-sm">Add New Voter</button>
-    </div>
+  <!-- CSV Upload + Add -->
+  <div class="card flex gap-2 items-center flex-wrap">
+    <input type="text" id="csvUrlInput" placeholder="Enter CSV URL" class="border p-2 rounded flex-1"/>
+    <button id="uploadCsvBtn" class="btn btn-blue btn-sm">Upload CSV</button>
+    <button id="addVoterBtn" class="btn btn-green btn-sm">Add New Voter</button>
   </div>
 
   <!-- Status count -->
@@ -96,19 +83,6 @@ tr:hover{background:#f7f9ff}
     <div class="flex justify-end gap-2">
       <button id="saveEditBtn" class="btn btn-green btn-sm">Save</button>
       <button id="cancelEditBtn" class="btn btn-red btn-sm">Cancel</button>
-    </div>
-  </div>
-</div>
-
-<!-- Admin Modal -->
-<div id="adminModal" class="hidden fixed top-0 left-0 w-full h-full bg-black/50 flex justify-center items-center">
-  <div class="bg-white p-4 rounded w-11/12 max-w-md">
-    <h2 class="text-lg font-bold mb-2">Add New Admin</h2>
-    <input id="newAdminEmail" placeholder="Admin Email" class="w-full border p-2 mb-2 rounded"/>
-    <label><input type="checkbox" id="fullControl"/> Full Control</label>
-    <div class="flex justify-end gap-2 mt-2">
-      <button id="saveAdminBtn" class="btn btn-green btn-sm">Save</button>
-      <button id="cancelAdminBtn" class="btn btn-red btn-sm">Cancel</button>
     </div>
   </div>
 </div>
@@ -141,28 +115,20 @@ const loginBtn = document.getElementById("googleLoginBtn");
 const logoutBtn = document.getElementById("logoutBtn");
 const voterListDiv = document.getElementById("voterList");
 const searchInput = document.getElementById("searchVoter");
-const senderDescEl = document.getElementById("senderDesc");
 const statusCountDiv = document.getElementById("statusCount");
 const voterDetailContainer = document.getElementById("voterDetailContainer");
 const adminControls = document.getElementById("adminControls");
 const addVoterBtn = document.getElementById("addVoterBtn");
+const uploadCsvBtn = document.getElementById("uploadCsvBtn");
+const csvUrlInput = document.getElementById("csvUrlInput");
 const editModal = document.getElementById("editModal");
 const modalTitle = document.getElementById("modalTitle");
-
-const adminMgmt = document.getElementById("adminMgmt");
-const addAdminBtn = document.getElementById("addAdminBtn");
-const adminModal = document.getElementById("adminModal");
-const cancelAdminBtn = document.getElementById("cancelAdminBtn");
-const saveAdminBtn = document.getElementById("saveAdminBtn");
-const newAdminEmail = document.getElementById("newAdminEmail");
-const fullControlCheckbox = document.getElementById("fullControl");
 
 let voterData = [];
 let selectedVoter = null;
 let isAdmin = false;
 let isFullAdmin = false;
 
-// Helpers
 function emailToKey(email){ return email.replace(/\./g,"_dot_"); }
 
 // Login / Logout
@@ -181,14 +147,12 @@ onAuthStateChanged(auth, async user=>{
     loginDiv.classList.add("hidden");
     panelDiv.classList.remove("hidden");
     adminControls.classList.remove("hidden");
-    if(isFullAdmin) adminMgmt.classList.remove("hidden");
 
     loadVoters();
   } else {
     loginDiv.classList.remove("hidden");
     panelDiv.classList.add("hidden");
     adminControls.classList.add("hidden");
-    adminMgmt.classList.add("hidden");
   }
 });
 
@@ -201,9 +165,8 @@ function loadVoters(){
       voterData.push({
         id: c.key,
         name: v.name || '',
-        voterID: v.epic || '',
         epic: v.epic || '',
-        partNo: v.part || '',
+        partNo: v.partNo || '',
         booth: v.booth || '',
         address: v.address || '',
         status: v.status || 'anti',
@@ -230,15 +193,11 @@ function renderTable(list){
   const tbody = voterListDiv.querySelector("tbody");
   list.forEach(v=>{
     const tr=document.createElement("tr");
-    tr.innerHTML=`
-      <td><img src="${v.photoURL||'https://i.ibb.co/LhDpnZFn/khatik-imase.jpg'}" class="img-sender-small"/> ${v.name}</td>
-      <td>${v.voterID}</td>
-      <td>${v.partNo}</td>
-      <td>${v.booth}</td>
-      <td>${v.address}</td>
+    tr.innerHTML=`<td><img src="${v.photoURL||'https://i.ibb.co/LhDpnZFn/khatik-imase.jpg'}" class="img-sender-small"/> ${v.name}</td>
+      <td>${v.epic}</td><td>${v.partNo}</td><td>${v.booth}</td><td>${v.address}</td>
       <td>
-        <button class="btn btn-sm btn-blue editBtn">Edit</button>
-        ${isFullAdmin?'<button class="btn btn-sm btn-red delBtn">Delete</button>':''}
+      <button class="btn btn-sm btn-blue editBtn">Edit</button>
+      ${isFullAdmin?'<button class="btn btn-sm btn-red delBtn">Delete</button>':''}
       </td>`;
     tr.className=v.status==="approved"?"card-approved":v.status==="opponent"?"card-opponent":"card-anti";
     tbody.appendChild(tr);
@@ -297,27 +256,31 @@ document.getElementById("saveEditBtn").onclick = async ()=>{
 // Add new voter
 addVoterBtn.onclick=()=>showEditModal(null);
 
-// Search filter
-searchInput.addEventListener("input", e=>{
-  const q = e.target.value.trim().toLowerCase();
-  if(!q) renderTable(voterData);
-  else renderTable(voterData.filter(v=>{
-    return `${v.name} ${v.voterID} ${v.partNo} ${v.booth} ${v.address}`.toLowerCase().includes(q);
-  }));
-});
-
-// Admin Modal
-addAdminBtn.onclick=()=>{adminModal.classList.remove("hidden");};
-cancelAdminBtn.onclick=()=>{adminModal.classList.add("hidden");};
-saveAdminBtn.onclick=async ()=>{
-  const email = newAdminEmail.value.trim();
-  if(!email) return alert("Enter email");
-  const key = emailToKey(email.toLowerCase());
-  await set(dbRef(db,"admins/"+key), {fullControl: fullControlCheckbox.checked});
-  alert("Admin added");
-  adminModal.classList.add("hidden");
-  newAdminEmail.value = '';
-  fullControlCheckbox.checked = false;
+// CSV Upload
+uploadCsvBtn.onclick = async () => {
+  const url = csvUrlInput.value.trim();
+  if(!url){ alert("Enter CSV URL"); return; }
+  try{
+    const response = await fetch(url);
+    const csvText = await response.text();
+    const rows = csvText.split("\n").map(r=>r.split(","));
+    for(let i=1;i<rows.length;i++){
+      const row = rows[i]; if(!row[3]) continue;
+      const voter = {
+        name: row[0]||'',
+        booth: row[1]||'',
+        partNo: row[2]||'',
+        epic: row[3]||'',
+        address: row[4]||'',
+        status:"anti",
+        photoURL:""
+      };
+      await fetch(`https://voter-25c94-default-rtdb.firebaseio.com/voters/${voter.epic}.json`,{
+        method:"PUT", headers:{"Content-Type":"application/json"}, body:JSON.stringify(voter)
+      });
+    }
+    alert("CSV uploaded successfully!");
+  }catch(e){ alert("Error: "+e.message); }
 };
 </script>
 </body>
