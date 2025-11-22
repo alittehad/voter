@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Dashboard</title>
+<style>
+body { font-family: Arial; padding:30px; background:#eef2ff; }
+.box { padding:20px; background:white; width:90%; max-width:700px; border-radius:8px; }
+button { padding:10px 15px; margin-top:10px; }
+</style>
+</head>
+<body>
+
+<div class="box">
+<h2 id="roleTitle"></h2>
+<div id="content"></div>
+<button onclick="logout()">Logout</button>
+</div>
+
+<script>
+let role = localStorage.getItem("role");
+if (!role) window.location.href = "index.html";
+
+document.getElementById("roleTitle").innerText = "Welcome: " + role.toUpperCase();
+
+let content = "";
+
+if (role === "admin1") {
+    content = `
+        <h3>Admin 1 Controls</h3>
+        <p>✔️ All access: Add, Edit, Delete, Print, WhatsApp Share, Upload Images</p>
+    `;
+}
+else if (role === "admin2") {
+    content = `
+        <h3>Admin 2 Controls</h3>
+        <p>✔️ Limited access: Edit Only</p>
+    `;
+}
+else {
+    content = `
+        <h3>User Dashboard</h3>
+        <p>✔️ View Only</p>
+    `;
+}
+
+document.getElementById("content").innerHTML = content;
+
+function logout() {
+    localStorage.removeItem("role");
+    window.location.href = "index.html";
+}
+</script>
+
+</body>
+</html>
