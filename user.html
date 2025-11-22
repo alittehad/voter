@@ -1,279 +1,191 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <title>Voter Panel (Sheet)</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <style>
-    body{font-family:Arial;margin:12px;background:#f3f4f6}
-    .card{background:#fff;padding:12px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.06);margin-bottom:12px}
-    input,select,textarea{padding:8px;width:100%;margin:6px 0;border:1px solid #ddd;border-radius:6px}
-    table{width:100%;border-collapse:collapse}
-    th,td{padding:8px;border:1px solid #eee;font-size:14px}
-    img.thumb{width:44px;height:44px;border-radius:6px;object-fit:cover}
-    .btn{padding:6px 10px;border-radius:6px;cursor:pointer}
-    .btn-blue{background:#2563eb;color:#fff;border:none}
-    .btn-green{background:#16a34a;color:#fff;border:none}
-    .btn-red{background:#dc2626;color:#fff;border:none}
-  </style>
+<meta charset="UTF-8">
+<title>Voter List Software</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+body{font-family:Arial;background:#eef2ff;margin:0;padding:0}
+.login-box,.panel{max-width:600px;margin:auto;background:#fff;padding:20px;border-radius:10px;margin-top:40px;box-shadow:0 0 10px #ccc}
+input,button{padding:10px;border-radius:6px;border:1px solid #999;width:100%;margin-top:10px}
+button{background:#2563eb;color:#fff;border:none;cursor:pointer}
+table{width:100%;border-collapse:collapse;margin-top:20px}
+table,th,td{border:1px solid #333}
+th,td{padding:8px;text-align:left}
+.hide{display:none}
+.status-btn{padding:4px 8px;font-size:12px}
+</style>
 </head>
+
 <body>
 
-<div id="loginDiv" class="card">
-  <h2>Login (local)</h2>
-  <p>Use these demo accounts:</p>
-  <ul>
-    <li>Admin1 — username: <b>admin1</b> password: <b>admin123</b> (full control)</li>
-    <li>Admin2 — username: <b>admin2</b> password: <b>admin456</b> (no delete)</li>
-    <li>User   — username: <b>user1</b>  password: <b>user123</b>  (view only)</li>
-  </ul>
-  <input id="uName" placeholder="username"/>
-  <input id="uPass" placeholder="password" type="password"/>
-  <button id="loginBtn" class="btn btn-blue">Login</button>
-  <p id="loginMsg" style="color:red"></p>
+<!-- LOGIN -->
+<div class="login-box" id="loginBox">
+  <h2>Voter List Software Login</h2>
+
+  <input id="loginUser" placeholder="Username">
+  <input type="password" id="loginPass" placeholder="Password">
+
+  <button onclick="login()">Login</button>
+
+  <p>Admin IDs:<br>
+  admin1 / 1234<br>
+  admin2 / 1234<br>
+  User ID:<br>
+  user1 / 1111</p>
 </div>
 
-<div id="panel" class="hidden">
-  <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center">
-      <div>
-        <strong>Logged in as:</strong> <span id="loggedUser"></span> — <span id="roleLabel"></span>
-      </div>
-      <div>
-        <button id="logoutBtn" class="btn">Logout</button>
-      </div>
-    </div>
-    <div style="margin-top:8px">
-      <input id="searchInput" placeholder="Search name / epic / part / address..."/>
-    </div>
-  </div>
+<!-- DASHBOARD -->
+<div class="panel hide" id="panel">
 
-  <div class="card">
-    <h3>Voters</h3>
-    <div style="margin-bottom:8px;display:flex;gap:8px">
-      <button id="refreshBtn" class="btn btn-blue">Refresh</button>
-      <button id="addBtn" class="btn btn-green">Add Voter</button>
-      <input id="csvInput" placeholder="Paste CSV text here (optional)"/>
-      <button id="uploadCsvBtn" class="btn">Upload CSV</button>
-    </div>
-    <div id="tableWrap"></div>
-  </div>
+  <h2>Voter Management Panel</h2>
+  <p id="roleText"></p>
+
+  <!-- CSV upload -->
+  <input type="file" id="csvUpload" accept=".csv">
+  <button onclick="uploadCSV()">Upload CSV</button>
+
+  <table id="voterTable">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>EPIC</th>
+        <th>Booth</th>
+        <th>Address</th>
+        <th>Status</th>
+        <th>Photo</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 </div>
 
-<!-- Edit Modal simple -->
-<div id="modal" class="hidden card" style="position:fixed;left:50%;top:12%;transform:translateX(-50%);width:90%;max-width:720px;z-index:999">
-  <h3 id="modalTitle">Edit Voter</h3>
-  <div>
-    <input id="f_state" placeholder="State"/>
-    <input id="f_district" placeholder="District"/>
-    <input id="f_acNo" placeholder="AC No"/>
-    <input id="f_partNo" placeholder="Part No"/>
-    <input id="f_epic" placeholder="EPIC (unique)"/>
-    <input id="f_name" placeholder="Name"/>
-    <input id="f_booth" placeholder="Booth"/>
-    <input id="f_address" placeholder="Address"/>
-    <input id="f_sender" placeholder="Sender"/>
-    <input id="f_photoURL" placeholder="Photo URL (optional)"/>
-    <div style="display:flex;gap:8px;margin-top:8px">
-      <button id="saveBtn" class="btn btn-blue">Save</button>
-      <button id="delBtn" class="btn btn-red">Delete</button>
-      <button id="closeBtn" class="btn">Close</button>
-    </div>
-  </div>
-</div>
 
 <script>
-/* CONFIG - REPLACE THESE */
-const API_URL = "REPLACE_WITH_YOUR_APPS_SCRIPT_WEBAPP_URL"; // from Apps Script deploy
-const ADMIN_SECRET_VALUE = "REPLACE_WITH_A_STRONG_SECRET"; // must match Apps Script ADMIN_SECRET
-
-/* local users (fixed) */
-const users = {
-  "admin1": { pass:"admin123", role:"admin1" }, // full control
-  "admin2": { pass:"admin456", role:"admin2" }, // no delete
-  "user1":  { pass:"user123", role:"user" }     // view only
+// -------------------- LOGIN SYSTEM --------------------
+const accounts = {
+  admin1:{pass:"1234", role:"admin"},
+  admin2:{pass:"1234", role:"admin"},
+  user1:{pass:"1111", role:"user"}
 };
 
-/* state */
-let currentUser = null;
-let currentRole = null;
-let voters = [];
+function login(){
+  let u = document.getElementById("loginUser").value;
+  let p = document.getElementById("loginPass").value;
 
-/* DOM */
-const loginDiv = document.getElementById('loginDiv');
-const panel = document.getElementById('panel');
-const loginBtn = document.getElementById('loginBtn');
-const logoutBtn = document.getElementById('logoutBtn');
-const loginMsg = document.getElementById('loginMsg');
-const loggedUser = document.getElementById('loggedUser');
-const roleLabel = document.getElementById('roleLabel');
-const searchInput = document.getElementById('searchInput');
-const tableWrap = document.getElementById('tableWrap');
-const refreshBtn = document.getElementById('refreshBtn');
-const addBtn = document.getElementById('addBtn');
-const modal = document.getElementById('modal');
-const modalTitle = document.getElementById('modalTitle');
-const saveBtn = document.getElementById('saveBtn');
-const delBtn = document.getElementById('delBtn');
-const closeBtn = document.getElementById('closeBtn');
-const uploadCsvBtn = document.getElementById('uploadCsvBtn');
-
-loginBtn.onclick = () => {
-  const u = document.getElementById('uName').value.trim();
-  const p = document.getElementById('uPass').value.trim();
-  if(!users[u] || users[u].pass !== p){ loginMsg.innerText = "Invalid credentials"; return; }
-  currentUser = u; currentRole = users[u].role;
-  loginDiv.classList.add('hidden'); panel.classList.remove('hidden');
-  loggedUser.innerText = u;
-  roleLabel.innerText = currentRole;
-  if(currentRole === 'user') addBtn.style.display = 'none';
-  refreshList();
-};
-
-logoutBtn.onclick = ()=> { location.reload(); };
-
-/* fetch voters */
-async function refreshList(){
-  try{
-    const res = await fetch(API_URL + "?action=getVoters");
-    const data = await res.json();
-    if(!data.ok){ tableWrap.innerHTML = "<p>Error loading</p>"; return; }
-    voters = data.voters;
-    renderTable(voters);
-  }catch(e){ tableWrap.innerHTML = "<p>Fetch error</p>"; }
+  if(accounts[u] && accounts[u].pass === p){
+    localStorage.setItem("role", accounts[u].role);
+    document.getElementById("loginBox").classList.add("hide");
+    document.getElementById("panel").classList.remove("hide");
+    document.getElementById("roleText").innerText = "Logged in as: " + accounts[u].role.toUpperCase();
+    loadTable();
+  } else {
+    alert("Wrong username or password");
+  }
 }
 
-refreshBtn.onclick = refreshList;
+// -------------------- CSV UPLOAD --------------------
+let voters = JSON.parse(localStorage.getItem("voters") || "[]");
 
-function renderTable(list){
-  const q = searchInput.value.trim().toLowerCase();
-  const filtered = q ? list.filter(v => (v.name+" "+v.epic+" "+v.partNo+" "+v.address+" "+v.sender).toLowerCase().includes(q)) : list;
-  let html = "<table><thead><tr><th>Photo</th><th>Name</th><th>EPIC</th><th>Part</th><th>Booth</th><th>Address</th><th>Sender</th><th>Actions</th></tr></thead><tbody>";
-  filtered.forEach(v=>{
-    html += `<tr>
-      <td>${v.photoURL?'<img class="thumb" src="'+v.photoURL+'"/>':''}</td>
-      <td>${escapeHtml(v.name||'')}</td>
-      <td>${escapeHtml(v.epic||'')}</td>
-      <td>${escapeHtml(v.partNo||'')}</td>
-      <td>${escapeHtml(v.booth||'')}</td>
-      <td>${escapeHtml(v.address||'')}</td>
-      <td>${escapeHtml(v.sender||'')}</td>
-      <td>
-        ${ (currentRole!=='user') ? `<button class="btn btn-blue" onclick='openEdit("${encodeURIComponent(v.epic)}")'>Edit</button>` : '' }
-        <button class="btn" onclick='printCard("${escapeForJS(v.name||'')}","${escapeForJS(v.epic||'')}")'>Print</button>
-        <button class="btn" onclick='shareWhats("${escapeForJS(v.name||'')}","${escapeForJS(v.epic||'')}","${escapeForJS(v.partNo||'')}","${escapeForJS(v.booth||'')}","${escapeForJS(v.address||'')}")'>WA</button>
-      </td>
-    </tr>`;
-  });
-  html += "</tbody></table>";
-  tableWrap.innerHTML = html;
-}
+function uploadCSV(){
+  let file = document.getElementById("csvUpload").files[0];
+  if(!file){ alert("Select CSV first"); return }
 
-searchInput.addEventListener('input', ()=> renderTable(voters));
+  let reader = new FileReader();
+  reader.onload = function(e){
+    let text = e.target.result;
+    let rows = text.split("\n");
 
-/* Add new voter */
-addBtn.onclick = ()=> {
-  openModalFor(null);
-};
+    for(let i=1;i<rows.length;i++){
+      let col = rows[i].split(",");
+      if(col.length < 4) continue;
 
-/* Open edit modal (epicKey may be '') */
-function openEdit(epicEnc){
-  const epic = decodeURIComponent(epicEnc);
-  const v = voters.find(x => String(x.epic) === String(epic));
-  openModalFor(v);
-}
+      voters.push({
+        name: col[0],
+        epic: col[1],
+        booth: col[2],
+        address: col[3],
+        status: "pending",
+        photo: ""
+      });
+    }
 
-function openModalFor(v){
-  modal.style.display = 'block';
-  modal.classList.remove('hidden');
-  modalTitle.innerText = v ? "Edit Voter" : "Add Voter";
-  document.getElementById('f_state').value = v?.state || '';
-  document.getElementById('f_district').value = v?.district || '';
-  document.getElementById('f_acNo').value = v?.acNo || '';
-  document.getElementById('f_partNo').value = v?.partNo || '';
-  document.getElementById('f_epic').value = v?.epic || '';
-  document.getElementById('f_name').value = v?.name || '';
-  document.getElementById('f_booth').value = v?.booth || '';
-  document.getElementById('f_address').value = v?.address || '';
-  document.getElementById('f_sender').value = v?.sender || '';
-  document.getElementById('f_photoURL').value = v?.photoURL || '';
-  // delete button visibility
-  if(currentRole === 'admin1' && v) delBtn.style.display = 'inline-block'; else delBtn.style.display = 'none';
-  // store current editing epic in dataset
-  modal.dataset.editing = v ? (v.epic||'') : '';
-}
-
-/* Close modal */
-closeBtn.onclick = ()=> { modal.style.display = 'none'; }
-
-/* Save (add/update) */
-saveBtn.onclick = async ()=>{
-  const voter = {
-    state: document.getElementById('f_state').value,
-    district: document.getElementById('f_district').value,
-    acNo: document.getElementById('f_acNo').value,
-    partNo: document.getElementById('f_partNo').value,
-    epic: document.getElementById('f_epic').value,
-    name: document.getElementById('f_name').value,
-    booth: document.getElementById('f_booth').value,
-    address: document.getElementById('f_address').value,
-    sender: document.getElementById('f_sender').value,
-    status: document.getElementById('f_sender').value,
-    photoURL: document.getElementById('f_photoURL').value
+    localStorage.setItem("voters", JSON.stringify(voters));
+    loadTable();
+    alert("CSV Uploaded Successfully");
   };
-  const existingEpic = modal.dataset.editing;
-  const action = existingEpic ? "updateVoter" : "addVoter";
-  const payload = { action, voter, adminSecret: ADMIN_SECRET_VALUE };
-  const res = await postJson(API_URL, payload);
-  if(!res.ok) alert("Error: "+(res.error||"unknown"));
-  else { alert("Saved"); modal.style.display='none'; refreshList(); }
-};
 
-/* Delete */
-delBtn.onclick = async ()=>{
-  if(!confirm("Delete this voter?")) return;
-  const epic = modal.dataset.editing;
-  const res = await postJson(API_URL, { action:'deleteVoter', epic, adminSecret: ADMIN_SECRET_VALUE });
-  if(!res.ok) alert("Error: "+(res.error||"unknown")); else { alert("Deleted"); modal.style.display='none'; refreshList(); }
-};
-
-/* Upload CSV (paste in textarea) */
-uploadCsvBtn.onclick = async ()=>{
-  const csv = document.getElementById('csvInput').value.trim();
-  if(!csv) return alert("Paste CSV text into the input first");
-  const res = await postJson(API_URL, { action:'uploadCSV', csv, adminSecret: ADMIN_SECRET_VALUE });
-  if(!res.ok) alert("CSV error: "+(res.error||"unknown")); else { alert("CSV uploaded"); refreshList(); document.getElementById('csvInput').value=''; }
-};
-
-/* Utilities */
-async function postJson(url, body){
-  try{
-    const r = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
-    return await r.json();
-  }catch(e){ return {ok:false, error:e.message}; }
-}
-function escapeHtml(s){ if(!s) return ''; return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
-function escapeForJS(s){ return (s||'').replace(/"/g,'').replace(/'/g,''); }
-
-function printCard(name, epic){
-  const html = `<html><body><h2>${escapeHtml(name)}</h2><p>EPIC: ${escapeHtml(epic)}</p><script>window.print()</script></body></html>`;
-  const w = window.open(); w.document.write(html); w.document.close();
+  reader.readAsText(file);
 }
 
-function shareWhats(name, epic, part, booth, addr){
-  const text = `Name: ${name}\nEPIC: ${epic}\nPart: ${part}\nBooth: ${booth}\nAddress: ${addr}`;
-  window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+// -------------------- TABLE RENDER --------------------
+function loadTable(){
+  let tbody = document.querySelector("#voterTable tbody");
+  tbody.innerHTML = "";
+
+  voters.forEach((v,i)=>{
+    tbody.innerHTML += `
+      <tr>
+        <td>${v.name}</td>
+        <td>${v.epic}</td>
+        <td>${v.booth}</td>
+        <td>${v.address}</td>
+        <td>${v.status}</td>
+        <td>${v.photo ? `<img src="${v.photo}" width="40">` : '—'}</td>
+        <td>
+          <button class="status-btn" onclick="setStatus(${i},'approved')">Approved</button>
+          <button class="status-btn" onclick="setStatus(${i},'opponent')">Opponent</button>
+          <button class="status-btn" onclick="setStatus(${i},'anti')">Anti</button>
+          <button onclick="uploadPhoto(${i})">Photo</button>
+          <button onclick="sendWA(${i})">WhatsApp</button>
+        </td>
+      </tr>
+    `;
+  });
 }
 
-/* initial */
-function init(){
-  // hide modal initially
-  modal.style.display = 'none';
-  // set delete button default hide
-  delBtn.style.display = 'none';
+// -------------------- STATUS CHANGE --------------------
+function setStatus(i, st){
+  voters[i].status = st;
+  localStorage.setItem("voters", JSON.stringify(voters));
+  loadTable();
 }
-init();
 
+// -------------------- PHOTO UPLOAD --------------------
+function uploadPhoto(i){
+  let input = document.createElement("input");
+  input.type = "file";
+  input.accept = "image/*";
+
+  input.onchange = function(e){
+    let file = e.target.files[0];
+    let reader = new FileReader();
+
+    reader.onload = function(evt){
+      voters[i].photo = evt.target.result;
+      localStorage.setItem("voters", JSON.stringify(voters));
+      loadTable();
+    };
+    reader.readAsDataURL(file);
+  };
+
+  input.click();
+}
+
+// -------------------- WHATSAPP SHARE --------------------
+function sendWA(i){
+  let v = voters[i];
+  let msg = `Name: ${v.name}
+EPIC: ${v.epic}
+Booth: ${v.booth}
+Address: ${v.address}
+Status: ${v.status}`;
+
+  window.open("https://wa.me/?text=" + encodeURIComponent(msg));
+}
 </script>
+
 </body>
 </html>
