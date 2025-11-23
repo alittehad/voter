@@ -26,13 +26,18 @@
 </head>
 <body class="bg-gray-100 p-4">
 
+<!-- Login Page -->
 <div id="loginPage" class="max-w-md mx-auto bg-white p-6 rounded-xl shadow-lg text-center">
   <h2 class="text-2xl font-bold mb-4">Login to Election Site</h2>
   <button id="loginBtn" class="btn-3d w-full text-lg">Login with Google</button>
 </div>
 
+<!-- User Registration Page -->
 <div id="userPage" class="hidden max-w-md mx-auto bg-white p-6 rounded-xl shadow-lg mb-6">
-  <h2 class="text-2xl font-bold mb-4 text-center">Voter Registration</h2>
+  <div class="flex justify-between mb-4">
+    <h2 class="text-2xl font-bold">Voter Registration</h2>
+    <button id="logoutBtn" class="btn-3d text-sm">Logout</button>
+  </div>
   <form id="regForm" class="space-y-4">
     <input type="text" id="name" placeholder="Name" required class="w-full border p-2 rounded-md">
     <input type="text" id="address" placeholder="Address" required class="w-full border p-2 rounded-md">
@@ -42,11 +47,16 @@
   </form>
 </div>
 
+<!-- Admin / Super Admin Dashboard -->
 <div id="adminPage" class="hidden max-w-3xl mx-auto bg-white p-6 rounded-xl shadow-lg mb-6">
-  <h2 class="text-2xl font-bold mb-4 text-center">Super Admin Dashboard</h2>
+  <div class="flex justify-between mb-4">
+    <h2 class="text-2xl font-bold">Admin Dashboard</h2>
+    <button id="logoutBtnAdmin" class="btn-3d text-sm">Logout</button>
+  </div>
   <div id="dashboard" class="space-y-4"></div>
 </div>
 
+<!-- Approved Voter List -->
 <div id="voterListPage" class="hidden max-w-3xl mx-auto bg-white p-6 rounded-xl shadow-lg">
   <h2 class="text-2xl font-bold mb-4 text-center">Approved Voters List</h2>
   <div class="overflow-x-auto">
@@ -66,7 +76,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js";
-import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-auth.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-auth.js";
 import { getFirestore, collection, addDoc, getDocs, updateDoc, doc, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-firestore.js";
 
 // 🔹 Firebase Config
@@ -98,12 +108,23 @@ document.getElementById("loginBtn").addEventListener("click", async () => {
   await signInWithPopup(auth, provider);
 });
 
+// 🔹 Logout
+document.getElementById("logoutBtn").addEventListener("click", () => signOut(auth));
+document.getElementById("logoutBtnAdmin").addEventListener("click", () => signOut(auth));
+
 // 🔹 Auth State
-onAuthStateChanged(auth, user => {
+onAuthStateChanged(auth, async user => {
   if(user){
     loginPage.classList.add("hidden");
 
-    if(user.email === "ngogrant45@gmail.com"){
+    // Get role from Firestore
+    const usersRef = collection(db, "users");
+    const q = query(usersRef, where("email","==",user.email));
+    const snapshot = await getDocs(q);
+    let role = "user"; // default role
+    snapshot.forEach(docSnap => { role = docSnap.data().role });
+
+    if(role === "superadmin" || role === "admin"){
       adminPage.classList.remove("hidden");
       userPage.classList.add("hidden");
       loadAdminDashboard();
@@ -124,12 +145,18 @@ onAuthStateChanged(auth, user => {
 // 🔹 User Registration
 document.getElementById("regForm").addEventListener("submit", async (e) => {
   e.preventDefault();
-  const name = document.getElementById("name").value;
-  const address = document.getElementById("address").value;
-  const mobile = document.getElementById("mobile").value;
-  const epic = document.getElementById("epic").value;
+  const name = document.getElementById("name").value.trim();
+  const address = document.getElementById("address").value.trim();
+  const mobile = document.getElementById("mobile").value.trim();
+  const epic = document.getElementById("epic").value.trim();
 
-  // 🔹 EPIC uniqueness check
+  // Mobile validation
+  if(!/^\d{10}$/.test(mobile)){
+    alert("Enter valid 10-digit mobile number");
+    return;
+  }
+
+  // EPIC uniqueness check
   const q = query(collection(db, "registrations"), where("epic", "==", epic));
   const existing = await getDocs(q);
   if(!existing.empty){
@@ -138,11 +165,11 @@ document.getElementById("regForm").addEventListener("submit", async (e) => {
   }
 
   await addDoc(collection(db, "registrations"), { name, address, mobile, epic, status: "pending" });
-  alert("Registration submitted! Waiting for Super Admin approval.");
+  alert("Registration submitted! Waiting for approval.");
   document.getElementById("regForm").reset();
 });
 
-// 🔹 Load Super Admin Dashboard (real-time)
+// 🔹 Admin Dashboard
 function loadAdminDashboard(){
   const registrationsRef = collection(db, "registrations");
   onSnapshot(registrationsRef, snapshot => {
@@ -176,7 +203,7 @@ window.approveUser = async (id) => {
   await updateDoc(doc(db, "registrations", id), { status: "approved" });
 };
 
-// 🔹 Load Approved Voter List (real-time)
+// 🔹 Approved Voter List
 function loadApprovedVoterList(){
   const q = query(collection(db, "registrations"), where("status","==","approved"));
   onSnapshot(q, snapshot => {
