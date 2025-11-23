@@ -1,209 +1,138 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
-<title>Voter Management</title>
-
+<title>Voter Search App</title>
 <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-    th, td { padding: 10px; border: 1px solid #999; }
-    tr:hover { background: #e2e8f0; cursor: pointer; }
-    
-    /* Popup Card */
-    #card {
-        display:none;
-        position:fixed;
-        top:50%; left:50%;
-        transform:translate(-50%,-50%);
-        background:white;
-        padding:20px;
-        width:350px;
-        border-radius:12px;
-        box-shadow:0px 0px 20px rgba(0,0,0,0.25);
-    }
-    #closeBtn{ float:right; cursor:pointer; font-weight:bold; font-size:20px; }
-
-    button{
-        padding:8px 12px;
-        margin:4px;
-        border:none;
-        cursor:pointer;
-        border-radius:6px;
-        background:#2563eb;
-        color:white;
-    }
-    #loginBtn{ background:#16a34a; }
+body { font-family: Arial; margin: 20px; }
+input, button { padding: 10px; width: 100%; margin-top: 10px; font-size: 18px; }
+#list div { background: #e5e7eb; padding: 12px; margin-top: 10px; cursor: pointer; border-radius: 6px; }
+.popup{
+ position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+ background:white; padding:20px; width:350px; border-radius:10px; 
+ box-shadow:0px 0px 10px #444; display:none;
+}
+.popup button{ width:100%; padding:10px; margin-top:10px; }
 </style>
 </head>
 <body>
 
-<h2>🗳 Election Voter Directory</h2>
+<h2>🔐 Login</h2>
+<input id="email" placeholder="Enter Email">
+<button id="loginBtn">Login</button>
 
-<button id="loginBtn">Login with Google</button>
-<p id="userStatus" style="font-weight:bold;color:green;"></p>
+<hr>
 
-<input id="search" placeholder="Search Name, EPIC, Part, AC..." style="width:100%; padding:10px; margin-top:10px;">
+<h2>🔍 Search Voter</h2>
+<input id="search" placeholder="Name, EPIC, AC No, Part No...">
 
-<table>
-<thead>
-<tr>
-    <th>EPIC</th>
-    <th>Name</th>
-    <th>AC No</th>
-    <th>Part No</th>
-    <th>Action</th>
-</tr>
-</thead>
-<tbody id="voterList"></tbody>
-</table>
+<div id="list"></div>
 
-<!-- Popup Card -->
-<div id="card">
-    <span id="closeBtn" onclick="closeCard()">✖</span>
-    <h3 id="cName"></h3>
-    <p><b>EPIC:</b> <span id="cEpic"></span></p>
-    <p><b>AC No:</b> <span id="cAc"></span></p>
-    <p><b>Part No:</b> <span id="cPart"></span></p>
-    <p><b>Description:</b> <span id="cDesc"></span></p>
-
-    <label><b>Change Color:</b></label><br>
-    <input type="color" id="colorPicker"><br><br>
-
-    <button onclick="printVoter()">Print</button>
-    <button onclick="sendWhatsApp()">Send WhatsApp</button>
+<div id="popup" class="popup">
+<h3>Voter Details</h3>
+<div id="details"></div>
+<textarea id="desc" placeholder="Message for voter..." style="width:100%;height:80px;margin-top:10px;"></textarea>
+<button onclick="send()">📩 Send</button>
+<button onclick="printCard()">🖨 Print</button>
+<button onclick="closePopup()">❌ Close</button>
 </div>
 
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-database.js"></script>
 
-<script type="module">
-
-// ---------- Firebase ----------
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
-import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-database.js";
-import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
-
+<script>
 const firebaseConfig = {
-    databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com/"
+  apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
+  authDomain: "voter-25c94.firebaseapp.com",
+  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
+  projectId: "voter-25c94",
+  storageBucket: "voter-25c94.appspot.com",
+  messagingSenderId: "297773534400",
+  appId: "1:297773534400:web:3722c487b8c83e9b787125"
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-const auth = getAuth();
-const provider = new GoogleAuthProvider();
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
-let VOTERS = {};
-let selectedKey = null;
+let voters = {};
+let users = {};
+let logged = null;
+let selectedVoter = null;
 
+// Load Data from Firebase
+db.ref("Users").on("value", snap => { users = snap.val() || {}; });
+db.ref("Voters").on("value", snap => { voters = snap.val() || {}; });
 
-// ---------- LOGIN ----------
-document.getElementById("loginBtn").onclick = () => signInWithPopup(auth, provider);
-
-onAuthStateChanged(auth, user=>{
-    if(user){
-        document.getElementById("userStatus").innerText = "Logged in as: " + user.email;
-        document.getElementById("loginBtn").style.display="none";
-    }
+// Login Function
+document.getElementById("loginBtn").addEventListener("click", function(){
+ let email = document.getElementById("email").value.trim();
+ if(users[email]){
+   logged = users[email];
+   alert(`✅ Login Success: ${logged.Name}`);
+ } else {
+   alert("❌ Invalid Email");
+ }
 });
 
+// Search Function
+document.getElementById("search").addEventListener("input", function(){
+ if(!logged){ alert("Login Required!"); return; }
 
-// ---------- LOAD DATA ----------
-onValue(ref(db,"Voters"), snap=>{
-    VOTERS = snap.val();
-    loadTable();
+ let text = this.value.toLowerCase();
+ let list = document.getElementById("list");
+ list.innerHTML = "";
+
+ Object.values(voters).forEach(v => {
+   if(v.Name.toLowerCase().includes(text) ||
+      v.Epic.toLowerCase().includes(text) ||
+      String(v.AcNo).includes(text) ||
+      String(v.PartNo).includes(text)){
+
+     let div = document.createElement("div");
+     div.innerHTML = `${v.Name} — (${v.Epic})`;
+     div.onclick = () => openPopup(v);
+     list.appendChild(div);
+   }
+ });
 });
 
-
-// ---------- TABLE RENDER ----------
-function loadTable(){
-    const tbody = document.getElementById("voterList");
-    tbody.innerHTML = "";
-    const q = document.getElementById("search").value.toLowerCase();
-
-    Object.keys(VOTERS).forEach(key=>{
-        const v = VOTERS[key];
-
-        if(JSON.stringify(v).toLowerCase().includes(q)){
-
-            const row = document.createElement("tr");
-            row.style.background = v.Color || "";
-
-            row.innerHTML = `
-                <td>${v.Epic}</td>
-                <td>${v.Name}</td>
-                <td>${v.AcNo}</td>
-                <td>${v.PartNo}</td>
-                <td><button onclick="openCard('${key}')">View</button></td>
-            `;
-            tbody.appendChild(row);
-        }
-    });
+// Popup Show
+function openPopup(v){
+ selectedVoter = v;
+ document.getElementById("details").innerHTML = `
+ Name: ${v.Name} <br>
+ EPIC: ${v.Epic} <br>
+ AC No: ${v.AcNo} <br>
+ Part No: ${v.PartNo}
+ `;
+ document.getElementById("popup").style.display = "block";
 }
 
-document.getElementById("search").oninput = loadTable;
+// Print Card
+function printCard(){
+ if(!selectedVoter) return;
+ let win = window.open("", "", "width=400,height=500");
+ win.document.write(`
+   <h2>Voter Card</h2>
+   Name: ${selectedVoter.Name}<br>
+   EPIC: ${selectedVoter.Epic}<br>
+   AC No: ${selectedVoter.AcNo}<br>
+   Part No: ${selectedVoter.PartNo}<br>
+ `);
+ win.print();
+ win.close();
+}
 
+// Send Button
+function send(){
+ alert("📩 Message sent:\n" + document.getElementById("desc").value);
+}
 
-// ---------- OPEN CARD ----------
-window.openCard = (key)=>{
-    const v = VOTERS[key];
-    selectedKey = key;
-
-    document.getElementById("cName").innerText = v.Name;
-    document.getElementById("cEpic").innerText = v.Epic;
-    document.getElementById("cAc").innerText = v.AcNo;
-    document.getElementById("cPart").innerText = v.PartNo;
-    document.getElementById("cDesc").innerText = v.Description || "—";
-
-    document.getElementById("colorPicker").value = v.Color || "#ffffff";
-    document.getElementById("card").style.background = v.Color || "#fff";
-
-    document.getElementById("card").style.display="block";
-};
-
-
-// ---------- COLOR UPDATE ----------
-document.getElementById("colorPicker").onchange = e=>{
-    const newColor = e.target.value;
-    update(ref(db,"Voters/"+selectedKey),{Color:newColor});
-    document.getElementById("card").style.background=newColor;
-    loadTable();
-};
-
-
-// ---------- PRINT ----------
-window.printVoter = ()=>{
-    const html = `
-        <h2>${document.getElementById("cName").innerText}</h2>
-        <p><b>EPIC:</b> ${document.getElementById("cEpic").innerText}</p>
-        <p><b>AC No:</b> ${document.getElementById("cAc").innerText}</p>
-        <p><b>Part No:</b> ${document.getElementById("cPart").innerText}</p>
-        <p><b>Description:</b> ${document.getElementById("cDesc").innerText}</p>
-        <hr><p>Generated from Election Management System</p>
-    `;
-
-    const win = window.open("");
-    win.document.write(html);
-    win.print();
-    win.close();
-};
-
-
-// ---------- WHATSAPP SEND ----------
-window.sendWhatsApp = ()=>{
-    let sender = prompt("Sender Message लिखें (optional):");
-    const msg = `
-${sender ? sender+"\n\n":""}
-Voter Details:
-Name: ${document.getElementById("cName").innerText}
-EPIC: ${document.getElementById("cEpic").innerText}
-AC: ${document.getElementById("cAc").innerText}
-Part: ${document.getElementById("cPart").innerText}
-Description: ${document.getElementById("cDesc").innerText}
-    `;
-    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`);
-};
-
-window.closeCard = ()=>document.getElementById("card").style.display="none";
-
+// Close Popup
+function closePopup(){
+ document.getElementById("popup").style.display = "none";
+}
 </script>
+
 </body>
 </html>
