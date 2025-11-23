@@ -1,97 +1,152 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Voter Search</title>
-
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Voter Manager — Edit / Image Upload / Multi-filter</title>
 <style>
-body {
-  font-family: Arial, sans-serif;
-  margin:0;
-  background:#f2f2f2;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  padding:10px;
-}
+  :root{ --accent:#0b84ff; --ok:#22c55e; --danger:#ef4444; }
+  body{ font-family:Inter,Arial,Helvetica,sans-serif; background:#f3f6fb; margin:0; padding:14px; color:#071133; }
+  h1{ font-size:18px; margin:6px 0 12px; }
+  .row{ display:flex; gap:10px; align-items:center; }
+  .col{ display:flex; flex-direction:column; gap:8px; }
 
-/* Search Input */
-#search {
-  width:90%;
-  padding:12px;
-  margin:10px 0;
-  border-radius:10px;
-  font-size:18px;
-  border:2px solid #aaa;
-  box-shadow:0 4px #ccc;
-}
+  /* inputs */
+  input[type="text"], input[type="number"], textarea, select {
+    padding:10px; border-radius:8px; border:1px solid #d0d7e6; font-size:15px; width:100%;
+  }
 
-/* Voter List UI */
-#list div {
-  width:90%;
-  background:white;
-  margin:5px 0;
-  padding:15px;
-  border-radius:10px;
-  font-size:18px;
-  cursor:pointer;
-  transition:0.2s;
-  box-shadow:0 5px #ddd;
-}
+  /* Search area */
+  #filters{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
+  .filter { flex:1; min-width:160px; }
 
-#list div:hover {
-  transform:scale(1.03);
-}
+  /* table */
+  table{ width:100%; border-collapse:collapse; background:white; border-radius:8px; overflow:hidden; box-shadow:0 6px 18px rgba(11,24,36,0.06); }
+  thead th{ background:#f8fafc; padding:10px 12px; text-align:left; font-weight:700; }
+  tbody td{ padding:10px 12px; border-bottom:1px solid #f1f5f9; vertical-align:middle; }
+  tbody tr:hover{ background:#fbfdff; transform:scale(1.0); }
+  .action-btn{ padding:8px 10px; border-radius:8px; border:none; cursor:pointer; font-weight:700; }
 
-.selected {
-  border:2px solid green;
-}
+  /* 3D button */
+  .btn-3d{ background:linear-gradient(180deg,#4ade80,#22c55e); color:white; border-radius:10px; box-shadow:0 6px #15803d; padding:12px; cursor:pointer; font-weight:700; }
+  .btn-3d:active{ transform:translateY(4px); box-shadow:0 2px #15803d; }
 
-/* Popup Box */
-#popup {
-  position:fixed;
-  bottom:0;
-  width:100%;
-  left:0;
-  background:white;
-  padding:20px;
-  border-radius:20px 20px 0 0;
-  box-shadow:0 -5px 15px rgba(0,0,0,0.3);
-  display:none;
-}
+  /* popup card at bottom */
+  #popup { position:fixed; left:50%; transform:translateX(-50%); bottom:-100%; width:96%; max-width:520px; background:white; border-radius:16px 16px 8px 8px; box-shadow:0 30px 80px rgba(9,12,20,0.25); padding:16px; transition:bottom .28s ease; z-index:999; }
+  #popup.show{ bottom:20px; }
+  #popup h2{ margin:0 0 8px; font-size:16px; }
+  .popup-rows{ display:grid; gap:8px; grid-template-columns:1fr 1fr; }
+  .popup-rows .full{ grid-column:1/-1; }
+  .color-row{ display:flex; gap:8px; margin-top:8px; }
+  .color-swatch{ width:40px; height:40px; border-radius:8px; cursor:pointer; border:2px solid #fff; box-shadow:0 6px rgba(0,0,0,0.08); }
 
-#closeBtn {
-  background:#ff4444;
-  color:white;
-  padding:10px;
-  width:100px;
-  border:none;
-  border-radius:10px;
-  font-size:18px;
-  margin-top:10px;
-  box-shadow:0 4px #b30000;
-}
+  /* image preview */
+  .img-preview{ display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+
+  /* small screens */
+  @media (max-width:640px){
+    .popup-rows{ grid-template-columns:1fr; }
+    #filters{ flex-direction:column; }
+    .filter{ min-width:auto; }
+  }
+
+  /* helper */
+  .muted{ color:#64748b; font-size:13px; }
+  .top-actions{ display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap; }
+  .small{ padding:8px 10px; font-size:14px; }
+
+  /* selected row highlight */
+  .selected-row { box-shadow: inset 6px 0 0 0 rgba(11,84,155,0.08); }
 
 </style>
 </head>
 <body>
 
-<h2>📍 Voter Search</h2>
-<input type="text" id="search" placeholder="Search by Name, EPIC, Part, AC...">
+<h1>🗳 Voter Manager — Edit / Images / Multi-filter</h1>
 
-<div id="list"></div>
+<div class="top-actions">
+  <button id="btnAdd" class="btn-3d">＋ Add New Voter</button>
+  <button id="btnRefresh" class="action-btn small" style="background:#eef2ff;color:var(--accent);border-radius:8px;">Refresh</button>
+</div>
 
-<div id="popup">
-  <div id="details"></div>
-  <button id="closeBtn">Close</button>
+<!-- filters -->
+<div id="filters">
+  <div class="filter"><input id="fName" type="text" placeholder="Name"></div>
+  <div class="filter"><input id="fEpic" type="text" placeholder="EPIC"></div>
+  <div class="filter"><input id="fAc" type="number" placeholder="AC No"></div>
+  <div class="filter"><input id="fPart" type="number" placeholder="Part No"></div>
+  <div class="filter"><input id="fBooth" type="text" placeholder="Booth / Area"></div>
+</div>
+
+<!-- table -->
+<table aria-label="Voter table">
+  <thead>
+    <tr><th>Name</th><th>EPIC</th><th>AC No</th><th>Part No</th><th>Booth/Addr</th><th style="width:140px">Action</th></tr>
+  </thead>
+  <tbody id="tbody"></tbody>
+</table>
+
+<!-- Popup / Card -->
+<div id="popup" aria-hidden="true">
+  <h2 id="cardTitle">Voter</h2>
+
+  <div class="popup-rows" id="formArea">
+    <div><label>Name</label><input id="iName" type="text"></div>
+    <div><label>EPIC</label><input id="iEpic" type="text"></div>
+    <div><label>AC No</label><input id="iAc" type="number"></div>
+    <div><label>Part No</label><input id="iPart" type="number"></div>
+
+    <div class="full"><label>Booth / Address</label><input id="iBooth" type="text"></div>
+    <div class="full"><label>Voter Address</label><input id="iVoterAddress" type="text"></div>
+    <div class="full"><label>Voting Address</label><input id="iVotingAddress" type="text"></div>
+
+    <div class="full"><label>Parent Name</label><input id="iParent" type="text"></div>
+    <div class="full"><label>Relation</label><input id="iRelation" type="text"></div>
+    <div class="full"><label>Relation Type</label><input id="iRelationType" type="text"></div>
+
+    <div class="full"><label>Description</label><textarea id="iDesc" rows="3"></textarea></div>
+
+    <div class="full">
+      <label>Images (jpg/png) — upload</label>
+      <input id="imgFile" type="file" accept="image/*">
+      <div class="img-preview" id="imgPreview"></div>
+    </div>
+  </div>
+
+  <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
+    <div style="flex:1;">
+      <label><b>Card Theme (3 colors)</b></label>
+      <div class="color-row">
+        <div class="color-swatch" style="background:#ffe4e1" data-color="#ffe4e1" onclick="applyTheme('#ffe4e1')"></div>
+        <div class="color-swatch" style="background:#e3f2fd" data-color="#e3f2fd" onclick="applyTheme('#e3f2fd')"></div>
+        <div class="color-swatch" style="background:#fff9c4" data-color="#fff9c4" onclick="applyTheme('#fff9c4')"></div>
+      </div>
+    </div>
+
+    <div style="min-width:170px;display:flex;flex-direction:column;gap:8px;">
+      <button id="btnSave" class="btn-3d" style="background:linear-gradient(180deg,#38bdf8,#0ea5e9); box-shadow:0 6px #0284c7;">Save</button>
+      <button id="btnDelete" class="action-btn small" style="background:#fee2e2;color:var(--danger);border-radius:8px;">Delete</button>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:8px;margin-top:10px;">
+    <button id="btnPrint" class="popup-btn" style="flex:1;background:#008cff;color:white;padding:10px;border-radius:10px;border:none;font-weight:700;">🖨 Print</button>
+    <button id="btnWhats" class="popup-btn" style="flex:1;background:#25D366;color:white;padding:10px;border-radius:10px;border:none;font-weight:700;">📤 WhatsApp</button>
+  </div>
+
+  <div style="margin-top:10px;">
+    <button id="btnClose" style="width:100%; padding:10px; background:#ef4444; color:white; border:none; border-radius:10px;">Close</button>
+  </div>
+
 </div>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
-import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js";
+/* ===== Imports (Firebase modular) ===== */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+import { getDatabase, ref as dbRef, onValue, set, update, remove } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-storage.js";
 
-// 🔥 Your Firebase Config
+/* ====== Put your firebaseConfig here (you provided earlier) ====== */
 const firebaseConfig = {
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
   authDomain: "voter-25c94.firebaseapp.com",
@@ -104,58 +159,339 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
+const storage = getStorage(app);
 
-let voters = {};
+/* ===== UI refs ===== */
+const tbody = document.getElementById('tbody');
+const fName = document.getElementById('fName');
+const fEpic = document.getElementById('fEpic');
+const fAc = document.getElementById('fAc');
+const fPart = document.getElementById('fPart');
+const fBooth = document.getElementById('fBooth');
 
-const list = document.getElementById("list");
-const search = document.getElementById("search");
-const popup = document.getElementById("popup");
-const details = document.getElementById("details");
+const popup = document.getElementById('popup');
+const cardTitle = document.getElementById('cardTitle');
+const iName = document.getElementById('iName');
+const iEpic = document.getElementById('iEpic');
+const iAc = document.getElementById('iAc');
+const iPart = document.getElementById('iPart');
+const iBooth = document.getElementById('iBooth');
+const iVoterAddress = document.getElementById('iVoterAddress');
+const iVotingAddress = document.getElementById('iVotingAddress');
+const iParent = document.getElementById('iParent');
+const iRelation = document.getElementById('iRelation');
+const iRelationType = document.getElementById('iRelationType');
+const iDesc = document.getElementById('iDesc');
+const imgFile = document.getElementById('imgFile');
+const imgPreview = document.getElementById('imgPreview');
 
-// Load Data From Firebase
-onValue(ref(db, "Voters"), snap => {
-  voters = snap.val() || {};
-  renderList("");
+const btnAdd = document.getElementById('btnAdd');
+const btnRefresh = document.getElementById('btnRefresh');
+const btnSave = document.getElementById('btnSave');
+const btnDelete = document.getElementById('btnDelete');
+const btnPrint = document.getElementById('btnPrint');
+const btnWhats = document.getElementById('btnWhats');
+const btnClose = document.getElementById('btnClose');
+
+/* ===== State ===== */
+let VOTERS = {};          // full object from DB
+let selectedKey = null;   // current DB key (e.g. "Bcd0598334")
+let currentImages = [];   // local URLs (downloaded) for preview
+let pendingUploadFile = null; // file to upload
+
+/* ===== Load voters live from Firebase ===== */
+onValue(dbRef(db, 'Voters'), snap => {
+  VOTERS = snap.val() || {};
+  renderTable();
 });
 
-// Show List
-function renderList(query){
-  list.innerHTML="";
-  Object.entries(voters).forEach(([id, v])=>{
-    let match = `${id} ${v.Name} ${v.Epic} ${v.PartNo} ${v.AcNo}`.toLowerCase();
+/* ===== Render table with multi-filter ===== */
+function renderTable(){
+  tbody.innerHTML = "";
+  const qName = (fName.value || "").toLowerCase();
+  const qEpic = (fEpic.value || "").toLowerCase();
+  const qAc = (fAc.value || "").toLowerCase();
+  const qPart = (fPart.value || "").toLowerCase();
+  const qBooth = (fBooth.value || "").toLowerCase();
 
-    if(match.includes(query.toLowerCase())){
-      let row = document.createElement("div");
-      row.innerHTML = `<b>${v.Name}</b><br>${v.Epic} | AC:${v.AcNo} | PART:${v.PartNo}`;
-      row.onclick = ()=>openPopup(v, row);
-      list.appendChild(row);
+  Object.entries(VOTERS).forEach(([key, v]) => {
+    // combined matching: check all filters (if a filter is blank, ignore it)
+    const matchName = !qName || ((v.Name||'').toLowerCase().includes(qName));
+    const matchEpic = !qEpic || ((v.Epic||'').toLowerCase().includes(qEpic));
+    const matchAc = !qAc || String(v.AcNo||'').toLowerCase().includes(qAc);
+    const matchPart = !qPart || String(v.PartNo||'').toLowerCase().includes(qPart);
+    const matchBooth = !qBooth || ((v.Booth||v.Address||'').toLowerCase().includes(qBooth));
+
+    if(matchName && matchEpic && matchAc && matchPart && matchBooth){
+      const tr = document.createElement('tr');
+      tr.dataset.key = key;
+      tr.className = 'vrow';
+      // left color border if Color saved
+      tr.style.borderLeft = `6px solid ${v.Color || 'transparent'}`;
+      tr.innerHTML = `
+        <td>${v.Name || '-'}</td>
+        <td>${v.Epic || '-'}</td>
+        <td>${v.AcNo ?? '-'}</td>
+        <td>${v.PartNo ?? '-'}</td>
+        <td>${(v.Booth||v.Address||v.VoterAddress) || '-'}</td>
+        <td>
+          <button class="action-btn" onclick="onOpen('${key}', event)" style="background:#eef2ff;color:var(--accent);">Open</button>
+          <button class="action-btn" onclick="onQuickColor('${key}', '#ffe4e1', event)" title="Quick color" style="margin-left:6px">🎨</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
     }
   });
 }
 
-// Search Logic
-search.oninput = ()=>renderList(search.value);
+/* ===== filters event ===== */
+[fName, fEpic, fAc, fPart, fBooth].forEach(el => el.addEventListener('input', renderTable));
+btnRefresh.addEventListener('click', ()=>{ renderTable(); });
 
-// Popup Show
-function openPopup(v, element){
-  document.querySelectorAll("#list div").forEach(x=>x.classList.remove("selected"));
-  element.classList.add("selected");
+/* ===== Open popup for edit/add ===== */
+function onOpen(key, evt){
+  evt && evt.stopPropagation();
+  selectedKey = key;
+  const v = VOTERS[key] || {};
+  // fill fields
+  cardTitle.textContent = `Edit Voter — ${key}`;
+  iName.value = v.Name || '';
+  iEpic.value = v.Epic || key || '';
+  iAc.value = v.AcNo ?? '';
+  iPart.value = v.PartNo ?? '';
+  iBooth.value = v.Booth || v.Address || '';
+  iVoterAddress.value = v.VoterAddress || '';
+  iVotingAddress.value = v.VotingAddress || '';
+  iParent.value = v.ParentName || '';
+  iRelation.value = v.Relation || '';
+  iRelationType.value = v.RelationType || '';
+  iDesc.value = v.Description || '';
 
-  details.innerHTML = `
-    <b>Name:</b> ${v.Name}<br>
-    <b>EPIC:</b> ${v.Epic}<br>
-    <b>AC No:</b> ${v.AcNo}<br>
-    <b>Part No:</b> ${v.PartNo}<br>
-    <b>Description:</b> ${v.Description || "No Notes"}<br>
-  `;
+  // images preview
+  currentImages = Array.isArray(v.Images) ? v.Images.slice() : [];
+  renderPreview();
 
-  popup.style.display="block";
+  // set popup color from saved color
+  popup.style.background = v.Color || '#ffffff';
+
+  // show popup
+  popup.classList.add('show'); // handled by CSS (bottom animation)
 }
 
-// Close Button
-document.getElementById("closeBtn").onclick = ()=>{
-  popup.style.display="none";
+/* open Add new */
+btnAdd.addEventListener('click', ()=>{
+  selectedKey = null;
+  cardTitle.textContent = 'Add New Voter';
+  iName.value = iEpic.value = iAc.value = iPart.value = iBooth.value = iVoterAddress.value = iVotingAddress.value = iParent.value = iRelation.value = iRelationType.value = iDesc.value = '';
+  currentImages = []; renderPreview();
+  popup.style.background = '#fff';
+  popup.classList.add('show');
+});
+
+/* close */
+btnClose.addEventListener('click', ()=> popup.classList.remove('show'));
+
+/* image file change */
+imgFile.addEventListener('change', (e)=>{
+  const f = e.target.files[0];
+  if(!f) return;
+  // preview local
+  pendingUploadFile = f;
+  const url = URL.createObjectURL(f);
+  currentImages = [url]; // preview only latest selected locally
+  renderPreview();
+});
+
+/* render preview */
+function renderPreview(){
+  imgPreview.innerHTML = '';
+  currentImages.forEach(src => {
+    const img = document.createElement('img');
+    img.src = src;
+    img.style.width = '96px';
+    img.style.height = '72px';
+    img.style.objectFit = 'cover';
+    img.style.borderRadius = '8px';
+    img.style.border = '1px solid #e6eef8';
+    imgPreview.appendChild(img);
+  });
+}
+
+/* ===== apply theme (color swatches) ===== */
+window.applyTheme = function(color){
+  popup.style.background = color;
+  // Also update selected row visual
+  if(selectedKey){
+    const row = document.querySelector(`tr[data-key="${selectedKey}"]`);
+    if(row) row.style.borderLeft = `6px solid ${color}`;
+  }
 };
+
+/* quick color button */
+window.onQuickColor = async function(key,color,e){
+  e && e.stopPropagation();
+  // update color in DB for that key
+  try {
+    await update(dbRef(db, 'Voters/' + key), { Color: color });
+    // local update
+    if(VOTERS[key]) VOTERS[key].Color = color;
+    renderTable();
+  } catch (err) {
+    alert('Update failed: '+ err.message);
+  }
+};
+
+/* ===== Save (Add or Update) ===== */
+btnSave.addEventListener('click', async ()=>{
+  // collect form data
+  const payload = {
+    Epic: (iEpic.value || '').trim(),
+    Name: (iName.value || '').trim(),
+    AcNo: iAc.value ? Number(iAc.value) : null,
+    PartNo: iPart.value ? Number(iPart.value) : null,
+    Booth: iBooth.value || '',
+    VoterAddress: iVoterAddress.value || '',
+    VotingAddress: iVotingAddress.value || '',
+    ParentName: iParent.value || '',
+    Relation: iRelation.value || '',
+    RelationType: iRelationType.value || '',
+    Description: iDesc.value || '',
+    Images: (VOTERS[selectedKey] && Array.isArray(VOTERS[selectedKey].Images)) ? VOTERS[selectedKey].Images : []
+  };
+
+  // key to save: if editing, keep the existing key; if adding new, use Epic (must be unique)
+  let keyToUse = selectedKey;
+  if(!keyToUse){
+    if(!payload.Epic){
+      alert('Please enter EPIC for new voter (used as key).');
+      return;
+    }
+    keyToUse = payload.Epic; // using Epic as key
+  }
+
+  // If there's a pending image file to upload, upload it and get URL
+  if(pendingUploadFile){
+    try {
+      const ext = pendingUploadFile.name.split('.').pop();
+      const storagePath = `voter_images/${keyToUse}/${Date.now()}.${ext}`;
+      const sRef = storageRef(storage, storagePath);
+      const snapshot = await uploadBytes(sRef, pendingUploadFile);
+      const url = await getDownloadURL(snapshot.ref);
+      payload.Images.push(url);
+      pendingUploadFile = null;
+    } catch (err) {
+      alert('Image upload failed: ' + err.message);
+      return;
+    }
+  }
+
+  // persist to DB (set entire object at path Voters/{key})
+  try {
+    await set(dbRef(db, 'Voters/' + keyToUse), payload);
+    // local update will come from onValue listener, but update local copy too for immediate UI
+    VOTERS[keyToUse] = payload;
+    renderTable();
+    popup.classList.remove('show');
+    alert('Saved successfully.');
+  } catch (err) {
+    alert('Save failed: ' + err.message);
+  }
+});
+
+/* ===== Delete ===== */
+btnDelete.addEventListener('click', async ()=>{
+  if(!selectedKey){ alert('No voter selected to delete.'); return; }
+  if(!confirm('Delete voter ' + selectedKey + ' ?')) return;
+  try {
+    await remove(dbRef(db, 'Voters/' + selectedKey));
+    delete VOTERS[selectedKey];
+    renderTable();
+    popup.classList.remove('show');
+    alert('Deleted.');
+  } catch (err) {
+    alert('Delete failed: ' + err.message);
+  }
+});
+
+/* ===== Print (styled) ===== */
+btnPrint.addEventListener('click', ()=>{
+  if(!selectedKey){ alert('Open a voter first'); return; }
+  const v = VOTERS[selectedKey];
+  const note = iDesc.value || '';
+  const html = `
+  <html><head><meta charset="utf-8"><title>Voter Card</title>
+  <style>
+    body{ font-family: Arial; padding:18px; background:#f6f8fb; }
+    .card{ max-width:720px; margin:0 auto; background:#fff; padding:18px; border-radius:10px; border-left:8px solid ${escapeHtml(v.Color||'#0b84ff')}; }
+    .row{ display:flex; gap:12px; margin:8px 0; }
+    .label{ width:140px; font-weight:700; color:#374151; }
+  </style>
+  </head><body>
+  <div class="card">
+    <h2>Voter Information</h2>
+    ${renderPrintRow('Name', v.Name)}
+    ${renderPrintRow('EPIC', v.Epic)}
+    ${renderPrintRow('AC No', v.AcNo)}
+    ${renderPrintRow('Part No', v.PartNo)}
+    ${renderPrintRow('Booth', v.Booth)}
+    ${renderPrintRow('Address', v.VoterAddress || v.Address)}
+    ${renderPrintRow('Voting Address', v.VotingAddress)}
+    ${renderPrintRow('Parent', v.ParentName)}
+    ${renderPrintRow('Relation', v.Relation + (v.RelationType ? ' ('+v.RelationType+')' : ''))}
+    ${renderPrintRow('Description', note)}
+    ${ v.Images && v.Images.length ? '<div style="margin-top:12px;"><strong>Images:</strong><div style="display:flex;gap:8px;margin-top:8px;">' + v.Images.map(s=>`<img src="${escapeHtml(s)}" style="width:120px;height:80px;object-fit:cover;border-radius:6px">`).join('') + '</div></div>' : '' }
+  </div>
+  </body></html>
+  `;
+  const w = window.open('', '_blank', 'width=900,height=800');
+  w.document.write(html); w.document.close();
+  setTimeout(()=> w.print(), 600);
+});
+
+/* ===== WhatsApp share ===== */
+btnWhats.addEventListener('click', ()=>{
+  if(!selectedKey){ alert('Open a voter first'); return; }
+  const v = VOTERS[selectedKey];
+  const note = iDesc.value || '';
+  const lines = [
+    note ? note : '',
+    '🗳 VOTER DETAILS',
+    `Name: ${v.Name || '-'}`,
+    `EPIC: ${v.Epic || '-'}`,
+    `AC No: ${v.AcNo ?? '-'}`,
+    `Part No: ${v.PartNo ?? '-'}`,
+    `Booth: ${v.Booth || '-'}`,
+    `Address: ${v.VoterAddress || v.Address || '-'}`,
+    v.Relation ? `Relation: ${v.Relation} ${v.RelationType ? '('+v.RelationType+')' : ''}` : ''
+  ].filter(Boolean).join('\n');
+  window.open('https://wa.me/?text=' + encodeURIComponent(lines), '_blank');
+});
+
+/* ===== helpers ===== */
+function escapeHtml(s){ if(s===undefined||s===null) return ''; return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
+function renderPrintRow(label, val){ return `<div class="row"><div class="label">${escapeHtml(label)}</div><div class="val">${escapeHtml(val ?? '-')}</div></div>`; }
+
+/* apply theme swatches: also save color to DB for selectedKey */
+window.applyTheme = (color) => {
+  popup.style.background = color;
+  if(selectedKey){
+    // update DB color field
+    update(dbRef(db, 'Voters/' + selectedKey), { Color: color }).catch(err=>console.error(err));
+    // update local & table immediately
+    if(VOTERS[selectedKey]) VOTERS[selectedKey].Color = color;
+    renderTable();
+  }
+};
+
+/* when opening popup, set selectedKey border highlight in table */
+window.onOpen = onOpen;
+
+/* initial render (if DB already had data) executed by onValue listener */
+
+/* expose some functions for inline buttons (Open/QuickColor) */
+window.onOpen = onOpen;
+window.onQuickColor = window.onQuickColor;
+
 </script>
 </body>
 </html>
