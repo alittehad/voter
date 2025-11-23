@@ -6,13 +6,12 @@
 <title>Voter Card</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
-.card-3d {
-  background: linear-gradient(145deg, #f0f0f0, #d9d9d9);
+.card {
+  background: linear-gradient(135deg, #fef9c3, #fde68a);
+  border-radius: 12px;
   padding: 1rem;
-  border-radius: 1rem;
-  box-shadow: 6px 6px 12px #aaa, -6px -6px 12px #fff;
-  max-width: 400px;
-  margin: 2rem auto;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+  margin-bottom: 1rem;
 }
 .button-3d {
   background: linear-gradient(145deg, #4f46e5, #3b36c4);
@@ -22,38 +21,27 @@
   border-radius: 0.5rem;
   box-shadow: 4px 4px 6px #333, -4px -4px 6px #666;
   transition: 0.2s;
-  margin: 5px 0;
+  display: inline-block;
+  text-align: center;
+  margin-top: 5px;
 }
 .button-3d:hover {
   transform: translateY(-2px);
   box-shadow: 6px 6px 8px #333, -6px -6px 8px #666;
 }
-img.voter-img {
+img {
   max-width: 100%;
-  margin-top: 10px;
-  border-radius: 0.5rem;
+  border-radius: 8px;
 }
 </style>
 </head>
-<body class="bg-gray-100">
+<body class="bg-gray-100 p-4">
 
-<div id="voterCard" class="card-3d"></div>
-
-<textarea id="descInput" placeholder="Enter description" class="border p-2 rounded w-full mt-2"></textarea>
-<br>
-<button id="saveDescBtn" class="button-3d">Save Description</button>
-<button id="deleteDescBtn" class="button-3d">Delete Description</button>
-<br>
-<button id="printBtn" class="button-3d">Print</button>
-<button id="whatsappBtn" class="button-3d">Send WhatsApp</button>
-<br>
-<input type="file" id="imageInput" class="hidden" accept="image/*">
-<button id="uploadBtn" class="button-3d">Upload Image</button>
-<div id="imagesContainer" class="mt-2"></div>
+<div id="cardContainer" class="max-w-md mx-auto"></div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-import { getDatabase, ref, get, child, update } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
+import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
 import { getStorage, ref as sRef, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-storage.js";
 
 const firebaseConfig = {
@@ -71,109 +59,110 @@ const db = getDatabase(app);
 const storage = getStorage(app);
 
 const urlParams = new URLSearchParams(window.location.search);
-const epic = urlParams.get('id');
+const epic = urlParams.get("id");
 
-const card = document.getElementById("voterCard");
-const uploadBtn = document.getElementById("uploadBtn");
-const imageInput = document.getElementById("imageInput");
-const imagesContainer = document.getElementById("imagesContainer");
-const descInput = document.getElementById("descInput");
-const saveDescBtn = document.getElementById("saveDescBtn");
-const deleteDescBtn = document.getElementById("deleteDescBtn");
-const printBtn = document.getElementById("printBtn");
-const whatsappBtn = document.getElementById("whatsappBtn");
+const cardContainer = document.getElementById("cardContainer");
 
-let voterData = {};
+async function loadVoter() {
+  const snapshot = await get(ref(db, 'voters/' + epic));
+  const voter = snapshot.val();
+  if(!voter) { cardContainer.innerHTML = "<p>Voter not found</p>"; return; }
 
-// Fetch voter
-async function fetchVoter(){
-  const snapshot = await get(child(ref(db), `voters/${epic}`));
-  voterData = snapshot.val();
-  if(!voterData){ card.innerHTML = "<p>Voter not found</p>"; return; }
-  displayVoter();
-  descInput.value = voterData.description || "";
-}
-fetchVoter();
-
-// Display voter + images
-function displayVoter(){
-  card.innerHTML = `
-    <h2 class="text-xl font-bold mb-2">${voterData.name}</h2>
-    <p><strong>EPIC:</strong> ${voterData.EPIC}</p>
-    <p><strong>State:</strong> ${voterData.state}</p>
-    <p><strong>District:</strong> ${voterData.district}</p>
-    <p><strong>AC No:</strong> ${voterData.acNo}</p>
-    <p><strong>Part No:</strong> ${voterData.partNo}</p>
+  cardContainer.innerHTML = `
+    <div class="card">
+      <h2 class="text-xl font-bold mb-2">${voter.name || '-'}</h2>
+      <p><strong>EPIC:</strong> ${voter.EPIC || epic}</p>
+      <p><strong>AC No:</strong> ${voter.acNo || '-'}</p>
+      <p><strong>Part No:</strong> ${voter.partNo || '-'}</p>
+      <div id="imagesContainer" class="my-2 flex flex-col gap-2"></div>
+      <div class="my-2">
+        <textarea id="description" rows="3" placeholder="Add description..." class="w-full p-2 border rounded">${voter.description || ''}</textarea>
+        <button id="saveDescBtn" class="button-3d w-full">Save Description</button>
+      </div>
+      <div class="flex gap-2 mt-2">
+        <button id="printBtn" class="button-3d flex-1">Print</button>
+        <button id="whatsappBtn" class="button-3d flex-1">Send WhatsApp</button>
+      </div>
+      <div class="my-2">
+        <input type="file" id="imageInput" multiple class="mb-2">
+        <button id="uploadBtn" class="button-3d w-full">Upload Image</button>
+      </div>
+    </div>
   `;
-  imagesContainer.innerHTML = "";
-  if(voterData.images){
-    voterData.images.forEach(url=>{
+
+  // Load images
+  const imagesContainer = document.getElementById("imagesContainer");
+  if(voter.images) {
+    voter.images.forEach((url, idx) => {
       const div = document.createElement("div");
-      div.className = "relative";
-      const img = document.createElement("img");
-      img.src = url;
-      img.className = "voter-img";
-      const delBtn = document.createElement("button");
-      delBtn.className = "button-3d absolute top-0 right-0 text-sm";
-      delBtn.innerText = "Delete";
-      delBtn.onclick = ()=> deleteImage(url);
-      div.appendChild(img);
-      div.appendChild(delBtn);
+      div.classList.add("relative");
+      div.innerHTML = `
+        <img src="${url}" alt="voter image">
+        <button class="button-3d absolute top-0 right-0 text-sm" data-idx="${idx}">Delete</button>
+      `;
       imagesContainer.appendChild(div);
     });
+
+    // Delete buttons
+    imagesContainer.querySelectorAll("button").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const i = btn.dataset.idx;
+        const imgUrl = voter.images[i];
+        const fileRef = sRef(storage, 'voterImages/' + epic + '/' + i);
+        await deleteObject(fileRef).catch(()=>console.log("Delete in storage skipped"));
+        voter.images.splice(i,1);
+        await update(ref(db, 'voters/' + epic), { images: voter.images });
+        loadVoter(); // reload card
+      });
+    });
   }
+
+  // Save description
+  document.getElementById("saveDescBtn").addEventListener("click", async () => {
+    const desc = document.getElementById("description").value.trim();
+    await update(ref(db, 'voters/' + epic), { description: desc });
+    alert("Description saved");
+  });
+
+  // Upload images
+  document.getElementById("uploadBtn").addEventListener("click", async () => {
+    const files = document.getElementById("imageInput").files;
+    if(!files.length) { alert("Select files"); return; }
+    voter.images = voter.images || [];
+    for(let f of files) {
+      const storageRef = sRef(storage, 'voterImages/' + epic + '/' + f.name);
+      await uploadBytes(storageRef, f);
+      const url = await getDownloadURL(storageRef);
+      voter.images.push(url);
+    }
+    await update(ref(db, 'voters/' + epic), { images: voter.images });
+    loadVoter();
+  });
+
+  // Print
+  document.getElementById("printBtn").addEventListener("click", () => {
+    const printContent = `
+      <h2>${voter.name}</h2>
+      <p><strong>EPIC:</strong> ${voter.EPIC}</p>
+      <p><strong>AC No:</strong> ${voter.acNo || '-'}</p>
+      <p><strong>Part No:</strong> ${voter.partNo || '-'}</p>
+      <p><strong>Description:</strong> ${document.getElementById("description").value}</p>
+    `;
+    const w = window.open("", "", "width=600,height=600");
+    w.document.write(printContent);
+    w.document.close();
+    w.print();
+  });
+
+  // WhatsApp Send
+  document.getElementById("whatsappBtn").addEventListener("click", () => {
+    const msg = `Name: ${voter.name}\nEPIC: ${voter.EPIC}\nAC: ${voter.acNo}\nPart: ${voter.partNo}\nDescription: ${document.getElementById("description").value}`;
+    const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+    window.open(url,'_blank');
+  });
 }
 
-// Upload image
-uploadBtn.addEventListener("click", ()=> imageInput.click());
-imageInput.addEventListener("change", async(e)=>{
-  const file = e.target.files[0]; if(!file) return;
-  const storageRef = sRef(storage, `voters/${epic}/${file.name}`);
-  await uploadBytes(storageRef, file);
-  const url = await getDownloadURL(storageRef);
-  voterData.images = voterData.images || [];
-  voterData.images.push(url);
-  await update(ref(db, `voters/${epic}`), { images: voterData.images });
-  displayVoter();
-});
-
-// Delete image
-async function deleteImage(url){
-  const storageRef = sRef(storage, `voters/${epic}/${url.split('/').pop()}`);
-  await deleteObject(storageRef).catch(()=>{});
-  voterData.images = voterData.images.filter(u=>u!==url);
-  await update(ref(db, `voters/${epic}`), { images: voterData.images });
-  displayVoter();
-}
-
-// Description
-saveDescBtn.addEventListener("click", async()=>{
-  const desc = descInput.value;
-  await update(ref(db, `voters/${epic}`), { description: desc });
-  alert("Description saved");
-});
-deleteDescBtn.addEventListener("click", async()=>{
-  await update(ref(db, `voters/${epic}`), { description: "" });
-  descInput.value = "";
-});
-
-// Print (images hide)
-printBtn.addEventListener("click", ()=>{
-  const style = document.createElement("style");
-  style.innerHTML = "@media print { img { display: none; } }";
-  document.head.appendChild(style);
-  window.print();
-  document.head.removeChild(style);
-});
-
-// WhatsApp send
-whatsappBtn.addEventListener("click", ()=>{
-  const desc = encodeURIComponent(descInput.value || "");
-  const message = `Name: ${encodeURIComponent(voterData.name)}
-EPIC: ${encodeURIComponent(voterData.EPIC)}
-Description: ${desc}`;
-  window.open(`https://wa.me/?text=${message}`, "_blank");
-});
+loadVoter();
 </script>
 </body>
 </html>
