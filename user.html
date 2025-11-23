@@ -12,121 +12,148 @@
 
     body {
         font-family: Arial, sans-serif;
-        background: #f5f5f5;
+        background: #f1f1f1;
         margin: 0;
     }
 
     header {
         background: var(--themeColor);
         color: white;
-        padding: 15px;
-        font-size: 22px;
+        padding: 12px;
         text-align: center;
+        font-size: 22px;
         font-weight: bold;
     }
 
     .search-box {
         width: 90%;
-        display: block;
-        margin: 15px auto;
-        padding: 12px;
-        font-size: 18px;
+        margin: 10px auto;
+        padding: 10px;
         border-radius: 10px;
         border: 2px solid #999;
+        display: block;
+        font-size: 18px;
     }
 
     .list-item {
         background: white;
-        margin: 10px;
-        padding: 14px;
-        border-radius: 12px;
-        cursor: pointer;
+        margin: 8px;
+        padding: 12px;
+        border-radius: 10px;
         border-left: 6px solid var(--themeColor);
+        cursor: pointer;
+        font-size: 18px;
         transition: 0.3s;
     }
 
     .list-item:hover {
-        transform: scale(1.03);
+        background: #eeeeee;
+        transform: scale(1.02);
     }
 
+    /* POPUP */
     #popup {
         display: none;
         position: fixed;
         top: 0; left: 0;
         width: 100%; height: 100%;
-        background: rgba(0,0,0,0.7);
+        background: rgba(0,0,0,0.6);
         justify-content: center;
         align-items: center;
         padding: 10px;
-        overflow-y: auto;
     }
 
     .card {
+        width: 90%;
+        max-width: 350px;
         background: var(--themeColor);
-        width: 100%;
-        max-width: 480px;
-        padding: 25px;
-        border-radius: 15px;
-        text-align: center;
         color: white;
+        padding: 15px;
+        border-radius: 18px;
+        text-align: center;
+        overflow-y: auto;
+        max-height: 95vh;
         position: relative;
+        animation: fadeIn .3s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+        from{transform:scale(0.7); opacity:0;}
+        to{transform:scale(1); opacity:1;}
     }
 
     .close-btn {
         position: absolute;
-        top: 6px; right: 10px;
+        top: 5px;
+        right: 10px;
+        font-size: 24px;
         cursor: pointer;
-        font-size: 28px;
-        font-weight: bold;
     }
 
     .img-preview {
-        width: 140px;
-        height: 140px;
+        width: 120px;
+        height: 120px;
         border-radius: 8px;
         border: 2px solid white;
+        margin: 10px auto;
         object-fit: cover;
         display: block;
-        margin: 10px auto;
     }
 
     .btn {
         width: 100%;
-        padding: 13px;
-        margin-top: 10px;
+        padding: 12px;
+        border-radius: 10px;
+        margin-top: 8px;
         background: white;
         color: black;
-        font-size: 18px;
         border: none;
-        border-radius: 12px;
-        cursor: pointer;
         font-weight: bold;
-        box-shadow: 3px 3px 6px rgba(0,0,0,0.2);
+        cursor: pointer;
+        font-size: 17px;
     }
 
     .color-box {
         display: flex;
         justify-content: center;
-        gap: 12px;
-        margin-top: 10px;
+        gap: 10px;
+        margin: 10px 0;
     }
 
     .color-option {
-        width: 40px;
-        height: 40px;
+        width: 35px;
+        height: 35px;
         border-radius: 50%;
         cursor: pointer;
         border: 3px solid #fff;
     }
 
-    @media print {
-        .close-btn, .btn, .color-box, #search, .list-item, input[type="file"], textarea {
-            display: none !important;
-        }
+    textarea {
+        width: 100%;
+        height: 70px;
+        margin-top: 8px;
+        padding: 8px;
+        border-radius: 10px;
+        font-size: 15px;
+        border: none;
+    }
 
-        #popup { position: static; background: white; }
-        .card { background:white !important; color:black !important; border:2px solid black; }
-        .img-preview { border:2px solid black; }
+    @media print {
+        .close-btn,.btn,.color-box,#search,.list-item,textarea,input[type="file"]{
+            display:none !important;
+        }
+        #popup{
+            display:block !important;
+            background:white !important;
+            position:static;
+        }
+        .card{
+            max-width:100% !important;
+            width:100% !important;
+            background:white !important;
+            color:black !important;
+            border:2px solid black;
+        }
     }
 </style>
 </head>
@@ -135,16 +162,16 @@
 
 <header>📋 Voter List</header>
 
-<input type="text" id="search" class="search-box" placeholder="Search by Name / EPIC...">
+<input type="text" id="search" class="search-box" placeholder="Search Name / EPIC">
 
 <div id="list"></div>
 
 <!-- Popup -->
-<div id="popup">
+<div id="popup" onclick="outsideClose(event)">
     <div class="card" id="cardBox">
         <span class="close-btn" onclick="closePopup()">✖</span>
 
-        <img id="voterImg" class="img-preview" src="" alt="No Image">
+        <img id="voterImg" class="img-preview" src="">
 
         <input type="file" id="uploadImg" accept="image/*" onchange="uploadImage(event)" class="btn">
 
@@ -153,82 +180,88 @@
         <p><b>🏛 AC No:</b> <span id="pAc"></span></p>
         <p><b>📍 Part No:</b> <span id="pPart"></span></p>
         <p><b>🏠 Address:</b> <span id="pAddress"></span></p>
-        <p><b>🗳 Voting Address:</b> <span id="pVoteAddress"></span></p>
+        <p><b>🗳 Booth:</b> <span id="pVoteAddress"></span></p>
 
-        <h3>🎨 Change Theme</h3>
+        <h3>🎨 Theme</h3>
         <div class="color-box">
             <div class="color-option" style="background:#4caf50" onclick="changeColor('#4caf50')"></div>
             <div class="color-option" style="background:#2196f3" onclick="changeColor('#2196f3')"></div>
             <div class="color-option" style="background:#ff5722" onclick="changeColor('#ff5722')"></div>
         </div>
 
-        <textarea id="senderNote" placeholder="Sender message..." style="width:100%;height:80px;margin-top:12px;border-radius:10px;padding:10px;font-size:16px;"></textarea>
+        <textarea id="senderNote" placeholder="Sender message..."></textarea>
 
         <button class="btn" onclick="printCard()">🖨 Print</button>
-        <button class="btn" onclick="sendWhatsApp()">📩 Share WhatsApp</button>
+        <button class="btn" onclick="sendWhatsApp()">📩 WhatsApp</button>
     </div>
 </div>
 
 <script>
-const data = {
-  "Bcd0598334": {Epic:"BCD0598334",Name:"Sanjay Malakar",AcNo:131,PartNo:92,Address:"Nalasopara",VotingAddress:"Vasai Booth No 45"},
-  "Djm1162627": {Epic:"DJM1162627",Name:"Jagdish Gurav",AcNo:131,PartNo:237,Address:"Virar",VotingAddress:"Booth 18"},
-  "Ltv1989003": {Epic:"LTV1989003",Name:"Jayprakash Shende",AcNo:131,PartNo:14,Address:"Bolinj",VotingAddress:"Booth 22"}
+const data={
+ "BCD0598334":{Name:"Sanjay Malakar",Ac:131,Part:92,Address:"Nalasopara",Vote:"Vasai Booth 45"},
+ "DJM1162627":{Name:"Jagdish Gurav",Ac:131,Part:237,Address:"Virar",Vote:"Booth 18"},
+ "LTV1989003":{Name:"Jayprakash Shende",Ac:131,Part:14,Address:"Bolinj",Vote:"Booth 22"}
 };
 
-let selected = null;
+let selected;
 
-function loadList() {
-  document.getElementById("list").innerHTML = "";
-  for (let k in data) {
-      let v = data[k];
-      let div = document.createElement("div");
-      div.className = "list-item";
-      div.innerHTML = `<b>${v.Name}</b><br>🆔 ${v.Epic}`;
-      div.onclick = () => openPopup(v);
-      document.getElementById("list").appendChild(div);
+function loadList(){
+  let list=document.getElementById("list");
+  list.innerHTML="";
+  for(let key in data){
+      let v=data[key];
+      let d=document.createElement("div");
+      d.className="list-item";
+      d.innerHTML=`<b>${v.Name}</b><br>🆔 ${key}`;
+      d.onclick=()=>openPopup(key,v);
+      list.appendChild(d);
   }
 }
 loadList();
 
-function openPopup(v) {
-  selected=v;
+function openPopup(id,v){
+  selected={id,...v};
   document.getElementById("pName").innerText=v.Name;
-  document.getElementById("pEpic").innerText=v.Epic;
-  document.getElementById("pAc").innerText=v.AcNo;
-  document.getElementById("pPart").innerText=v.PartNo;
+  document.getElementById("pEpic").innerText=id;
+  document.getElementById("pAc").innerText=v.Ac;
+  document.getElementById("pPart").innerText=v.Part;
   document.getElementById("pAddress").innerText=v.Address;
-  document.getElementById("pVoteAddress").innerText=v.VotingAddress;
-  document.getElementById("voterImg").src=localStorage.getItem(v.Epic) || "";
+  document.getElementById("pVoteAddress").innerText=v.Vote;
 
+  document.getElementById("voterImg").src=localStorage.getItem(id) || "";
   document.getElementById("popup").style.display="flex";
 }
 
 function uploadImage(e){
-    if(selected){
-        const url=URL.createObjectURL(e.target.files[0]);
-        document.getElementById("voterImg").src=url;
-        localStorage.setItem(selected.Epic,url);
-    }
+  let url=URL.createObjectURL(e.target.files[0]);
+  document.getElementById("voterImg").src=url;
+  localStorage.setItem(selected.id,url);
 }
 
-function closePopup(){ document.getElementById("popup").style.display="none"; }
+function changeColor(c){
+  document.documentElement.style.setProperty("--themeColor",c);
+}
 
-function changeColor(color){ document.documentElement.style.setProperty("--themeColor",color); }
+function closePopup(){
+  document.getElementById("popup").style.display="none";
+}
 
-function printCard(){ window.print(); }
+function outsideClose(e){
+  if(e.target.id==="popup") closePopup();
+}
+
+function printCard(){window.print();}
 
 function sendWhatsApp(){
-  const note=document.getElementById("senderNote").value||"No message";
-  let msg=`📌 Voter Details:\n\n👤 ${selected.Name}\n🆔 ${selected.Epic}\n🏛 AC No: ${selected.AcNo}\n📍 Part No: ${selected.PartNo}\n🏠 Address: ${selected.Address}\n🗳 Booth: ${selected.VotingAddress}\n\n📝 Sender: ${note}`;
-  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,"_blank");
+  let msg=`📌 VOTER DETAILS\n\n👤 ${selected.Name}\n🆔 ${selected.id}\nAC: ${selected.Ac}\nPart: ${selected.Part}\n🏠 ${selected.Address}\n🗳 Booth: ${selected.Vote}\n\n📩 Sender:\n${document.getElementById("senderNote").value}`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`);
 }
 
 document.getElementById("search").addEventListener("input",()=>{
-   let val=document.getElementById("search").value.toLowerCase();
-   document.querySelectorAll(".list-item").forEach(i=>{
-     i.style.display=i.innerText.toLowerCase().includes(val)?"block":"none";
-   });
+ let v=document.getElementById("search").value.toLowerCase();
+ document.querySelectorAll(".list-item").forEach(i=>{
+  i.style.display=i.innerText.toLowerCase().includes(v)?"block":"none";
+ });
 });
 </script>
 
