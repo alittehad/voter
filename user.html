@@ -1,102 +1,46 @@
 <!DOCTYPE html>
 <html lang="hi">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Voter Management with Roles</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<style>
-body{font-family:system-ui,sans-serif;background:#f0f2f5;}
-.button-3d{background:linear-gradient(145deg,#4f46e5,#3b36c4);color:#fff;font-weight:700;padding:.35rem .6rem;border-radius:8px;box-shadow:3px 3px 6px rgba(0,0,0,.4),-3px -3px 6px rgba(255,255,255,.03);transition:transform .14s,box-shadow .14s;font-size:.9rem;}
-.button-3d:active{transform:translateY(1px);}
-.small-3d{padding:.25rem .45rem;font-size:.82rem;border-radius:6px;box-shadow:2px 2px 4px rgba(0,0,0,.35), -2px -2px 4px rgba(255,255,255,.02);}
-.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:9999;}
-.modal{width:95%;max-width:520px;background:#fff;border-radius:12px;padding:14px;box-shadow:0 10px 30px rgba(0,0,0,.25);}
-.close-x{position:absolute;right:12px;top:8px;cursor:pointer;font-weight:700;font-size:18px;}
-table td,table th{padding:10px;border-bottom:1px solid #eee;text-align:left;vertical-align:middle;}
-img.thumb{max-height:110px;border-radius:8px;display:block;margin-top:8px;}
-.hidden{display:none !important;}
-</style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Form Submission with Approval</title>
+<script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-firestore.js"></script>
 </head>
-<body class="p-4">
+<body>
 
-<!-- Login Screen -->
-<div id="loginScreen" class="min-h-screen flex items-center justify-center">
-  <div class="text-center">
-    <h1 class="text-2xl font-bold mb-4">Voter Management</h1>
-    <button id="loginBtn" class="button-3d px-6 py-3 text-lg">Login with Google</button>
-    <p class="text-sm text-gray-600 mt-3">SuperAdmin/Admin/User roles applied.</p>
-  </div>
-</div>
+<h2>Registration Form</h2>
+<form id="regForm">
+  <label>Name:</label><br>
+  <input type="text" id="name" required><br><br>
+  
+  <label>Address:</label><br>
+  <input type="text" id="address" required><br><br>
+  
+  <label>Mobile No:</label><br>
+  <input type="text" id="mobile" required><br><br>
+  
+  <label>Role:</label><br>
+  <select id="role">
+    <option value="user">User</option>
+    <option value="admin">Admin</option>
+  </select><br><br>
+  
+  <button type="submit">Submit</button>
+</form>
 
-<!-- App -->
-<div id="app" class="hidden">
-
-  <!-- AC Filter + Search -->
-  <div class="flex gap-3 mb-3 items-center">
-    <select id="acFilter" class="border p-2 rounded">
-      <option value="">All AC</option>
-      <option value="131">131</option>
-      <option value="132">132</option>
-      <option value="133">133</option>
-    </select>
-    <input id="searchInput" class="border p-2 w-full rounded" placeholder="Search by name, EPIC, part, parent, address..." />
-  </div>
-
-  <!-- Sender Panel -->
-  <div class="bg-white p-3 rounded shadow mb-4" id="senderPanel">
-    <div class="flex items-start gap-4">
-      <div class="flex-1">
-        <label class="block font-medium">Sender description</label>
-        <textarea id="senderText" class="border p-2 w-full mt-1 rounded" rows="2"></textarea>
-      </div>
-      <div class="w-48">
-        <label class="block font-medium">Sender poster</label>
-        <input id="senderFile" type="file" accept="image/*" class="mt-1" />
-        <div id="senderPreviewWrap" class="mt-2 hidden">
-          <img id="senderPreview" class="thumb" src="" alt="sender poster" />
-        </div>
-        <div class="flex gap-2 mt-2">
-          <button class="button-3d small-3d" onclick="saveSender()">Save</button>
-          <button class="button-3d small-3d bg-red-600" onclick="deleteSenderPoster()">Delete</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Table -->
-  <div class="bg-white rounded shadow overflow-auto">
-    <table id="voterTable" class="w-full">
-      <thead class="bg-gray-100">
-        <tr>
-          <th style="width:25%">Name</th>
-          <th style="width:15%">EPIC</th>
-          <th style="width:10%">AC</th>
-          <th style="width:10%">Part</th>
-          <th style="width:15%">Parent</th>
-          <th style="width:25%">Action</th>
-        </tr>
-      </thead>
-      <tbody id="tableBody"></tbody>
-    </table>
-  </div>
-</div>
-
-<!-- Modal -->
-<div id="modal" class="modal-bg hidden">
-  <div class="modal relative">
-    <div class="close-x" onclick="closeModal()">✖</div>
-    <div id="modalContent"></div>
-  </div>
-</div>
+<hr>
+<h3>Super Admin Approval Panel</h3>
+<div id="approvalPanel"></div>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-import { getDatabase, ref, onValue, get, update, set } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
-import { getStorage, ref as sRef, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-storage.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js";
+  import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-auth.js";
+  import { getFirestore, collection, addDoc, getDocs, updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-firestore.js";
 
-const firebaseConfig = {
+  // 🔹 Firebase config
+ const firebaseConfig = {
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
   authDomain: "voter-25c94.firebaseapp.com",
   databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
@@ -106,150 +50,69 @@ const firebaseConfig = {
   appId: "1:297773534400:web:3722c487b8c83e9b787125"
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-const storage = getStorage(app);
-const auth = getAuth();
+  
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const auth = getAuth(app);
+  const provider = new GoogleAuthProvider();
 
-const loginScreen = document.getElementById('loginScreen');
-const loginBtn = document.getElementById('loginBtn');
-const appDiv = document.getElementById('app');
-const tableBody = document.getElementById('tableBody');
-const modal = document.getElementById('modal');
-const modalContent = document.getElementById('modalContent');
-const searchInput = document.getElementById('searchInput');
-const acFilter = document.getElementById('acFilter');
-const senderText = document.getElementById('senderText');
-const senderFile = document.getElementById('senderFile');
-const senderPreview = document.getElementById('senderPreview');
-const senderPreviewWrap = document.getElementById('senderPreviewWrap');
-const senderPanel = document.getElementById('senderPanel');
+  const form = document.getElementById("regForm");
+  const approvalPanel = document.getElementById("approvalPanel");
 
-let currentUser = null, currentRole="", permissions={}, voters={}, sender={text:"",img:""};
+  // 🔹 Form submit
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const name = document.getElementById("name").value;
+    const address = document.getElementById("address").value;
+    const mobile = document.getElementById("mobile").value;
+    const role = document.getElementById("role").value;
 
-// LOGIN
-loginBtn.onclick=async()=>{
-  try{
-    const result = await signInWithPopup(auth,new GoogleAuthProvider());
-    currentUser = result.user;
-    await checkRole();
-  }catch(e){alert("Login failed: "+e.message);}
-};
+    await addDoc(collection(db, "registrations"), {
+      name,
+      address,
+      mobile,
+      role,
+      status: "pending"
+    });
 
-// ROLE CHECK
-async function checkRole(){
-    const rolesSnap = await get(ref(db,"Roles"));
-    const roles = rolesSnap.val() || {};
-    let roleAssigned = false;
-
-    if(currentUser.email === roles.SuperAdmin){
-        currentRole = "SuperAdmin";
-        roleAssigned = true;
-    } else if(roles.Admins && roles.Admins[currentUser.email]){
-        currentRole = "Admin";
-        permissions = roles.Admins[currentUser.email].permissions || {};
-        roleAssigned = true;
-    } else if(roles.Users && roles.Users[currentUser.email]){
-        currentRole = "User";
-        permissions = roles.Users[currentUser.email].permissions || {};
-        roleAssigned = true;
-    }
-
-    if(!roleAssigned){
-        alert("No role assigned!");
-        return;
-    }
-
-    loginScreen.classList.add('hidden');
-    appDiv.classList.remove('hidden');
-
-    senderPanel.style.display = (currentRole==="SuperAdmin" || (currentRole==="Admin" && permissions.sendMessage)) ? "block" : "none";
-
-    init();
-}
-
-// Persistent Login
-onAuthStateChanged(auth, async(user)=>{
-    if(user){
-        currentUser = user;
-        await checkRole();
-    }
-});
-
-// INIT
-function init(){
-  onValue(ref(db,'Sender'),snap=>{
-    sender = snap.val()||{};
-    senderText.value=sender.text||"";
-    if(sender.img){senderPreview.src=sender.img;senderPreviewWrap.classList.remove('hidden');}else senderPreviewWrap.classList.add('hidden');
+    alert("Form submitted! Waiting for Super Admin approval.");
+    form.reset();
   });
 
-  onValue(ref(db,'Voters'),snap=>{
-    voters = snap.val()||{};
-    renderTable();
-  });
+  // 🔹 Super Admin Login
+  async function loadApprovalPanel() {
+    const userCredential = await signInWithPopup(auth, provider);
+    const user = userCredential.user;
+    
+    if(user.email !== "ngogrant45@gmail.com") {
+      alert("You are not Super Admin!");
+      return;
+    }
 
-  searchInput.oninput = renderTable;
-  acFilter.onchange = renderTable;
+    const querySnapshot = await getDocs(collection(db, "registrations"));
+    approvalPanel.innerHTML = "";
 
-  senderFile.onchange = ()=>{const f=senderFile.files[0]; if(!f) return; senderPreview.src=URL.createObjectURL(f); senderPreviewWrap.classList.remove('hidden');};
-}
-
-// CHECK PERMISSION
-function checkPermission(field){ if(currentRole==="SuperAdmin") return true; if(currentRole==="Admin" && permissions[field]) return true; return false; }
-
-// RENDER TABLE
-function renderTable(){
-  tableBody.innerHTML='';
-  const q=(searchInput.value||'').toLowerCase();
-  const ac=acFilter.value;
-
-  Object.keys(voters).sort().forEach(key=>{
-    const v=voters[key]; if(!v) return;
-    if(ac && String(v.AcNo)!==ac) return;
-    const searchText=(v.Name+" "+v.Epic+" "+v.PartNo+" "+(v.ParentName||"")+" "+(v.Description||"")+" "+(v.VoterAddress||"")+" "+(v.VotingAddress||"")).toLowerCase();
-    if(q && !searchText.includes(q)) return;
-
-    const tr=document.createElement('tr');
-    tr.style.background=v.Color||'#fff';
-    tr.innerHTML=`<td>${escapeHtml(v.Name||'')}</td>
-                    <td>${escapeHtml(v.Epic||key)}</td>
-                    <td>${escapeHtml(v.AcNo||'')}</td>
-                    <td>${escapeHtml(v.PartNo||'')}</td>
-                    <td>${escapeHtml(v.ParentName||'')}</td>
-                    <td><button class="button-3d small-3d" onclick="openCard('${key}')">View</button></td>`;
-    tableBody.appendChild(tr);
-  });
-}
-
-// OPEN CARD, SAVE fields, WhatsApp send, DELETE images
-// (Use same code as previous modal card, wrap each save/delete with checkPermission(field))
-
-// CLOSE MODAL
-document.getElementById('modal').addEventListener('click',e=>{if(e.target.id==='modal') modal.classList.add('hidden');});
-function closeModal(){modal.classList.add('hidden');}
-function escapeHtml(s=''){return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');}
-
-// SAVE / DELETE SENDER
-async function saveSender(){
-  if(!checkPermission("sendMessage")) return alert("Not allowed to edit Sender");
-  const file=senderFile.files[0]; let updates={};
-  if(file){
-    const p=sRef(storage,'Sender/poster.jpg');
-    const uploadTask=uploadBytesResumable(p,file);
-    await uploadTask;
-    updates.img=await getDownloadURL(p);
+    querySnapshot.forEach(docSnap => {
+      const data = docSnap.data();
+      if(data.status === "pending"){
+        const div = document.createElement("div");
+        div.innerHTML = `
+          ${data.name} (${data.role}) 
+          <button onclick="approve('${docSnap.id}', '${data.role}')">Approve</button>
+        `;
+        approvalPanel.appendChild(div);
+      }
+    });
   }
-  updates.text=senderText.value;
-  await set(ref(db,'Sender'),updates);
-  alert("Sender saved");
-}
-async function deleteSenderPoster(){
-  if(!checkPermission("sendMessage")) return alert("Not allowed to delete Sender");
-  try{await deleteObject(sRef(storage,'Sender/poster.jpg'));}catch(e){}
-  await update(ref(db,'Sender'),{img:""});
-  senderPreview.src=''; senderPreviewWrap.classList.add('hidden');
-}
+
+  window.approve = async (id, role) => {
+    await updateDoc(doc(db, "registrations", id), { status: "approved" });
+    alert(`${role} approved!`);
+    loadApprovalPanel(); // refresh
+  }
+
+  // Load approval panel for Super Admin
+  loadApprovalPanel();
 </script>
 </body>
 </html>
