@@ -5,35 +5,56 @@
 <style>
 body { font-family: Arial; margin: 20px; }
 input, button { padding: 10px; width: 100%; margin-top: 10px; font-size: 18px; }
-#list div { background: #e5e7eb; padding: 12px; margin-top: 10px; cursor: pointer; border-radius: 6px; }
+#list div { background: #e5e7eb; padding: 12px; margin-top: 10px; cursor: pointer; border-radius: 6px; transition: 0.3s; }
+#list div:hover { transform: scale(1.02); }
+.selected { border-left: 6px solid red; }
+
 .popup{
  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
- background:white; padding:20px; width:350px; border-radius:10px; 
+ background:white; padding:20px; width:380px; border-radius:10px;
  box-shadow:0px 0px 10px #444; display:none;
 }
 .popup button{ width:100%; padding:10px; margin-top:10px; }
+
+.color-btn { width: 30%; padding: 10px; border-radius: 5px; cursor: pointer; margin: 4px; }
 </style>
 </head>
 <body>
 
-<h2>🔐 Login</h2>
+<h2 id="loginTitle">🔐 Login</h2>
+
+<div id="loginBox">
 <input id="email" placeholder="Enter Email">
 <button id="loginBtn">Login</button>
-<br><br>
 <button id="googleLogin" style="background:#4285F4;color:white;">🔑 Login with Google</button>
+</div>
+
+<div id="logoutBox" style="display:none;">
+<p><b>Logged in as:</b> <span id="userName"></span></p>
+<button onclick="logout()">🚪 Logout</button>
+</div>
 
 <hr>
 
 <h2>🔍 Search Voter</h2>
-<input id="search" placeholder="Name, EPIC, AC No, Part No...">
+<input id="search" placeholder="Search Name / EPIC / AC / Part">
 
 <div id="list"></div>
 
 <div id="popup" class="popup">
-<h3>Voter Details</h3>
+<h3>🪪 Voter Details</h3>
 <div id="details"></div>
-<textarea id="desc" placeholder="Message for voter..." style="width:100%;height:80px;margin-top:10px;"></textarea>
-<button onclick="send()">📩 Send</button>
+
+<p><b>Choose Card Color:</b></p>
+<div style="display:flex;gap:5px;">
+ <div class="color-btn" style="background:#fde68a" onclick="changeColor('#fde68a')"></div>
+ <div class="color-btn" style="background:#a5f3fc" onclick="changeColor('#a5f3fc')"></div>
+ <div class="color-btn" style="background:#fca5a5" onclick="changeColor('#fca5a5')"></div>
+</div>
+
+<textarea id="desc" placeholder="Sender Message..." style="width:100%;height:80px;margin-top:10px;"></textarea>
+
+<button onclick="sendWhatsApp()">📩 Send WhatsApp</button>
 <button onclick="printCard()">🖨 Print</button>
 <button onclick="closePopup()">❌ Close</button>
 </div>
@@ -63,101 +84,93 @@ let users = {};
 let logged = null;
 let selectedVoter = null;
 
-// Load Users & Voters
-db.ref("Users").on("value", snap => { users = snap.val() || {}; });
-db.ref("Voters").on("value", snap => { voters = snap.val() || {}; });
+// Load Data
+db.ref("Users").on("value", s => users = s.val() || {});
+db.ref("Voters").on("value", s => voters = s.val() || {});
 
 // Manual Login
-document.getElementById("loginBtn").addEventListener("click", function(){
- let email = document.getElementById("email").value.trim();
+loginBtn.onclick = ()=>{
+ let email = email.value.trim();
+ checkLogin(email);
+};
+
+// Google Login
+googleLogin.onclick = async ()=>{
+ let provider = new firebase.auth.GoogleAuthProvider();
+ let result = await auth.signInWithPopup(provider);
+ checkLogin(result.user.email);
+};
+
+function checkLogin(email){
  if(users[email]){
    logged = users[email];
-   alert(`✅ Login Success: ${logged.Name}`);
+   document.getElementById("userName").innerText = logged.Name;
+   loginBox.style.display = "none";
+   logoutBox.style.display = "block";
  } else {
-   alert("❌ Invalid Email");
+   alert("❌ Email Not Registered");
  }
-});
+}
 
-// GOOGLE LOGIN
-document.getElementById("googleLogin").addEventListener("click", async () => {
-  const provider = new firebase.auth.GoogleAuthProvider();
-
-  try {
-    const result = await auth.signInWithPopup(provider);
-    const email = result.user.email;
-
-    if(users[email]){ 
-      logged = users[email]; 
-      alert(`✅ Google Login Success: ${logged.Name}`); 
-    } else {
-      alert("❌ Your email is not registered in user list.");
-      auth.signOut();
-    }
-
-  } catch (err) {
-    alert("⚠ Google login failed.");
-  }
-});
+function logout(){
+ logged = null;
+ loginBox.style.display="block";
+ logoutBox.style.display="none";
+ alert("Logged out");
+}
 
 // Search
-document.getElementById("search").addEventListener("input", function(){
- if(!logged){ alert("Login Required!"); return; }
+search.oninput = ()=>{
+ list.innerHTML="";
+ if(!logged) return;
+ let q = search.value.toLowerCase();
 
- let text = this.value.toLowerCase();
- let list = document.getElementById("list");
- list.innerHTML = "";
-
- Object.values(voters).forEach(v => {
-   if(v.Name.toLowerCase().includes(text) ||
-      v.Epic.toLowerCase().includes(text) ||
-      String(v.AcNo).includes(text) ||
-      String(v.PartNo).includes(text)){
-
-     let div = document.createElement("div");
-     div.innerHTML = `${v.Name} — (${v.Epic})`;
-     div.onclick = () => openPopup(v);
-     list.appendChild(div);
+ Object.values(voters).forEach(v=>{
+   if(Object.values(v).join(" ").toLowerCase().includes(q)){
+     let item=document.createElement("div");
+     item.innerText=`${v.Name} (${v.Epic})`;
+     item.onclick=()=>openPopup(v, item);
+     list.appendChild(item);
    }
  });
-});
+};
 
 // Popup
-function openPopup(v){
- selectedVoter = v;
- document.getElementById("details").innerHTML = `
- Name: ${v.Name} <br>
- EPIC: ${v.Epic} <br>
- AC No: ${v.AcNo} <br>
- Part No: ${v.PartNo}
- `;
- document.getElementById("popup").style.display = "block";
+function openPopup(v, el){
+ selectedVoter=v;
+ document.querySelectorAll("#list div").forEach(x=>x.classList.remove("selected"));
+ el.classList.add("selected");
+ let html="";
+ for(let k in v) html+= `<b>${k}</b>: ${v[k]}<br>`;
+ details.innerHTML=html;
+ popup.style.display="block";
+}
+
+// Color Change
+function changeColor(color){
+ popup.style.background=color;
+ document.querySelector(".selected").style.background=color;
 }
 
 // Print
 function printCard(){
- if(!selectedVoter) return;
- let win = window.open("", "", "width=400,height=500");
- win.document.write(`
-   <h2>Voter Card</h2>
-   Name: ${selectedVoter.Name}<br>
-   EPIC: ${selectedVoter.Epic}<br>
-   AC No: ${selectedVoter.AcNo}<br>
-   Part No: ${selectedVoter.PartNo}<br><br>
-   Message: ${document.getElementById("desc").value}
- `);
- win.print();
- win.close();
+ let w = window.open("", "", "width=400,height=600");
+ w.document.write(`<h2>Voter Card</h2>${details.innerHTML}<br><b>Message:</b><br>${desc.value}`);
+ w.print();
+ w.close();
 }
 
-// Send
-function send(){
- alert("📩 Message sent:\n" + document.getElementById("desc").value);
+// WhatsApp Send
+function sendWhatsApp(){
+ let msg = `Voter Details:\n${details.innerText}\n\nMessage:\n${desc.value}`;
+ window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`);
 }
 
-// Close
+// Close Popup
 function closePopup(){
- document.getElementById("popup").style.display = "none";
+ popup.style.display="none";
 }
+
 </script>
 
 </body>
