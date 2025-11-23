@@ -5,77 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Voter List</title>
 <style>
-body {
-    font-family: Arial, sans-serif;
-    margin: 0; padding: 10px;
-    background: #f3f3f3;
-}
-
-h2 { text-align: center; margin-bottom: 15px; }
-
-input {
-    width: 100%; padding: 12px; margin-bottom: 12px;
-    border-radius: 10px; border: 2px solid #777;
-    font-size: 16px;
-}
-
-.list-item {
-    padding: 14px; background: white; border: 2px solid #aaa;
-    margin-bottom: 10px; border-radius: 12px;
-    cursor: pointer; transition: .3s;
-    font-size: 16px;
-}
-.list-item:hover { transform: scale(1.03); box-shadow:0 0 10px gray; word-wrap: break-word; }
-
-#popup {
-    position: fixed; top:0; left:0; width:100%; height:100%;
-    background: rgba(0,0,0,0.7);
-    display:none; justify-content:center; align-items:center;
-    overflow-y: auto; padding: 10px;
-}
-
-.card {
-    width: 95%; max-width: 400px;
-    background:white; border:3px solid black;
-    border-radius:15px; padding:20px;
-    text-align:left;
-    box-sizing: border-box;
-}
-
-/* Buttons */
-.btn {
-    padding:12px; width:100%; margin-top:10px;
-    background:#008cff; color:white;
-    border:none; cursor:pointer; font-size:16px;
-    border-radius:10px; box-shadow:0 4px 0 #003f7f;
-}
+body { font-family: Arial; margin:0; padding:10px; background:#f3f3f3; }
+h2 { text-align:center; margin-bottom:15px; }
+input { width:100%; padding:12px; margin-bottom:12px; border-radius:10px; border:2px solid #777; font-size:16px; }
+.list-item { padding:14px; background:white; border:2px solid #aaa; margin-bottom:10px; border-radius:12px; cursor:pointer; transition:.3s; font-size:16px; }
+.list-item:hover { transform:scale(1.03); box-shadow:0 0 10px gray; word-wrap:break-word; }
+#popup { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); display:none; justify-content:center; align-items:center; overflow-y:auto; padding:10px; }
+.card { width:95%; max-width:400px; background:white; border:3px solid black; border-radius:15px; padding:20px; text-align:left; box-sizing:border-box; }
+.btn { padding:12px; width:100%; margin-top:10px; background:#008cff; color:white; border:none; cursor:pointer; font-size:16px; border-radius:10px; box-shadow:0 4px 0 #003f7f; }
 .btn:active { transform:translateY(4px); box-shadow:0 1px 0 #003f7f; }
-
 .close-btn { background:red; box-shadow:0 4px 0 #7a0000; }
-
-/* Color selector */
-.color-box {
-    width:40px; height:40px; border-radius:10px;
-    margin:6px; cursor:pointer; border:2px solid black;
-    display:inline-block;
-}
-
-/* PRINT MODE FIX */
-@media print {
-    body * { visibility: hidden; }
-    #popup, #popup * { visibility: visible; }
-    #popup { position: absolute; top:0; left:0; width:100%; }
-    .btn, .close-btn, .color-box, #themeTitle, input { display: none !important; }
-}
-
-/* Mobile tweaks */
-@media(max-width: 500px){
-    input { font-size: 14px; padding:10px; }
-    .list-item { font-size: 14px; padding:12px; }
-    .btn { font-size: 14px; padding:10px; }
-    .color-box { width:35px; height:35px; margin:4px; }
-    .card { padding:15px; }
-}
+.color-box { width:40px; height:40px; border-radius:10px; margin:6px; cursor:pointer; border:2px solid black; display:inline-block; }
+@media print { body *{visibility:hidden} #popup, #popup *{visibility:visible} #popup{position:absolute;top:0;left:0;width:100%} .btn,.close-btn,.color-box,input{display:none !important} }
+@media(max-width:500px){ input{font-size:14px;padding:10px} .list-item{font-size:14px;padding:12px} .btn{font-size:14px;padding:10px} .color-box{width:35px;height:35px;margin:4px} .card{padding:15px} }
 </style>
 </head>
 <body>
@@ -95,9 +37,9 @@ input {
         <p><b>🗳 Booth:</b> <span id="pVoteAddress"></span></p>
 
         <label><b>Sender Message:</b></label>
-        <textarea id="senderNote" placeholder="Your message..." rows="4" style="width:100%;border-radius:8px;"></textarea>
+        <textarea id="senderNote" placeholder="Your note..." rows="4" style="width:100%;border-radius:8px;"></textarea>
 
-        <h3 id="themeTitle">🎨 Theme Color</h3>
+        <h3>🎨 Theme Color</h3>
         <div>
             <div class="color-box" onclick="setColor('#fca5a5')" style="background:#fca5a5"></div>
             <div class="color-box" onclick="setColor('#a5f7c5')" style="background:#a5f7c5"></div>
@@ -112,6 +54,7 @@ input {
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase.js"></script>
 <script>
+// Firebase Setup
 const firebaseConfig = {
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
   authDomain: "voter-25c94.firebaseapp.com",
@@ -121,74 +64,67 @@ const firebaseConfig = {
   messagingSenderId: "297773534400",
   appId: "1:297773534400:web:3722c487b8c83e9b787125"
 };
-
 firebase.initializeApp(firebaseConfig);
 
 let voters = {};
 let selected = null;
+let globalSenderNote = "";
 
-// Load voters from Firebase
-firebase.database().ref("Voters").on("value", snap => {
-    voters = snap.val() || {};
+// Load Data
+firebase.database().ref("/").once("value").then(snap=>{
+    const data = snap.val();
+    globalSenderNote = data.GlobalSenderNote || "";
+    voters = data.Voters || {};
     showList(voters);
 });
 
-// Display list
+// Show List
 function showList(data){
     const box = document.getElementById("list");
     box.innerHTML = "";
-    Object.values(data).forEach(v => {
+    Object.values(data).forEach(v=>{
         let div = document.createElement("div");
         div.className = "list-item";
         div.style.background = v.Color || "white";
         div.style.borderColor = v.Color || "#aaa";
-        div.innerHTML = `
-            <b>${v.name}</b><br>
-            🆔 ${v.EPIC} | 🏛 AC:${v.acNo} | 📍 Part:${v.partNo} | 🗳 Booth: ${v.VotingAddress || "NA"} | 🏠 Address: ${v.Address || "NA"}
-        `;
-        div.onclick = () => openPopup(v);
+        div.innerHTML = `<b>${v.Name}</b><br>🆔 ${v.EPIC} | 🏛 AC:${v.AcNo} | 📍 Part:${v.PartNo} | 🗳 Booth:${v.VotingAddress || "NA"}`;
+        div.onclick = ()=>openPopup(v);
         box.appendChild(div);
     });
 }
 
-// Open popup
+// Popup
 function openPopup(v){
     selected = v;
-    document.getElementById("pName").innerText = v.name;
+    document.getElementById("pName").innerText = v.Name;
     document.getElementById("pEpic").innerText = v.EPIC;
-    document.getElementById("pAc").innerText = v.acNo;
-    document.getElementById("pPart").innerText = v.partNo;
+    document.getElementById("pAc").innerText = v.AcNo;
+    document.getElementById("pPart").innerText = v.PartNo;
     document.getElementById("pAddress").innerText = v.Address || "Not Available";
     document.getElementById("pVoteAddress").innerText = v.VotingAddress || "Not Available";
+    document.getElementById("senderNote").value = v.SenderNote || globalSenderNote || "";
     document.getElementById("cardBox").style.background = v.Color || "white";
-    document.getElementById("senderNote").value = v.senderNote || "";
     document.getElementById("popup").style.display = "flex";
 }
 
-function closePopup(){ document.getElementById("popup").style.display = "none"; }
+function closePopup(){ document.getElementById("popup").style.display="none"; }
 
-// Change card color
+// Save Color
 function setColor(c){
     document.getElementById("cardBox").style.background = c;
-    firebase.database().ref("Voters/" + selected.EPIC).update({ Color: c });
+    firebase.database().ref("Voters/"+selected.EPIC).update({Color:c});
     showList(voters);
 }
 
-// Print card
-function printCard(){ 
-    // Save sender message
-    let msg = document.getElementById("senderNote").value;
-    firebase.database().ref("Voters/" + selected.EPIC).update({ senderNote: msg });
-    window.print();
-}
+// Print
+function printCard(){ window.print(); }
 
-// Send WhatsApp
+// WhatsApp
 function sendWA(){
     let note = document.getElementById("senderNote").value || "—";
-    // Save message
-    firebase.database().ref("Voters/" + selected.EPIC).update({ senderNote: note });
-
-    let text = `*Voter Info*%0A👤 ${selected.name}%0A🆔 EPIC: ${selected.EPIC}%0A🏛 AC:${selected.acNo}%0A📍 Part:${selected.partNo}%0A🏠 Address:${selected.Address || "NA"}%0A🗳 Booth: ${selected.VotingAddress || "NA"}%0A%0A📝 Message: ${note}`;
+    // Save note globally
+    firebase.database().ref("GlobalSenderNote").set(note);
+    let text = `*Voter Info*%0A%0A👤 ${selected.Name}%0A🆔 EPIC: ${selected.EPIC}%0A🏛 AC: ${selected.AcNo}%0A📍 Part: ${selected.PartNo}%0A🏠 Address: ${selected.Address || "NA"}%0A🗳 Booth: ${selected.VotingAddress || "NA"}%0A%0A📝 Message: ${note}`;
     window.open(`https://wa.me/?text=${text}`);
 }
 
@@ -196,14 +132,13 @@ function sendWA(){
 document.getElementById("search").addEventListener("input", e=>{
     let t = e.target.value.toLowerCase();
     let f = Object.values(voters).filter(v =>
-        v.name.toLowerCase().includes(t) ||
+        v.Name.toLowerCase().includes(t) ||
         v.EPIC.toLowerCase().includes(t) ||
-        String(v.acNo).includes(t) ||
-        String(v.partNo).includes(t)
+        String(v.AcNo).includes(t) ||
+        String(v.PartNo).includes(t)
     );
     showList(f);
 });
 </script>
-
 </body>
 </html>
