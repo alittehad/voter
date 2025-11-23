@@ -18,17 +18,8 @@
   display: inline-block;
   text-align: center;
 }
-.button-3d:hover {
-  transform: translateY(-2px);
-  box-shadow: 6px 6px 8px #333, -6px -6px 8px #666;
-}
-.card {
-  background: linear-gradient(135deg, #fef9c3, #fde68a);
-  border-radius: 12px;
-  padding: 1rem;
-  box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-  margin-bottom: 1rem;
-}
+.button-3d:hover { transform: translateY(-2px); box-shadow: 6px 6px 8px #333, -6px -6px 8px #666; }
+.card { background: linear-gradient(135deg, #fef9c3, #fde68a); border-radius: 12px; padding: 1rem; box-shadow: 0 8px 16px rgba(0,0,0,0.2); margin-bottom: 1rem; }
 img { max-width: 100%; border-radius: 8px; }
 </style>
 </head>
@@ -40,7 +31,7 @@ img { max-width: 100%; border-radius: 8px; }
 
 <div id="mainSection" class="hidden">
   <h1 class="text-2xl font-bold mb-4 text-center">Voter List</h1>
-  
+
   <div id="adminPanel" class="mb-4 hidden">
     <h2 class="font-bold mb-2">Add Voter</h2>
     <input type="text" id="vName" placeholder="Name" class="p-2 border rounded mb-2 w-full">
@@ -77,7 +68,7 @@ const firebaseConfig = {
   authDomain: "voter-25c94.firebaseapp.com",
   databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
   projectId: "voter-25c94",
-  storageBucket: "voter-25c94.firebasestorage.app",
+  storageBucket: "voter-25c94.appspot.com",
   messagingSenderId: "297773534400",
   appId: "1:297773534400:web:3722c487b8c83e9b787125"
 };
@@ -115,7 +106,7 @@ document.getElementById("addVoterBtn").addEventListener("click", async ()=>{
   const acNo = parseInt(document.getElementById("vAC").value);
   const partNo = parseInt(document.getElementById("vPart").value);
   if(!name||!epic) return alert("Enter name and EPIC");
-  await set(ref(db,'voters/'+epic),{ name, EPIC: epic, acNo, partNo, images: [], description: "" });
+  await set(ref(db,'Voters/'+epic),{ Epic: epic, Name: name, AcNo: acNo, PartNo: partNo, Description: "", Images: [] });
   document.getElementById("vName").value="";
   document.getElementById("vEPIC").value="";
   document.getElementById("vAC").value="";
@@ -124,7 +115,7 @@ document.getElementById("addVoterBtn").addEventListener("click", async ()=>{
 
 // Load voters
 function loadVoters(){
-  onValue(ref(db,'voters'), snapshot=>{
+  onValue(ref(db,'Voters'), snapshot=>{
     const data = snapshot.val();
     voterTableBody.innerHTML="";
     if(!data) return;
@@ -132,11 +123,11 @@ function loadVoters(){
       const v = data[epic];
       const tr = document.createElement("tr");
       tr.innerHTML=`
-        <td class="px-4 py-2 border text-gray-700">${v.name||'-'}</td>
-        <td class="px-4 py-2 border">${v.EPIC||epic}</td>
-        <td class="px-4 py-2 border">${v.partNo||'-'}</td>
+        <td class="px-4 py-2 border text-gray-700">${v.Name||'-'}</td>
+        <td class="px-4 py-2 border">${v.Epic||epic}</td>
+        <td class="px-4 py-2 border">${v.PartNo||'-'}</td>
         <td class="px-4 py-2 border">
-          <button class="button-3d w-full" onclick="openCard('${v.EPIC}')">View</button>
+          <button class="button-3d w-full" onclick="openCard('${v.Epic}')">View</button>
         </td>`;
       voterTableBody.appendChild(tr);
     });
@@ -145,19 +136,19 @@ function loadVoters(){
 
 // Open card
 window.openCard = async function(epic){
-  const snap = await get(ref(db,'voters/'+epic));
+  const snap = await get(ref(db,'Voters/'+epic));
   const voter = snap.val();
   if(!voter){ cardContainer.innerHTML="<p>Voter not found</p>"; return; }
 
   cardContainer.innerHTML=`
     <div class="card">
-      <h2 class="text-xl font-bold mb-2">${voter.name}</h2>
-      <p><strong>EPIC:</strong> ${voter.EPIC}</p>
-      <p><strong>AC:</strong> ${voter.acNo||'-'}</p>
-      <p><strong>Part:</strong> ${voter.partNo||'-'}</p>
+      <h2 class="text-xl font-bold mb-2">${voter.Name}</h2>
+      <p><strong>EPIC:</strong> ${voter.Epic}</p>
+      <p><strong>AC:</strong> ${voter.AcNo||'-'}</p>
+      <p><strong>Part:</strong> ${voter.PartNo||'-'}</p>
       <div id="imagesContainer" class="my-2 flex flex-col gap-2"></div>
       <div class="my-2">
-        <textarea id="description" rows="3" placeholder="Add description..." class="w-full p-2 border rounded">${voter.description||''}</textarea>
+        <textarea id="description" rows="3" placeholder="Add description..." class="w-full p-2 border rounded">${voter.Description||''}</textarea>
         ${isAdmin?'<button id="saveDescBtn" class="button-3d w-full mt-2">Save Description</button>':''}
       </div>
       <div class="flex gap-2 mt-2">
@@ -172,8 +163,8 @@ window.openCard = async function(epic){
   `;
 
   const imagesContainer = document.getElementById("imagesContainer");
-  if(voter.images){
-    voter.images.forEach((url,idx)=>{
+  if(voter.Images){
+    voter.Images.forEach((url,idx)=>{
       const div = document.createElement("div");
       div.classList.add("relative");
       div.innerHTML=`<img src="${url}" alt="voter image"><button class="button-3d absolute top-0 right-0 text-sm" data-idx="${idx}">Delete</button>`;
@@ -182,8 +173,8 @@ window.openCard = async function(epic){
     imagesContainer.querySelectorAll("button").forEach(btn=>{
       btn.addEventListener("click", async ()=>{
         const i = btn.dataset.idx;
-        voter.images.splice(i,1);
-        await update(ref(db,'voters/'+epic),{images:voter.images});
+        voter.Images.splice(i,1);
+        await update(ref(db,'Voters/'+epic),{Images:voter.Images});
         openCard(epic);
       });
     });
@@ -192,14 +183,14 @@ window.openCard = async function(epic){
   if(isAdmin){
     document.getElementById("saveDescBtn").addEventListener("click", async ()=>{
       const desc=document.getElementById("description").value.trim();
-      await update(ref(db,'voters/'+epic),{description:desc});
+      await update(ref(db,'Voters/'+epic),{Description:desc});
       alert("Description saved");
     });
 
     document.getElementById("uploadBtn").addEventListener("click", async ()=>{
       const files = document.getElementById("imageInput").files;
       if(!files.length) return alert("Select files");
-      voter.images = voter.images || [];
+      voter.Images = voter.Images || [];
       for(let f of files){
         const form = new FormData();
         form.append('image', f);
@@ -208,21 +199,21 @@ window.openCard = async function(epic){
           body: form
         });
         const data = await res.json();
-        if(data.success) voter.images.push(data.data.url);
+        if(data.success) voter.Images.push(data.data.url);
       }
-      await update(ref(db,'voters/'+epic),{images:voter.images});
+      await update(ref(db,'Voters/'+epic),{Images:voter.Images});
       openCard(epic);
     });
   }
 
   document.getElementById("printBtn").addEventListener("click", ()=>{
     const w=window.open('','', 'width=600,height=600');
-    w.document.write(`<h2>${voter.name}</h2><p><strong>EPIC:</strong> ${voter.EPIC}</p><p>${document.getElementById("description").value}</p>`);
+    w.document.write(`<h2>${voter.Name}</h2><p><strong>EPIC:</strong> ${voter.Epic}</p><p>${document.getElementById("description").value}</p>`);
     w.document.close(); w.print();
   });
 
   document.getElementById("whatsappBtn").addEventListener("click", ()=>{
-    const msg=`Name: ${voter.name}\nEPIC: ${voter.EPIC}\nAC: ${voter.acNo}\nPart: ${voter.partNo}\nDescription: ${document.getElementById("description").value}\nImages: ${voter.images?voter.images.join(', '):''}`;
+    const msg=`Name: ${voter.Name}\nEPIC: ${voter.Epic}\nAC: ${voter.AcNo}\nPart: ${voter.PartNo}\nDescription: ${document.getElementById("description").value}\nImages: ${voter.Images?voter.Images.join(', '):''}`;
     window.open('https://api.whatsapp.com/send?text='+encodeURIComponent(msg),'_blank');
   });
 }
