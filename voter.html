@@ -29,10 +29,7 @@
   transform: translateY(-2px);
   box-shadow: 6px 6px 8px #333, -6px -6px 8px #666;
 }
-img {
-  max-width: 100%;
-  border-radius: 8px;
-}
+img { max-width: 100%; border-radius: 8px; }
 </style>
 </head>
 <body class="bg-gray-100 p-4">
@@ -58,9 +55,7 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const storage = getStorage(app);
 
-const urlParams = new URLSearchParams(window.location.search);
-const epic = urlParams.get("id");
-
+const epic = new URLSearchParams(window.location.search).get("id");
 const cardContainer = document.getElementById("cardContainer");
 
 async function loadVoter() {
@@ -70,10 +65,10 @@ async function loadVoter() {
 
   cardContainer.innerHTML = `
     <div class="card">
-      <h2 class="text-xl font-bold mb-2">${voter.name || '-'}</h2>
-      <p><strong>EPIC:</strong> ${voter.EPIC || epic}</p>
-      <p><strong>AC No:</strong> ${voter.acNo || '-'}</p>
-      <p><strong>Part No:</strong> ${voter.partNo || '-'}</p>
+      <h2 class="text-xl font-bold mb-2">${voter.name}</h2>
+      <p><strong>EPIC:</strong> ${voter.EPIC}</p>
+      <p><strong>AC No:</strong> ${voter.acNo}</p>
+      <p><strong>Part No:</strong> ${voter.partNo}</p>
       <div id="imagesContainer" class="my-2 flex flex-col gap-2"></div>
       <div class="my-2">
         <textarea id="description" rows="3" placeholder="Add description..." class="w-full p-2 border rounded">${voter.description || ''}</textarea>
@@ -92,30 +87,26 @@ async function loadVoter() {
 
   // Load images
   const imagesContainer = document.getElementById("imagesContainer");
-  if(voter.images) {
-    voter.images.forEach((url, idx) => {
-      const div = document.createElement("div");
-      div.classList.add("relative");
-      div.innerHTML = `
-        <img src="${url}" alt="voter image">
-        <button class="button-3d absolute top-0 right-0 text-sm" data-idx="${idx}">Delete</button>
-      `;
-      imagesContainer.appendChild(div);
-    });
+  voter.images = voter.images || [];
+  voter.images.forEach((url, idx) => {
+    const div = document.createElement("div");
+    div.classList.add("relative");
+    div.innerHTML = `<img src="${url}" alt="voter image">
+                     <button class="button-3d absolute top-0 right-0 text-sm" data-idx="${idx}">Delete</button>`;
+    imagesContainer.appendChild(div);
+  });
 
-    // Delete buttons
-    imagesContainer.querySelectorAll("button").forEach(btn => {
-      btn.addEventListener("click", async () => {
-        const i = btn.dataset.idx;
-        const imgUrl = voter.images[i];
-        const fileRef = sRef(storage, 'voterImages/' + epic + '/' + i);
-        await deleteObject(fileRef).catch(()=>console.log("Delete in storage skipped"));
-        voter.images.splice(i,1);
-        await update(ref(db, 'voters/' + epic), { images: voter.images });
-        loadVoter(); // reload card
-      });
+  // Delete images
+  imagesContainer.querySelectorAll("button").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const i = btn.dataset.idx;
+      const fileRef = sRef(storage, 'voterImages/' + epic + '/' + i);
+      await deleteObject(fileRef).catch(()=>console.log("Skipped delete in storage"));
+      voter.images.splice(i,1);
+      await update(ref(db, 'voters/' + epic), { images: voter.images });
+      loadVoter();
     });
-  }
+  });
 
   // Save description
   document.getElementById("saveDescBtn").addEventListener("click", async () => {
@@ -128,8 +119,7 @@ async function loadVoter() {
   document.getElementById("uploadBtn").addEventListener("click", async () => {
     const files = document.getElementById("imageInput").files;
     if(!files.length) { alert("Select files"); return; }
-    voter.images = voter.images || [];
-    for(let f of files) {
+    for(let f of files){
       const storageRef = sRef(storage, 'voterImages/' + epic + '/' + f.name);
       await uploadBytes(storageRef, f);
       const url = await getDownloadURL(storageRef);
@@ -141,20 +131,16 @@ async function loadVoter() {
 
   // Print
   document.getElementById("printBtn").addEventListener("click", () => {
-    const printContent = `
-      <h2>${voter.name}</h2>
-      <p><strong>EPIC:</strong> ${voter.EPIC}</p>
-      <p><strong>AC No:</strong> ${voter.acNo || '-'}</p>
-      <p><strong>Part No:</strong> ${voter.partNo || '-'}</p>
-      <p><strong>Description:</strong> ${document.getElementById("description").value}</p>
-    `;
+    const printContent = `<h2>${voter.name}</h2>
+                          <p>EPIC: ${voter.EPIC}</p>
+                          <p>AC No: ${voter.acNo}</p>
+                          <p>Part No: ${voter.partNo}</p>
+                          <p>Description: ${document.getElementById("description").value}</p>`;
     const w = window.open("", "", "width=600,height=600");
-    w.document.write(printContent);
-    w.document.close();
-    w.print();
+    w.document.write(printContent); w.document.close(); w.print();
   });
 
-  // WhatsApp Send
+  // WhatsApp
   document.getElementById("whatsappBtn").addEventListener("click", () => {
     const msg = `Name: ${voter.name}\nEPIC: ${voter.EPIC}\nAC: ${voter.acNo}\nPart: ${voter.partNo}\nDescription: ${document.getElementById("description").value}`;
     const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
