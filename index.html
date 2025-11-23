@@ -42,6 +42,9 @@ body{font-family:system-ui,sans-serif;background:#f0f2f5;margin:0;padding:0;}
   transition: transform .14s, box-shadow .14s;
 }
 .dashboard-btn:active{transform: translateY(2px);}
+#logoutBtn{
+  background: linear-gradient(145deg,#ff8800,#ffcc00);
+}
 </style>
 </head>
 <body>
@@ -58,11 +61,12 @@ body{font-family:system-ui,sans-serif;background:#f0f2f5;margin:0;padding:0;}
     <button class="dashboard-btn" id="btn132">132</button>
     <button class="dashboard-btn" id="btn133">133</button>
   </div>
+  <button class="button-3d" id="logoutBtn">Logout</button>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
@@ -77,26 +81,34 @@ const auth = getAuth(app);
 const loginBtn = document.getElementById("loginBtn");
 const loginScreen = document.getElementById("loginScreen");
 const dashboard = document.getElementById("dashboard");
+const logoutBtn = document.getElementById("logoutBtn");
 
 // Login button click
 loginBtn.onclick = async () => {
-  try{
-    const result = await signInWithPopup(auth,new GoogleAuthProvider());
-    const user = result.user;
-    // Login success
-    showDashboard();
-  }catch(e){ alert("Login failed: "+e.message);}
+  try {
+    await signInWithPopup(auth, new GoogleAuthProvider());
+  } catch(e) {
+    alert("Login failed: "+e.message);
+  }
 };
 
 // Persistent login
-onAuthStateChanged(auth,user=>{
-  if(user){ showDashboard(); }
+onAuthStateChanged(auth, user => {
+  if(user){
+    // User is logged in
+    loginScreen.style.display = "none";
+    dashboard.style.display = "block";
+  } else {
+    // User is logged out
+    loginScreen.style.display = "flex";
+    dashboard.style.display = "none";
+  }
 });
 
-function showDashboard(){
-  loginScreen.style.display="none";
-  dashboard.style.display="block";
-}
+// Logout
+logoutBtn.onclick = async ()=>{
+  await signOut(auth);
+};
 
 // Dashboard buttons
 document.getElementById("btn131").onclick = ()=>{ window.location.href="PAGE_LINK_131.html"; }
