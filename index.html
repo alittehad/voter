@@ -1,38 +1,44 @@
-
 <!DOCTYPE html>
 <html lang="hi">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Election Voter List</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script type="module" src="main.js"></script>
+<title>Login</title>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js"></script>
+<script type="module">
+import { getAuth, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+import { app } from './firebase-config.js';
+import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
+
+const auth = getAuth(app);
+const db = getDatabase(app);
+
+document.addEventListener("DOMContentLoaded", () => {
+  const loginBtn = document.getElementById("loginBtn");
+  loginBtn.addEventListener("click", async () => {
+    const provider = new GoogleAuthProvider();
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      const uid = user.uid;
+      const snapshot = await get(ref(db, 'admins/' + user.email.replace(/\./g, ',')));
+      if(snapshot.exists()){
+        // Admin
+        window.location.href = "admin.html";
+      } else {
+        // User
+        window.location.href = "user.html";
+      }
+    } catch(e) {
+      alert("Login failed: " + e.message);
+    }
+  });
+});
+</script>
 </head>
-<body class="bg-gray-100 p-4">
-
-<div id="loginDiv" class="text-center">
-  <button id="loginBtn" class="bg-blue-500 text-white px-4 py-2 rounded">Login with Google</button>
-</div>
-
-<div id="adminPanel" class="hidden my-4">
-  <h2 class="text-xl font-bold mb-2">Admin Panel</h2>
-  <input type="file" id="sheetUpload">
-  <button onclick="uploadSheet()" class="bg-green-500 px-3 py-1 text-white rounded">Import Sheet</button>
-  <a href="add-voter.html" class="bg-yellow-500 px-3 py-1 text-white rounded ml-2">Add Voter</a>
-</div>
-
-<h1 class="text-2xl font-bold my-4">Voter List</h1>
-<table class="min-w-full bg-white" id="voterTable">
-  <thead>
-    <tr class="bg-gray-200">
-      <th class="px-4 py-2">Name</th>
-      <th class="px-4 py-2">EPIC</th>
-      <th class="px-4 py-2">Booth</th>
-      <th class="px-4 py-2">Action</th>
-    </tr>
-  </thead>
-  <tbody></tbody>
-</table>
-
+<body class="flex items-center justify-center h-screen">
+  <button id="loginBtn" class="px-6 py-3 bg-blue-600 text-white rounded font-bold shadow-lg hover:bg-blue-700">
+    Google Login
+  </button>
 </body>
 </html>
