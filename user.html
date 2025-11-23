@@ -25,7 +25,7 @@ input, textarea { width:100%; padding:10px; margin-bottom:12px; border-radius:8p
     body * { visibility:hidden } 
     #popup, #popup * { visibility:visible } 
     #popup { position:absolute; top:0; left:0; width:100%; } 
-    .btn,.close-btn,.color-box,input,h2 { display:none !important; } 
+    .btn,.close-btn,.color-box,input,h2,img { display:none !important; } 
 }
 
 /* Mobile tweaks */
@@ -62,7 +62,6 @@ input, textarea { width:100%; padding:10px; margin-bottom:12px; border-radius:8p
             <div class="color-box" onclick="setColor('#9fd1ff')" style="background:#9fd1ff"></div>
         </div>
 
-        <button class="btn" onclick="saveImage()">💾 Save Image</button>
         <button class="btn" onclick="printCard()">🖨 Print</button>
         <button class="btn" onclick="sendWA()">📩 WhatsApp Send</button>
         <button class="btn close-btn" onclick="closePopup()">❌ Close</button>
@@ -159,11 +158,14 @@ document.getElementById("imageInput").addEventListener("change", e=>{
     const file = e.target.files[0];
     if(!file || !selected) return;
     const storageRef = firebase.storage().ref(`voterImages/${selected.EPIC}`);
-    storageRef.put(file).then(()=> storageRef.getDownloadURL().then(url=>{
-        document.getElementById("voterImage").src = url;
-        document.getElementById("voterImage").style.display="block";
-        firebase.database().ref("Voters/"+selected.EPIC).update({ImageURL:url});
-    }));
+    storageRef.put(file).then(()=>{
+        storageRef.getDownloadURL().then(url=>{
+            const img = document.getElementById("voterImage");
+            img.src = url;
+            img.style.display="block";
+            firebase.database().ref("Voters/"+selected.EPIC).update({ImageURL:url});
+        });
+    });
 });
 
 // Search
