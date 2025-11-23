@@ -7,7 +7,6 @@
 <style>
     body {
         font-family: Arial, sans-serif;
-        padding-bottom:50px;
     }
     h2{text-align:center;}
 
@@ -18,7 +17,7 @@
         display:block;
         font-size:18px;
         border-radius:10px;
-        border: 2px solid gray;
+        border: 2px solid black;
     }
 
     table {
@@ -30,11 +29,15 @@
 
     th, td {
         padding:10px;
-        border-bottom: 2px solid gray;
+        border-bottom: 2px solid black;
         cursor:pointer;
     }
 
-    tr:hover {background:#eee;}
+    /* Highlight selected row */
+    .selectedRow{
+        font-weight:bold;
+        color:white;
+    }
 
     /* Popup Card */
     #popup {
@@ -67,14 +70,24 @@
 
     .color-btns{
         display:flex;
-        justify-content: space-between;
+        gap:5px;
         margin:10px 0;
     }
+
     .color-btns button{
-        width:30%;
+        flex:1;
         padding:8px;
         border-radius:10px;
         cursor:pointer;
+        color:white;
+        border:none;
+    }
+
+    /* Print only popup */
+    @media print {
+        body * { visibility: hidden; }
+        #popup, #popup * { visibility: visible; }
+        #popup { position:absolute; top:0; left:0; width:100%; box-shadow:none;}
     }
 
 </style>
@@ -91,7 +104,6 @@
 
 <script>
 
-// JSON DATA
 const data = {
   "Voters": {
     "Bcd0598334": {
@@ -99,29 +111,29 @@ const data = {
       "Name": "Sanjay Malakar",
       "AcNo": 131,
       "PartNo": 92,
-      "Description": "Active Voter",
-      "Images": []
+      "Description": "Active Voter"
     },
     "Djm1162627": {
       "Epic": "DJM1162627",
       "Name": "Jagdish Gajanan Gurav",
       "AcNo": 131,
       "PartNo": 237,
-      "Description": "Regular Voter",
-      "Images": []
+      "Description": "Regular Voter"
     },
     "Ltv1989003": {
       "Epic": "LTV1989003",
       "Name": "Jayprakash Gopal Shende",
       "AcNo": 131,
       "PartNo": 14,
-      "Description": "Senior Citizen",
-      "Images": []
+      "Description": "Senior Citizen"
     }
   }
 };
 
-let currentColor = "gray";
+let selectedRow = null;
+let currentColor = "black";
+let selectedData = null;
+
 
 function loadTable(){
     const table = document.getElementById("voterTable");
@@ -132,7 +144,7 @@ function loadTable(){
     for(let id in data.Voters){
         let v = data.Voters[id];
         table.innerHTML += `
-        <tr onclick="showPopup('${id}')">
+        <tr onclick="selectVoter(this,'${id}')">
             <td>${v.Epic}</td>
             <td>${v.Name}</td>
             <td>${v.AcNo}</td>
@@ -142,23 +154,47 @@ function loadTable(){
 }
 loadTable();
 
+
 document.getElementById("searchBox").addEventListener("keyup", function(){
     let filter = this.value.toLowerCase();
-    document.querySelectorAll("#voterTable tr").forEach((row, i)=>{
-        if(i === 0) return;
+    document.querySelectorAll("#voterTable tr").forEach((row,i)=>{
+        if(i===0) return;
         row.style.display = row.innerText.toLowerCase().includes(filter) ? "" : "none";
     });
 });
 
 
-function showPopup(id){
-    let v = data.Voters[id];
-    const popup = document.getElementById("popup");
+function selectVoter(row,id){
 
-    popup.style.border = `4px solid ${currentColor}`;
+    if(selectedRow) selectedRow.classList.remove("selectedRow");
+    selectedRow=row;
+    selectedRow.classList.add("selectedRow");
+    selectedData=data.Voters[id];
+
+    applyColor(currentColor);
+    showPopup();
+}
+
+
+function applyColor(color){
+    currentColor=color;
+
+    if(selectedRow){
+        selectedRow.style.background=color;
+        selectedRow.style.color="white";
+    }
+
+    let popup=document.getElementById("popup");
+    popup.style.border=`4px solid ${color}`;
+}
+
+
+function showPopup(){
+    let v=selectedData;
+    const popup=document.getElementById("popup");
 
     popup.innerHTML = `
-        <h3 style="text-align:center">🪪 Voter Information</h3>
+        <h3 style="text-align:center">🪪 Voter Details</h3>
 
         <p><b>Name:</b> ${v.Name}</p>
         <p><b>EPIC:</b> ${v.Epic}</p>
@@ -167,32 +203,35 @@ function showPopup(id){
         <p><b>Note:</b> ${v.Description}</p>
 
         <div class="color-btns">
-            <button style="background:#ff7675" onclick="changeColor('#ff7675')">Red</button>
-            <button style="background:#74b9ff" onclick="changeColor('#74b9ff')">Blue</button>
-            <button style="background:#55efc4" onclick="changeColor('#55efc4')">Green</button>
+            <button style="background:#ff7675" onclick="applyColor('#ff7675')">Red</button>
+            <button style="background:#74b9ff" onclick="applyColor('#74b9ff')">Blue</button>
+            <button style="background:#55efc4" onclick="applyColor('#55efc4')">Green</button>
         </div>
 
-        <button onclick="window.print()">🖨 Print</button>
-        <button onclick="shareWhatsapp('${v.Name}','${v.Epic}')">📩 WhatsApp</button>
+        <button onclick="window.print()">🖨 Print Card</button>
+        <button onclick="shareOnWhatsapp()">📲 Send via WhatsApp</button>
         <button class="close-btn" onclick="closePopup()">❌ Close</button>
     `;
-
-    popup.style.display = "block";
+    popup.style.display="block";
 }
 
-function changeColor(color){
-    currentColor = color;
-    document.querySelectorAll("td, th").forEach(el=>{
-        el.style.borderBottom = `2px solid ${color}`;
-    });
-    document.getElementById("popup").style.border = `4px solid ${color}`;
+function shareOnWhatsapp(){
+    let v=selectedData;
+    let msg = `🗳 *Voter Information*  
+--------------------
+👤 Name: ${v.Name}
+🆔 EPIC: ${v.Epic}
+📍 AC No: ${v.AcNo}
+📄 Part No: ${v.PartNo}
+📝 Note: ${v.Description}
+--------------------
+Sent from Voter App`;
+
+    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
 }
 
-function closePopup(){ document.getElementById("popup").style.display="none"; }
-
-function shareWhatsapp(name, epic){
-    let msg = `Voter Detail:%0AName: ${name}%0AEPIC: ${epic}`;
-    window.open(`https://wa.me/?text=${msg}`, "_blank");
+function closePopup(){ 
+    document.getElementById("popup").style.display="none"; 
 }
 
 </script>
