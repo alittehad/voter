@@ -3,42 +3,236 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Login</title>
-<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js"></script>
-<script type="module">
-import { getAuth, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
-import { app } from './firebase-config.js';
-import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
-
-const auth = getAuth(app);
-const db = getDatabase(app);
-
-document.addEventListener("DOMContentLoaded", () => {
-  const loginBtn = document.getElementById("loginBtn");
-  loginBtn.addEventListener("click", async () => {
-    const provider = new GoogleAuthProvider();
-    try {
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-      const uid = user.uid;
-      const snapshot = await get(ref(db, 'admins/' + user.email.replace(/\./g, ',')));
-      if(snapshot.exists()){
-        // Admin
-        window.location.href = "admin.html";
-      } else {
-        // User
-        window.location.href = "user.html";
-      }
-    } catch(e) {
-      alert("Login failed: " + e.message);
-    }
-  });
-});
-</script>
+<title>Voter System</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+/* 3D button style */
+.button-3d {
+  background: linear-gradient(145deg, #4f46e5, #3b36c4);
+  color: white;
+  font-weight: bold;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  box-shadow: 4px 4px 6px #333, -4px -4px 6px #666;
+  transition: 0.2s;
+  display: inline-block;
+  text-align: center;
+}
+.button-3d:hover {
+  transform: translateY(-2px);
+  box-shadow: 6px 6px 8px #333, -6px -6px 8px #666;
+}
+.card {
+  background: linear-gradient(135deg, #fef9c3, #fde68a);
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+  margin-bottom: 1rem;
+}
+img { max-width: 100%; border-radius: 8px; }
+</style>
 </head>
-<body class="flex items-center justify-center h-screen">
-  <button id="loginBtn" class="px-6 py-3 bg-blue-600 text-white rounded font-bold shadow-lg hover:bg-blue-700">
-    Google Login
-  </button>
+<body class="bg-gray-100 p-4">
+
+<div id="loginSection" class="text-center">
+  <button id="loginBtn" class="button-3d">Login with Google</button>
+</div>
+
+<div id="mainSection" class="hidden">
+  <h1 class="text-2xl font-bold mb-4 text-center">Voter List</h1>
+  
+  <div id="adminPanel" class="mb-4 hidden">
+    <h2 class="font-bold mb-2">Add Voter</h2>
+    <input type="text" id="vName" placeholder="Name" class="p-2 border rounded mb-2 w-full">
+    <input type="text" id="vEPIC" placeholder="EPIC" class="p-2 border rounded mb-2 w-full">
+    <input type="number" id="vAC" placeholder="AC No" class="p-2 border rounded mb-2 w-full">
+    <input type="number" id="vPart" placeholder="Part No" class="p-2 border rounded mb-2 w-full">
+    <button id="addVoterBtn" class="button-3d w-full">Add Voter</button>
+  </div>
+
+  <div class="overflow-x-auto">
+    <table class="min-w-full table-auto border border-gray-300" id="voterTable">
+      <thead class="bg-gray-200">
+        <tr>
+          <th class="px-4 py-2 border">Name</th>
+          <th class="px-4 py-2 border">EPIC</th>
+          <th class="px-4 py-2 border">Part No</th>
+          <th class="px-4 py-2 border">Action</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div id="cardContainer" class="max-w-md mx-auto mt-4"></div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+import { getDatabase, ref, set, get, onValue, update } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
+  authDomain: "voter-25c94.firebaseapp.com",
+  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
+  projectId: "voter-25c94",
+  storageBucket: "voter-25c94.firebasestorage.app",
+  messagingSenderId: "297773534400",
+  appId: "1:297773534400:web:3722c487b8c83e9b787125"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const auth = getAuth();
+
+const loginBtn = document.getElementById("loginBtn");
+const loginSection = document.getElementById("loginSection");
+const mainSection = document.getElementById("mainSection");
+const adminPanel = document.getElementById("adminPanel");
+const voterTableBody = document.querySelector("#voterTable tbody");
+const cardContainer = document.getElementById("cardContainer");
+
+let currentUser = null;
+let isAdmin = false;
+
+const ADMIN_EMAILS = ["ngogrant454@gmail.com", "zarafix3@gmail.com"];
+
+loginBtn.addEventListener("click", async () => {
+  const provider = new GoogleAuthProvider();
+  const result = await signInWithPopup(auth, provider);
+  currentUser = result.user;
+  isAdmin = ADMIN_EMAILS.includes(currentUser.email);
+  loginSection.classList.add("hidden");
+  mainSection.classList.remove("hidden");
+  if(isAdmin) adminPanel.classList.remove("hidden");
+  loadVoters();
+});
+
+// Add voter
+document.getElementById("addVoterBtn").addEventListener("click", async () => {
+  const name = document.getElementById("vName").value.trim();
+  const epic = document.getElementById("vEPIC").value.trim();
+  const acNo = parseInt(document.getElementById("vAC").value);
+  const partNo = parseInt(document.getElementById("vPart").value);
+  if(!name || !epic) return alert("Enter name and EPIC");
+  await set(ref(db,'voters/'+epic), { name, EPIC: epic, acNo, partNo, images: [], description: "" });
+  document.getElementById("vName").value = "";
+  document.getElementById("vEPIC").value = "";
+  document.getElementById("vAC").value = "";
+  document.getElementById("vPart").value = "";
+});
+
+// Load voters
+function loadVoters() {
+  onValue(ref(db,'voters'), snapshot => {
+    const data = snapshot.val();
+    voterTableBody.innerHTML = "";
+    if(!data) return;
+    Object.keys(data).sort().forEach(epic => {
+      const v = data[epic];
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td class="px-4 py-2 border text-gray-700">${v.name || '-'}</td>
+        <td class="px-4 py-2 border">${v.EPIC || epic}</td>
+        <td class="px-4 py-2 border">${v.partNo || '-'}</td>
+        <td class="px-4 py-2 border">
+          <button class="button-3d w-full" onclick="openCard('${v.EPIC}')">View</button>
+        </td>`;
+      voterTableBody.appendChild(tr);
+    });
+  });
+}
+
+// Open card
+window.openCard = async function(epic){
+  const snap = await get(ref(db,'voters/'+epic));
+  const voter = snap.val();
+  if(!voter) { cardContainer.innerHTML="<p>Voter not found</p>"; return; }
+
+  cardContainer.innerHTML = `
+    <div class="card">
+      <h2 class="text-xl font-bold mb-2">${voter.name}</h2>
+      <p><strong>EPIC:</strong> ${voter.EPIC}</p>
+      <p><strong>AC:</strong> ${voter.acNo || '-'}</p>
+      <p><strong>Part:</strong> ${voter.partNo || '-'}</p>
+      <div id="imagesContainer" class="my-2 flex flex-col gap-2"></div>
+      <div class="my-2">
+        <textarea id="description" rows="3" placeholder="Add description..." class="w-full p-2 border rounded">${voter.description || ''}</textarea>
+        ${isAdmin?'<button id="saveDescBtn" class="button-3d w-full mt-2">Save Description</button>':''}
+      </div>
+      <div class="flex gap-2 mt-2">
+        <button id="printBtn" class="button-3d flex-1">Print</button>
+        <button id="whatsappBtn" class="button-3d flex-1">Send WhatsApp</button>
+      </div>
+      ${isAdmin?`<div class="my-2">
+        <input type="file" id="imageInput" multiple class="mb-2">
+        <button id="uploadBtn" class="button-3d w-full">Upload Image</button>
+      </div>`:''}
+    </div>
+  `;
+
+  const imagesContainer = document.getElementById("imagesContainer");
+  if(voter.images){
+    voter.images.forEach((url,idx)=>{
+      const div = document.createElement("div");
+      div.classList.add("relative");
+      div.innerHTML = `<img src="${url}" alt="voter image"><button class="button-3d absolute top-0 right-0 text-sm" data-idx="${idx}">Delete</button>`;
+      imagesContainer.appendChild(div);
+    });
+    // Delete buttons
+    imagesContainer.querySelectorAll("button").forEach(btn=>{
+      btn.addEventListener("click", async ()=>{
+        const i = btn.dataset.idx;
+        voter.images.splice(i,1);
+        await update(ref(db,'voters/'+epic), { images:voter.images });
+        openCard(epic);
+      });
+    });
+  }
+
+  // Save description
+  if(isAdmin){
+    document.getElementById("saveDescBtn").addEventListener("click", async ()=>{
+      const desc = document.getElementById("description").value.trim();
+      await update(ref(db,'voters/'+epic), { description: desc });
+      alert("Description saved");
+    });
+  }
+
+  // Print
+  document.getElementById("printBtn").addEventListener("click", ()=>{
+    const w = window.open('','', 'width=600,height=600');
+    w.document.write(`<h2>${voter.name}</h2><p><strong>EPIC:</strong> ${voter.EPIC}</p><p>${document.getElementById("description").value}</p>`);
+    w.document.close(); w.print();
+  });
+
+  // WhatsApp
+  document.getElementById("whatsappBtn").addEventListener("click", ()=>{
+    const msg = `Name: ${voter.name}\nEPIC: ${voter.EPIC}\nAC: ${voter.acNo}\nPart: ${voter.partNo}\nDescription: ${document.getElementById("description").value}\nImages: ${voter.images?voter.images.join(', '):''}`;
+    window.open('https://api.whatsapp.com/send?text='+encodeURIComponent(msg),'_blank');
+  });
+
+  // Upload images via imgbb (admin only)
+  if(isAdmin){
+    document.getElementById("uploadBtn").addEventListener("click", async ()=>{
+      const files = document.getElementById("imageInput").files;
+      if(!files.length) return alert("Select files");
+      voter.images = voter.images || [];
+      for(let f of files){
+        const form = new FormData();
+        form.append('image', f);
+        const res = await fetch('https://api.imgbb.com/1/upload?key=YOUR_IMGBB_API_KEY',{
+          method:'POST', body: form
+        });
+        const data = await res.json();
+        if(data.success) voter.images.push(data.data.url);
+      }
+      await update(ref(db,'voters/'+epic), { images:voter.images });
+      openCard(epic);
+    });
+  }
+}
+</script>
 </body>
 </html>
