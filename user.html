@@ -1,37 +1,37 @@
-<!DOCTYPE html>
-<html lang="hi">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Election Voter List</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script type="module" src="main.js"></script>
-</head>
-<body class="bg-gray-100 p-4">
-
-<div id="loginDiv" class="text-center">
-  <button id="loginBtn" class="bg-blue-500 text-white px-4 py-2 rounded">Login with Google</button>
-</div>
-
-<div id="adminPanel" class="hidden my-4">
-  <h2 class="text-xl font-bold mb-2">Admin Panel</h2>
-  <input type="file" id="sheetUpload">
-  <button onclick="uploadSheet()" class="bg-green-500 px-3 py-1 text-white rounded">Import Sheet</button>
-  <a href="add-voter.html" class="bg-yellow-500 px-3 py-1 text-white rounded ml-2">Add Voter</a>
-</div>
-
-<h1 class="text-2xl font-bold my-4">Voter List</h1>
-<table class="min-w-full bg-white" id="voterTable">
+<table id="voterTable">
   <thead>
-    <tr class="bg-gray-200">
-      <th class="px-4 py-2">Name</th>
-      <th class="px-4 py-2">EPIC</th>
-      <th class="px-4 py-2">Booth</th>
-      <th class="px-4 py-2">Action</th>
-    </tr>
+    <tr><th>Name</th><th>EPIC</th><th>Part No</th><th>Action</th></tr>
   </thead>
   <tbody></tbody>
 </table>
 
-</body>
-</html>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  databaseURL: "https://YOUR_PROJECT.firebaseio.com",
+  projectId: "YOUR_PROJECT",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+const tbody = document.querySelector("#voterTable tbody");
+
+onValue(ref(db, 'voters'), (snapshot) => {
+  const data = snapshot.val();
+  tbody.innerHTML = "";
+  Object.values(data).forEach(v => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${v.name}</td><td>${v.EPIC}</td><td>${v.partNo}</td>
+      <td><a href="voter.html?id=${v.EPIC}">View</a></td>`;
+    tbody.appendChild(tr);
+  });
+});
+</script>
