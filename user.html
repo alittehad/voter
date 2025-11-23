@@ -59,8 +59,10 @@ input {
 
 /* PRINT MODE FIX */
 @media print {
-    .btn, .close-btn, textarea, .color-box, #themeTitle, #popup { display:none !important; }
-    .card { width:100% !important; border:2px solid black; background:white !important; }
+    body * { visibility: hidden; } /* पूरी page hide */
+    #popup, #popup * { visibility: visible; } /* सिर्फ popup visible */
+    #popup { position: absolute; top:0; left:0; width:100%; }
+    .btn, .close-btn, .color-box, textarea, #themeTitle { display: none !important; }
 }
 </style>
 </head>
