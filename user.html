@@ -1,178 +1,158 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
-<title>Voter Directory</title>
-
+<title>Voter List</title>
 <style>
-body{font-family:Arial;background:#eef2ff;padding:15px}
-#search{width:100%;padding:10px;font-size:18px;margin-bottom:12px;border-radius:6px;border:2px solid #888}
-table{width:100%;border-collapse:collapse;background:white;border-radius:10px;overflow:hidden}
-th,td{padding:10px;border-bottom:1px solid #ccc}
-tr:hover{background:#d1fae5;cursor:pointer}
-.activeRow{background:var(--selectedColor,#fef08a)!important}
+body { font-family: Arial; margin: 20px; background: #f4f4f4; }
 
-/* Popup */
-#overlay{
-position:fixed;top:0;left:0;width:100%;height:100%;
-background:rgba(0,0,0,0.5);display:none;
-}
-#card{
-width:400px;background:white;padding:20px;border-radius:12px;
-position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);
-box-shadow:0 8px 25px rgba(0,0,0,0.25);transition:.3s;
-}
-#card.show{transform:translate(-50%,-50%) scale(1)}
+table { width: 100%; border-collapse: collapse; }
+th, td { border: 1px solid #ccc; padding: 10px; }
+tr:hover { background: #d7ffd7; cursor: pointer; }
 
-/* Buttons */
-button{
-padding:10px;margin:5px;border:none;border-radius:8px;font-size:15px;cursor:pointer}
-.colorBtn{width:32px;height:32px;border-radius:50%;border:2px solid #222;cursor:pointer}
+#popup {
+  display: none; position: fixed; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  background: white; padding: 20px; width: 350px;
+  border-radius: 10px; box-shadow: 0px 0px 20px black;
+}
+
+.color-btn { width: 25px; height: 25px; border-radius: 50%; border: none; cursor: pointer; margin: 5px; }
+
 </style>
 </head>
 <body>
 
-<h2>📋 Election Voter List</h2>
+<h2>🗳 Election Voter Management</h2>
 
-<input id="search" placeholder="🔍 Search voter by name or EPIC...">
-
-<table>
-<thead>
-<tr><th>Name</th><th>EPIC</th><th>Booth</th><th>Area</th></tr>
-</thead>
-<tbody id="voterTable"></tbody>
-</table>
-
-<!-- POPUP -->
-<div id="overlay"></div>
-<div id="card">
-<h2 id="cName"></h2>
-<hr>
-<div id="info"></div>
-
-<p><b>🎨 Color Theme:</b></p>
-<button class="colorBtn" style="background:#fca5a5" onclick="changeColor('#fca5a5')"></button>
-<button class="colorBtn" style="background:#fffb91" onclick="changeColor('#fffb91')"></button>
-<button class="colorBtn" style="background:#baffc9" onclick="changeColor('#baffc9')"></button>
+<textarea id="jsonInput" rows="6" style="width:100%" placeholder="Yaha JSON paste karo..."></textarea>
+<br><br>
+<button onclick="loadJSON()">Load JSON</button>
 
 <br><br>
+
+<input type="text" id="search" placeholder="Search voter..." onkeyup="filterTable()" style="width:100%; padding:8px;">
+
+<br><br>
+
+<table id="voterTable">
+<thead>
+<tr>
+<th>Name</th>
+<th>EPIC</th>
+<th>AC</th>
+<th>Part</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+
+
+<div id="popup">
+<h3 id="name"></h3>
+<div id="details"></div>
+<br>
+<div>
+<button class="color-btn" style="background:#ff9f9f" onclick="changeColor('#ff9f9f')"></button>
+<button class="color-btn" style="background:#9fd3ff" onclick="changeColor('#9fd3ff')"></button>
+<button class="color-btn" style="background:#caff9f" onclick="changeColor('#caff9f')"></button>
+</div>
+<br>
 <button onclick="printCard()">🖨 Print</button>
 <button onclick="sendWhatsApp()">📩 WhatsApp</button>
-<button onclick="closeCard()" style="background:#dc2626;color:white">❌ Close</button>
+<button onclick="closePopup()">❌ Close</button>
 </div>
 
-<script type="module">
+<script>
+let currentVoterKey = "";
+let activeRow = null;
+let data = {};
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
+function loadJSON(){
+    try {
+        data = JSON.parse(document.getElementById("jsonInput").value);
+        let tbody = document.querySelector("#voterTable tbody");
+        tbody.innerHTML = "";
 
-// 🔥 CHANGE THIS CONFIG WITH YOUR FIREBASE
-const firebaseConfig = {
-  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com/"
-};
+        Object.keys(data.Voters).forEach(key=>{
+            let v = data.Voters[key];
+            let row = document.createElement("tr");
+            row.innerHTML = `
+                <td>${v.Name}</td>
+                <td>${v.Epic}</td>
+                <td>${v.AcNo || '-'}</td>
+                <td>${v.PartNo || '-'}</td>`;
+            row.onclick = () => openCard(key, row);
+            tbody.append(row);
+        });
 
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-
-let voters = {};
-let activeKey = "";
-
-const tbody = document.getElementById("voterTable");
-const search = document.getElementById("search");
-
-onValue(ref(db,"Voters"),snap=>{
-voters = snap.val() || {};
-renderTable(voters);
-});
-
-search.addEventListener("input",()=>{
-let text = search.value.toLowerCase();
-let filter = Object.fromEntries(
-Object.entries(voters).filter(([k,v])=>
-(v.Name+" "+v.Epic).toLowerCase().includes(text))
-);
-renderTable(filter);
-});
-
-function renderTable(data){
-tbody.innerHTML="";
-Object.entries(data).forEach(([key,v])=>{
-let row=document.createElement("tr");
-row.style.borderLeft=`6px solid ${v.Color||"#aaa"}`;
-row.innerHTML=`
-<td>${v.Name}</td>
-<td>${v.Epic}</td>
-<td>${v.Booth||"-"}</td>
-<td>${v.Address||"-"}</td>`;
-row.onclick=()=>openCard(key,row);
-tbody.appendChild(row);
-});
+        alert("JSON Loaded Successfully!");
+    } catch {
+        alert("Invalid JSON!");
+    }
 }
 
-function openCard(key,row){
-activeKey=key;
-
-document.querySelectorAll("tr").forEach(r=>r.classList.remove("activeRow"));
-row.classList.add("activeRow");
-
-let v=voters[key];
-
-document.documentElement.style.setProperty("--selectedColor",v.Color);
-
-document.getElementById("cName").innerText=v.Name;
-
-document.getElementById("info").innerHTML=`
-<b>EPIC:</b> ${v.Epic}<br>
-<b>Father/Relation:</b> ${v.ParentName || "-"} (${v.RelationType || "-"})<br>
-<b>Relation:</b> ${v.Relation || "-"}<br>
-<b>Booth:</b> ${v.Booth || "-"}<br>
-<b>Voter Address:</b> ${v.VoterAddress || "-"}<br>
-<b>Voting Address:</b> ${v.VotingAddress || "-"}<br>
-<b>Description:</b> ${v.Description || "-"}
-`;
-
-document.getElementById("card").style.background=v.Color || "white";
-
-document.getElementById("overlay").style.display="block";
-document.getElementById("card").classList.add("show");
+function filterTable(){
+    let s = document.getElementById("search").value.toLowerCase();
+    document.querySelectorAll("#voterTable tbody tr").forEach(row=>{
+        row.style.display = row.innerText.toLowerCase().includes(s) ? "" : "none";
+    });
 }
 
-function closeCard(){
-document.getElementById("overlay").style.display="none";
-document.getElementById("card").classList.remove("show");
+function openCard(key, row){
+    currentVoterKey = key;
+    activeRow = row;
+    
+    document.querySelectorAll("#voterTable tr").forEach(r=>r.style.background="white");
+
+    let v = data.Voters[key];
+
+    row.style.background = v.Color || "#ffd6a5";
+
+    document.getElementById("name").innerHTML = v.Name;
+    document.getElementById("details").innerHTML = `
+        <b>EPIC:</b> ${v.Epic}<br>
+        <b>AC No:</b> ${v.AcNo}<br>
+        <b>Part No:</b> ${v.PartNo}<br>
+        <b>Address:</b> ${v.Address || '-'}<br>
+        <b>Voter Address:</b> ${v.VoterAddress || '-'}<br>
+        <b>Voting Address:</b> ${v.VotingAddress || '-'}<br>
+        <b>Relation:</b> ${v.Relation || '-'} (${v.RelationType || 'NA'})<br>
+        <b>Description:</b> ${v.Description || '-'}<br><br>
+        <b>Images:</b><br>
+        ${(v.Images && v.Images.length) ? v.Images.map(img => `<img src="${img}" width="80" style="margin:5px;border-radius:6px;">`).join("") : "<i>No Images</i>"}
+    `;
+
+    document.getElementById("popup").style.display = "block";
+    document.getElementById("popup").style.background = v.Color || "white";
 }
 
-function changeColor(color){
-update(ref(db,"Voters/"+activeKey),{Color:color});
-document.getElementById("card").style.background=color;
-document.documentElement.style.setProperty("--selectedColor",color);
-renderTable(voters);
+function changeColor(c){
+    document.getElementById("popup").style.background = c;
+    if(activeRow) activeRow.style.background = c;
+    data.Voters[currentVoterKey].Color = c;
 }
 
-function printCard(){
-let printContent=document.getElementById("card").innerHTML;
-let win=window.open("");
-win.document.write(`<html><body>${printContent}</body></html>`);
-win.print();
-}
+function closePopup(){ document.getElementById("popup").style.display = "none"; }
+
+function printCard(){ window.print(); }
 
 function sendWhatsApp(){
-let v=voters[activeKey];
-let text=`🗳 VOTER DETAILS:
+    let v = data.Voters[currentVoterKey];
+    let msg = `
+🗳 *Voter Details*
 
 👤 Name: ${v.Name}
 🆔 EPIC: ${v.Epic}
-👪 Parent: ${v.ParentName} (${v.RelationType})
-🏠 Address: ${v.VoterAddress}
-🗳 Voting Location: ${v.VotingAddress}
-📍 Booth: ${v.Booth}
-📝 Note: ${v.Description}
+🏛 AC: ${v.AcNo}
+📄 Part: ${v.PartNo}
+🏠 Address: ${v.Address || '-'}
+📌 Voting Address: ${v.VotingAddress || '-'}
+👪 Relation: ${v.Relation || '-'} (${v.RelationType || 'NA'})
+📝 Description: ${v.Description || '-'}
+`;
 
-Sent via Voter App`;
-
-window.open(`https://wa.me/?text=${encodeURIComponent(text)}`);
+    window.open("https://wa.me/?text=" + encodeURIComponent(msg));
 }
-
 </script>
 </body>
 </html>
