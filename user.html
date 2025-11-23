@@ -14,15 +14,15 @@ body { background: #f0f2f5; }
   display: inline-block; text-align: center; font-size: 0.9rem;
 }
 .button-3d:hover { transform: translateY(-2px); box-shadow: 5px 5px 7px #333, -5px -5px 7px #666; }
-.card { background: linear-gradient(135deg, #fef9c3, #fde68a); border-radius: 12px; padding: 1rem; box-shadow: 0 8px 16px rgba(0,0,0,0.2); }
+.card { background: linear-gradient(135deg, #fef9c3, #fde68a); border-radius: 12px; padding: 1rem; }
 img { max-width: 100%; border-radius: 8px; }
 .modal-bg {
   position: fixed; top:0; left:0; width:100%; height:100%;
   background: rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center; z-index:1000;
 }
-.modal { background:white; padding:1rem; border-radius:10px; max-width:400px; width:90%; position:relative; }
-.closeBtn { position:absolute; top:5px; right:5px; cursor:pointer; font-weight:bold; }
-.color-btn { width:24px; height:24px; border-radius:50%; margin-right:5px; }
+.modal { background:white; padding:1rem; border-radius:10px; max-width:420px; width:92%; position:relative; }
+.closeBtn { position:absolute; top:5px; right:5px; cursor:pointer; font-weight:bold; font-size:18px; }
+.color-btn { width:24px; height:24px; border-radius:50%; cursor:pointer; }
 </style>
 </head>
 <body class="p-4">
@@ -36,18 +36,6 @@ img { max-width: 100%; border-radius: 8px; }
 <div id="mainSection" class="hidden">
   <h1 class="text-3xl font-bold mb-4 text-center">Voter List</h1>
 
-  <!-- Admin Panel -->
-  <div id="adminPanel" class="mb-4 hidden p-4 bg-white rounded shadow">
-    <h2 class="font-bold mb-2 text-lg">Add Voter</h2>
-    <input type="text" id="vName" placeholder="Name" class="p-2 border rounded mb-2 w-full">
-    <input type="text" id="vEPIC" placeholder="EPIC" class="p-2 border rounded mb-2 w-full">
-    <input type="number" id="vAC" placeholder="AC No" class="p-2 border rounded mb-2 w-full">
-    <input type="number" id="vPart" placeholder="Part No" class="p-2 border rounded mb-2 w-full">
-    <button id="addVoterBtn" class="button-3d w-full mb-2">Add Voter</button>
-    <input type="text" id="searchInput" placeholder="Search by Name or EPIC" class="p-2 border rounded w-full">
-  </div>
-
-  <!-- Voter Table -->
   <div class="overflow-x-auto bg-white p-2 rounded shadow">
     <table class="min-w-full table-auto border border-gray-300" id="voterTable">
       <thead class="bg-gray-200">
@@ -65,15 +53,15 @@ img { max-width: 100%; border-radius: 8px; }
 
 <!-- Modal -->
 <div id="modal" class="modal-bg hidden">
-  <div class="modal" id="modalContent">
-    <span class="closeBtn" id="closeModal">&times;</span>
+  <div class="modal">
+    <span class="closeBtn" id="closeModal">✖</span>
     <div id="modalBody"></div>
   </div>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-import { getDatabase, ref, set, get, onValue, update } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
+import { getDatabase, ref, set, get, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
 
 const firebaseConfig = {
@@ -86,176 +74,124 @@ const firebaseConfig = {
   appId: "1:297773534400:web:3722c487b8c83e9b787125"
 };
 
-
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const auth = getAuth();
-
-const loginBtn = document.getElementById("loginBtn");
-const loginSection = document.getElementById("loginSection");
-const mainSection = document.getElementById("mainSection");
-const adminPanel = document.getElementById("adminPanel");
-const voterTableBody = document.querySelector("#voterTable tbody");
-const modal = document.getElementById("modal");
-const modalBody = document.getElementById("modalBody");
-const closeModal = document.getElementById("closeModal");
-const searchInput = document.getElementById("searchInput");
-
-let currentUser = null;
-let isAdmin = false;
 const ADMIN_EMAILS = ["ngogrant454@gmail.com","zarafix3@gmail.com"];
+let currentUser=null,isAdmin=false;
 
-loginBtn.addEventListener("click", async ()=>{
-  const provider = new GoogleAuthProvider();
-  const result = await signInWithPopup(auth, provider);
-  currentUser = result.user;
-  isAdmin = ADMIN_EMAILS.includes(currentUser.email);
-  loginSection.classList.add("hidden");
-  mainSection.classList.remove("hidden");
-  if(isAdmin) adminPanel.classList.remove("hidden");
+const loginBtn=document.getElementById("loginBtn");
+const loginSection=document.getElementById("loginSection");
+const mainSection=document.getElementById("mainSection");
+const modal=document.getElementById("modal");
+const modalBody=document.getElementById("modalBody");
+const closeModal=document.getElementById("closeModal");
+const voterTableBody=document.querySelector("#voterTable tbody");
+
+loginBtn.onclick=async()=>{
+  const result=await signInWithPopup(auth,new GoogleAuthProvider());
+  currentUser=result.user;
+  isAdmin=ADMIN_EMAILS.includes(currentUser.email);
+  loginSection.style.display="none";
+  mainSection.style.display="block";
   loadVoters();
-});
+};
 
-// Add voter
-document.getElementById("addVoterBtn").addEventListener("click", async ()=>{
-  const name = document.getElementById("vName").value.trim();
-  const epic = document.getElementById("vEPIC").value.trim();
-  const acNo = parseInt(document.getElementById("vAC").value);
-  const partNo = parseInt(document.getElementById("vPart").value);
-  if(!name||!epic) return alert("Enter name and EPIC");
-  await set(ref(db,'Voters/'+epic),{ Epic: epic, Name: name, AcNo: acNo, PartNo: partNo, Description: "", Images: [], Color: "#fde68a" });
-  document.getElementById("vName").value="";
-  document.getElementById("vEPIC").value="";
-  document.getElementById("vAC").value="";
-  document.getElementById("vPart").value="";
-});
-
-// Search/filter
-searchInput.addEventListener("input", ()=>{
-  const filter = searchInput.value.toLowerCase();
-  document.querySelectorAll("#voterTable tbody tr").forEach(tr=>{
-    const text = tr.innerText.toLowerCase();
-    tr.style.display = text.includes(filter)? "table-row":"none";
-  });
-});
-
-// Load voters
 function loadVoters(){
-  onValue(ref(db,'Voters'), snapshot=>{
-    const data = snapshot.val();
+  onValue(ref(db,"Voters"),snapshot=>{
     voterTableBody.innerHTML="";
-    if(!data) return;
-    Object.keys(data).sort().forEach(epic=>{
-      const v = data[epic];
-      const tr = document.createElement("tr");
-      tr.innerHTML=`
-        <td class="px-4 py-2 border text-gray-700">${v.Name||'-'}</td>
-        <td class="px-4 py-2 border">${v.Epic||epic}</td>
-        <td class="px-4 py-2 border">${v.PartNo||'-'}</td>
-        <td class="px-4 py-2 border">
-          <button class="button-3d w-full" onclick="openCard('${v.Epic}')">View</button>
-        </td>`;
-      voterTableBody.appendChild(tr);
-    });
+    const data=snapshot.val(); if(!data) return;
+
+    for(let epic in data){
+      let v=data[epic];
+      let row=document.createElement("tr");
+      row.style.background=v.Color||"#ffffff";  
+      row.innerHTML=`
+        <td class="border px-2">${v.Name}</td>
+        <td class="border px-2">${v.Epic}</td>
+        <td class="border px-2">${v.PartNo||'-'}</td>
+        <td class="border px-2"><button class="button-3d w-full" onclick="openCard('${epic}')">View</button></td>
+      `;
+      voterTableBody.append(row);
+    }
   });
 }
 
-// Sort Table
-window.sortTable = function(n){
-  const table = document.getElementById("voterTable");
-  let rows = Array.from(table.rows).slice(1);
-  rows.sort((a,b)=>{
-    const x = a.cells[n].innerText.toLowerCase();
-    const y = b.cells[n].innerText.toLowerCase();
-    return x>y?1:x<y?-1:0;
-  });
-  rows.forEach(r=>table.appendChild(r));
-}
+window.openCard=async(epic)=>{
+  const snap=await get(ref(db,"Voters/"+epic));
+  const v=snap.val();
 
-// Open Card Modal
-window.openCard = async function(epic){
-  const snap = await get(ref(db,'Voters/'+epic));
-  const voter = snap.val();
-  if(!voter) return alert("Voter not found");
-  
   modalBody.innerHTML=`
-    <div class="card" id="vCard" style="background:${voter.Color||'#fde68a'}">
-      <h2 class="text-xl font-bold mb-2">${voter.Name}</h2>
-      <p><strong>EPIC:</strong> ${voter.Epic}</p>
-      <p><strong>AC:</strong> ${voter.AcNo||'-'}</p>
-      <p><strong>Part:</strong> ${voter.PartNo||'-'}</p>
-      <div id="imagesContainer" class="my-2 flex flex-col gap-2"></div>
-      <div class="my-2">
-        <textarea id="description" rows="3" placeholder="Add description..." class="w-full p-2 border rounded">${voter.Description||''}</textarea>
-        ${isAdmin?'<button id="saveDescBtn" class="button-3d w-full mt-2">Save Description</button>':''}
-      </div>
-      ${isAdmin?`<div class="my-2 flex gap-1">
-        <input type="file" id="imageInput" multiple class="mb-2">
-        <button id="uploadBtn" class="button-3d flex-1">Upload</button>
-      </div>`:''}
-      ${isAdmin?`<div class="my-2 flex gap-1">
-        <div class="color-btn button-3d" style="background:#fde68a" onclick="changeColor('${epic}','#fde68a')"></div>
-        <div class="color-btn button-3d" style="background:#a5f3fc" onclick="changeColor('${epic}','#a5f3fc')"></div>
-        <div class="color-btn button-3d" style="background:#fca5a5" onclick="changeColor('${epic}','#fca5a5')"></div>
-      </div>`:''}
+  <div class="card" style="background:${v.Color}">
+
+    <h2 class="font-bold text-xl mb-1">${v.Name}</h2>
+    <p><strong>EPIC:</strong> ${v.Epic}</p>
+    <p><strong>AC:</strong> ${v.AcNo||'-'}</p>
+    <p><strong>Part:</strong> ${v.PartNo||'-'}</p>
+
+    <textarea id="desc" class="w-full border p-2 mt-2" rows="2">${v.Description||""}</textarea>
+
+    <textarea id="address" class="w-full border p-2 mt-2" placeholder="Address" rows="2">${v.Address||""}</textarea>
+
+    <textarea id="booth" class="w-full border p-2 mt-2" placeholder="Voting Booth Address" rows="2">${v.Booth||""}</textarea>
+
+    <select id="relationType" class="border p-1 w-full mt-2">
+      <option ${v.RelationType==="Father"?"selected":""}>Father</option>
+      <option ${v.RelationType==="Husband"?"selected":""}>Husband</option>
+    </select>
+
+    <input id="relation" class="border p-2 w-full mt-2" placeholder="Name" value="${v.Relation||""}"/>
+
+    <div class="flex gap-2 mt-2">
+      <button class="button-3d flex-1" onclick="saveFields('${epic}')">Save</button>
+      <button class="button-3d flex-1" onclick="printCard()">Print</button>
     </div>
-  `;
-  
-  const imagesContainer = document.getElementById("imagesContainer");
-  if(voter.Images){
-    voter.Images.forEach((url,idx)=>{
-      const div = document.createElement("div");
-      div.classList.add("relative");
-      div.innerHTML=`<img src="${url}" alt="voter image"><button class="button-3d absolute top-0 right-0 text-sm" data-idx="${idx}">Delete</button>`;
-      imagesContainer.appendChild(div);
-    });
-    imagesContainer.querySelectorAll("button").forEach(btn=>{
-      btn.addEventListener("click", async ()=>{
-        const i = btn.dataset.idx;
-        voter.Images.splice(i,1);
-        await update(ref(db,'Voters/'+epic),{Images:voter.Images});
-        openCard(epic);
-      });
-    });
-  }
 
-  if(isAdmin){
-    document.getElementById("saveDescBtn").addEventListener("click", async ()=>{
-      const desc=document.getElementById("description").value.trim();
-      await update(ref(db,'Voters/'+epic),{Description:desc});
-      alert("Saved for all users!");
-    });
+    <div class="flex gap-2 mt-2">
+      <button class="button-3d flex-1" onclick="sendWhatsApp('${v.Name}','${v.Epic}')">WhatsApp</button>
+      <button class="button-3d flex-1 bg-red-600" onclick="deleteVoter('${epic}')">Delete</button>
+    </div>
 
-    document.getElementById("uploadBtn").addEventListener("click", async ()=>{
-      const files = document.getElementById("imageInput").files;
-      if(!files.length) return alert("Select files");
-      voter.Images = voter.Images || [];
-      for(let f of files){
-        const form = new FormData();
-        form.append('image', f);
-        const res = await fetch('https://api.imgbb.com/1/upload?key=5735107daf1af173af2008a3899a2496',{
-          method:'POST', body:form
-        });
-        const data = await res.json();
-        if(data.success) voter.Images.push(data.data.url);
-      }
-      await update(ref(db,'Voters/'+epic),{Images:voter.Images});
-      openCard(epic);
-    });
-  }
-
+    <div class="flex gap-2 mt-3">
+      <div class="color-btn" style="background:#fde68a" onclick="changeColor('${epic}','#fde68a')"></div>
+      <div class="color-btn" style="background:#a5f3fc" onclick="changeColor('${epic}','#a5f3fc')"></div>
+      <div class="color-btn" style="background:#fca5a5" onclick="changeColor('${epic}','#fca5a5')"></div>
+    </div>
+  </div>`;
   modal.classList.remove("hidden");
-}
+};
 
-// Close modal
-closeModal.addEventListener("click", ()=> modal.classList.add("hidden"));
-window.addEventListener("click",(e)=>{ if(e.target==modal) modal.classList.add("hidden"); });
+window.saveFields=async(epic)=>{
+  await update(ref(db,"Voters/"+epic),{
+    Description:desc.value,
+    Address:address.value,
+    Booth:booth.value,
+    RelationType:relationType.value,
+    Relation:relation.value
+  });
+  alert("Saved & Live Updated!");
+};
 
-// Change color
-window.changeColor = async function(epic,color){
-  await update(ref(db,'Voters/'+epic),{Color:color});
+window.printCard=()=>{ window.print(); };
+
+window.sendWhatsApp=(name,epic)=>{
+  let msg=`Voter Details:%0AName: ${name}%0AEPIC: ${epic}`;
+  window.open(`https://wa.me/?text=${msg}`,"_blank");
+};
+
+window.deleteVoter=async(epic)=>{
+  if(confirm("Delete voter?")){
+    await remove(ref(db,"Voters/"+epic));
+    modal.classList.add("hidden");
+  }
+};
+
+window.changeColor=async(epic,color)=>{
+  await update(ref(db,"Voters/"+epic),{Color:color});
   openCard(epic);
-}
+};
+
+closeModal.onclick=()=>modal.classList.add("hidden");
 </script>
 </body>
 </html>
