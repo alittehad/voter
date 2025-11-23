@@ -102,6 +102,7 @@ input {
         <label><b>Sender Message:</b></label>
         <textarea id="senderNote" placeholder="Your note..." rows="4"
         style="width:100%;border-radius:8px;"></textarea>
+        <button class="btn" style="background:orange;" onclick="deleteSenderNote()">🗑 Delete Message</button>
 
         <h3 id="themeTitle">🎨 Theme Color</h3>
         <div>
@@ -172,30 +173,59 @@ function openPopup(v){
     document.getElementById("pVoteAddress").innerText = v.VotingAddress || "Not Available";
 
     document.getElementById("cardBox").style.background = v.Color || "white";
+
+    // Load saved sender message
+    firebase.database().ref("Voters/" + v.Epic + "/SenderNote").once("value").then(snap=>{
+        document.getElementById("senderNote").value = snap.val() || "";
+    });
+
     document.getElementById("popup").style.display = "flex";
 }
 
+// Close popup
 function closePopup(){
     document.getElementById("popup").style.display = "none";
 }
 
-// SAVE Color
+// Color change
 function setColor(c){
     document.getElementById("cardBox").style.background = c;
     firebase.database().ref("Voters/" + selected.Epic).update({ Color: c });
     showList(voters);
 }
 
-// Print (includes sender note)
-function printCard(){ window.print(); }
+// Save Sender Message on change
+document.getElementById("senderNote").addEventListener("change", function(){
+    if(selected){
+        firebase.database().ref("Voters/" + selected.Epic).update({ SenderNote: this.value });
+    }
+});
 
-// WhatsApp Sender (includes sender note)
+// Delete Sender Message
+function deleteSenderNote(){
+    if(selected){
+        firebase.database().ref("Voters/" + selected.Epic).update({ SenderNote: "" }).then(()=>{
+            document.getElementById("senderNote").value = "";
+            alert("Sender message deleted!");
+        });
+    }
+}
+
+// Print
+function printCard(){
+    firebase.database().ref("Voters/" + selected.Epic + "/SenderNote").once("value").then(snap=>{
+        document.getElementById("senderNote").value = snap.val() || "";
+        window.print();
+    });
+}
+
+// WhatsApp
 function sendWA(){
-    let note = document.getElementById("senderNote").value || "—";
-
-    let text = `*Voter Information*%0A%0A👤 *${selected.Name}*%0A🆔 EPIC: ${selected.Epic}%0A🏛 AC No: ${selected.AcNo}%0A📍 Part No: ${selected.PartNo}%0A🏠 Address: ${selected.Address}%0A🗳 Booth: ${selected.VotingAddress}%0A%0A📝 *Message:* ${note}`;
-
-    window.open(`https://wa.me/?text=${text}`);
+    firebase.database().ref("Voters/" + selected.Epic + "/SenderNote").once("value").then(snap=>{
+        let note = snap.val() || "";
+        let text = `*Voter Information*%0A%0A👤 *${selected.Name}*%0A🆔 EPIC: ${selected.Epic}%0A🏛 AC No: ${selected.AcNo}%0A📍 Part No: ${selected.PartNo}%0A🏠 Address: ${selected.Address}%0A🗳 Booth: ${selected.VotingAddress}%0A%0A📝 *Message:* ${note}`;
+        window.open(`https://wa.me/?text=${text}`);
+    });
 }
 
 // Search
