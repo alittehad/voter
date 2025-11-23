@@ -1,142 +1,154 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Form Submission with Approval</title>
-<script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-auth.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-firestore.js"></script>
-<script src="https://cdn.tailwindcss.com"></script>
+<title>Voter Management System</title>
 <style>
-  /* 3D button effect */
-  .btn-3d {
-    background: linear-gradient(145deg, #ff7f50, #ff6347);
-    color: white;
-    font-weight: bold;
-    padding: 12px 24px;
+body{
+    font-family: Arial, sans-serif;
+    background: var(--theme, #ffffff);
+}
+.container{
+    width: 90%;
+    margin: auto;
+    margin-top: 30px;
+}
+.search-box{
+    margin-bottom: 15px;
+}
+input{
+    width: 100%;
+    padding: 8px;
+    font-size: 16px;
+}
+table{
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    background: var(--theme, #f3f3f3);
+    transition: .4s;
+}
+th, td{
+    border: 1px solid #ccc;
+    padding: 10px;
+    cursor: pointer;
+}
+.card{
+    width: 350px;
+    margin: 20px auto;
+    padding: 20px;
+    background: var(--theme, #f3f3f3);
     border-radius: 12px;
-    box-shadow: 0 5px #d35400;
-    transition: 0.2s;
-  }
-  .btn-3d:active {
-    box-shadow: 0 2px #d35400;
-    transform: translateY(3px);
-  }
+    display: none;
+    transition: .4s;
+    text-align: center;
+    box-shadow: 0 0 16px rgba(0,0,0,0.3);
+}
+.btn{
+    margin: 10px;
+    padding: 8px 15px;
+    cursor: pointer;
+    border: none;
+    font-size: 16px;
+    border-radius: 5px;
+}
+.theme-btn{
+    border: none;
+    margin: 5px;
+    width: 35px;
+    height: 35px;
+    border-radius: 8px;
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(0,0,0,.4);
+}
+.footer{
+    margin-top: 15px;
+    font-size: 14px;
+}
 </style>
 </head>
-<body class="bg-gray-100 p-4">
 
-<div class="max-w-md mx-auto bg-white p-6 rounded-xl shadow-lg">
-<h2 class="text-2xl font-bold mb-4 text-center">Registration Form</h2>
+<body>
 
-<form id="regForm" class="space-y-4">
-  <div>
-    <label class="block font-medium">Name:</label>
-    <input type="text" id="name" required class="w-full border p-2 rounded-md">
-  </div>
-  
-  <div>
-    <label class="block font-medium">Address:</label>
-    <input type="text" id="address" required class="w-full border p-2 rounded-md">
-  </div>
-  
-  <div>
-    <label class="block font-medium">Mobile No:</label>
-    <input type="text" id="mobile" required class="w-full border p-2 rounded-md">
-  </div>
-  
-  <div>
-    <label class="block font-medium">Role:</label>
-    <select id="role" class="w-full border p-2 rounded-md">
-      <option value="user">User</option>
-      <option value="admin">Admin</option>
-    </select>
-  </div>
-  
-  <button type="submit" class="btn-3d w-full mt-4 text-lg">Submit</button>
-</form>
+<div class="container">
 
-<hr class="my-6">
-<h3 class="text-xl font-semibold mb-2 text-center">Super Admin Approval Panel</h3>
-<div id="approvalPanel" class="space-y-2"></div>
+<h2>📋 Voter List</h2>
+
+<div>
+<button class="theme-btn" style="background:red;" onclick="changeTheme('#ffb9b9')"></button>
+<button class="theme-btn" style="background:green;" onclick="changeTheme('#b8ffd6')"></button>
+<button class="theme-btn" style="background:blue;" onclick="changeTheme('#b9d9ff')"></button>
 </div>
 
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js";
-  import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-auth.js";
-  import { getFirestore, collection, addDoc, getDocs, updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-firestore.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
-    authDomain: "voter-25c94.firebaseapp.com",
-    databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
-    projectId: "voter-25c94",
-    storageBucket: "voter-25c94.appspot.com",
-    messagingSenderId: "297773534400",
-    appId: "1:297773534400:web:3722c487b8c83e9b787125"
-  };
 
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-  const auth = getAuth(app);
-  const provider = new GoogleAuthProvider();
+<input type="text" class="search-box" id="search" placeholder="🔍 Search voter..." onkeyup="filterTable()">
 
-  const form = document.getElementById("regForm");
-  const approvalPanel = document.getElementById("approvalPanel");
+<table id="voterTable">
+<tr>
+<th>ID</th>
+<th>Name</th>
+<th>Mobile</th>
+<th>Village</th>
+</tr>
 
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const name = document.getElementById("name").value;
-    const address = document.getElementById("address").value;
-    const mobile = document.getElementById("mobile").value;
-    const role = document.getElementById("role").value;
+<tr onclick="showCard('101','Rahul Sharma','9876543210','Delhi','Student')">
+<td>101</td><td>Rahul Sharma</td><td>9876543210</td><td>Delhi</td>
+</tr>
 
-    await addDoc(collection(db, "registrations"), {
-      name,
-      address,
-      mobile,
-      role,
-      status: "pending"
+<tr onclick="showCard('102','Priya Verma','9696969696','Mumbai','Teacher')">
+<td>102</td><td>Priya Verma</td><td>9696969696</td><td>Mumbai</td>
+</tr>
+
+<tr onclick="showCard('103','Amit Singh','9090909090','Lucknow','Businessman')">
+<td>103</td><td>Amit Singh</td><td>9090909090</td><td>Lucknow</td>
+</tr>
+
+</table>
+
+<div class="card" id="voterCard">
+<h3 id="name"></h3>
+<p><b>ID:</b> <span id="id"></span></p>
+<p><b>Mobile:</b> <span id="mobile"></span></p>
+<p><b>Village:</b> <span id="village"></span></p>
+<p><b>Description:</b> <span id="desc"></span></p>
+
+<hr>
+
+<button class="btn" onclick="window.print()">🖨 Print</button>
+<button class="btn" id="whatsappBtn">📩 WhatsApp</button>
+
+<div class="footer">Sender: Election Management System</div>
+</div>
+
+</div>
+
+<script>
+function filterTable(){
+    let input = document.getElementById("search").value.toLowerCase();
+    let rows = document.querySelectorAll("#voterTable tr");
+
+    rows.forEach((row, index)=>{
+        if(index !== 0){
+            row.style.display = row.innerText.toLowerCase().includes(input) ? "" : "none";
+        }
     });
+}
 
-    alert("Form submitted! Waiting for Super Admin approval.");
-    form.reset();
-  });
+function showCard(id,name,mobile,village,desc){
+    document.getElementById("voterCard").style.display="block";
+    document.getElementById("name").innerText=name;
+    document.getElementById("id").innerText=id;
+    document.getElementById("mobile").innerText=mobile;
+    document.getElementById("village").innerText=village;
+    document.getElementById("desc").innerText=desc;
 
-  async function loadApprovalPanel() {
-    const userCredential = await signInWithPopup(auth, provider);
-    const user = userCredential.user;
-    
-    if(user.email !== "ngogrant45@gmail.com") {
-      alert("You are not Super Admin!");
-      return;
-    }
+    document.getElementById("whatsappBtn").href=`https://wa.me/${mobile}?text=Hello ${name}`;
+}
 
-    const querySnapshot = await getDocs(collection(db, "registrations"));
-    approvalPanel.innerHTML = "";
-
-    querySnapshot.forEach(docSnap => {
-      const data = docSnap.data();
-      if(data.status === "pending"){
-        const div = document.createElement("div");
-        div.className = "flex justify-between items-center bg-gray-100 p-2 rounded-md shadow";
-        div.innerHTML = `
-          <span>${data.name} (${data.role})</span>
-          <button class="btn-3d text-sm" onclick="approve('${docSnap.id}', '${data.role}')">Approve</button>
-        `;
-        approvalPanel.appendChild(div);
-      }
-    });
-  }
-
-  window.approve = async (id, role) => {
-    await updateDoc(doc(db, "registrations", id), { status: "approved" });
-    alert(`${role} approved!`);
-    loadApprovalPanel();
-  }
-
-  loadApprovalPanel();
+function changeTheme(color){
+    document.documentElement.style.setProperty("--theme", color);
+}
 </script>
+
 </body>
 </html>
