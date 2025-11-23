@@ -41,7 +41,7 @@ img.thumb{max-height:110px;border-radius:8px;display:block;margin-top:8px;}
       <option value="132">132</option>
       <option value="133">133</option>
     </select>
-    <input id="searchInput" class="border p-2 w-full rounded" placeholder="Search by name or EPIC..." />
+    <input id="searchInput" class="border p-2 w-full rounded" placeholder="Search by name, EPIC, part, parent, address..." />
   </div>
 
   <!-- Sender Panel -->
@@ -74,7 +74,8 @@ img.thumb{max-height:110px;border-radius:8px;display:block;margin-top:8px;}
           <th style="width:15%">EPIC</th>
           <th style="width:10%">AC</th>
           <th style="width:10%">Part</th>
-          <th style="width:40%">Action</th>
+          <th style="width:15%">Parent</th>
+          <th style="width:25%">Action</th>
         </tr>
       </thead>
       <tbody id="tableBody"></tbody>
@@ -139,8 +140,8 @@ loginBtn.onclick=async()=>{
   }catch(e){alert("Login failed: "+e.message);}
 };
 
-// Login Persistence
-onAuthStateChanged(auth, user=>{
+// Persistent Login
+onAuthStateChanged(auth,user=>{
   if(user){
     currentUser=user;
     isAdmin=ADMIN_EMAILS.includes(currentUser.email);
@@ -178,11 +179,17 @@ function renderTable(){
   Object.keys(voters).sort().forEach(key=>{
     const v=voters[key]; if(!v) return;
     if(ac && String(v.AcNo)!==ac) return;
-    const text=(v.Name||'')+' '+(v.Epic||'')+' '+(v.PartNo||'');
-    if(q && text.toLowerCase().indexOf(q)===-1) return;
+    const searchText=(v.Name+" "+v.Epic+" "+v.PartNo+" "+(v.ParentName||"")+" "+(v.Description||"")+" "+(v.VoterAddress||"")+" "+(v.VotingAddress||"")).toLowerCase();
+    if(q && !searchText.includes(q)) return;
+
     const tr=document.createElement('tr');
     tr.style.background=v.Color||'#fff';
-    tr.innerHTML=`<td>${escapeHtml(v.Name||'')}</td><td>${escapeHtml(v.Epic||key)}</td><td>${escapeHtml(v.AcNo||'')}</td><td>${escapeHtml(v.PartNo||'')}</td><td><button class="button-3d small-3d" onclick="openCard('${key}')">View</button></td>`;
+    tr.innerHTML=`<td>${escapeHtml(v.Name||'')}</td>
+                    <td>${escapeHtml(v.Epic||key)}</td>
+                    <td>${escapeHtml(v.AcNo||'')}</td>
+                    <td>${escapeHtml(v.PartNo||'')}</td>
+                    <td>${escapeHtml(v.ParentName||'')}</td>
+                    <td><button class="button-3d small-3d" onclick="openCard('${key}')">View</button></td>`;
     tableBody.appendChild(tr);
   });
 }
@@ -193,135 +200,70 @@ window.openCard=async function(key){
   modalContent.innerHTML='';
   const html=document.createElement('div');
   html.innerHTML=`
-    <div style="display:flex;flex-direction:column;gap:8px;background:${v.Color||'#fff'};padding:10px;border-radius:10px">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div>
-          <div style="font-weight:700;font-size:18px">${escapeHtml(v.Name)}</div>
-          <div style="color:#555">EPIC: ${escapeHtml(v.Epic)}</div>
-        </div>
-        <div style="text-align:right">
-          <div style="color:#444">AC: ${escapeHtml(v.AcNo||'')}</div>
-          <div style="color:#444">Part: ${escapeHtml(v.PartNo||'')}</div>
-        </div>
-      </div>
-
+  <div style="display:flex;flex-direction:column;gap:8px;background:${v.Color||'#fff'};padding:10px;border-radius:10px">
+    <div style="display:flex;justify-content:space-between;align-items:center">
       <div>
-        <label class="font-medium">Father/Husband Name</label>
-        <select id="fieldParentName" class="border p-2 w-full rounded mt-1">
-          <option value="">Select</option>
-          <option value="Father">Father</option>
-          <option value="Husband">Husband</option>
-        </select>
+        <div style="font-weight:700;font-size:18px">${escapeHtml(v.Name)}</div>
+        <div style="color:#555">EPIC: ${escapeHtml(v.Epic)}</div>
       </div>
+      <div style="text-align:right">
+        <div style="color:#444">AC: ${escapeHtml(v.AcNo||'')}</div>
+        <div style="color:#444">Part: ${escapeHtml(v.PartNo||'')}</div>
+      </div>
+    </div>
 
-      <div>
-        <label class="font-medium">Voter image</label>
-        <input type="file" id="voterFile" accept="image/*" style="margin-top:6px"/>
-        ${v.Images&&v.Images.length?`<img src="${v.Images[0]}" class="thumb" />`:""}
-        ${v.Images&&v.Images.length?`<button class="button-3d small-3d bg-red-600 mt-2" onclick="deleteVoterImage('${key}')">Delete Image</button>`:""}
-      </div>
+    <div>
+      <label class="font-medium">Parent Name</label>
+      <select id="parentDropdown">
+        <option value="Father">Father</option>
+        <option value="Husband">Husband</option>
+      </select>
+      <input id="parentInput" type="text" class="border w-full p-2 rounded mt-1" placeholder="Type parent name" value="${escapeHtml(v.ParentName||'')}"/>
+      <button class="button-3d small-3d mt-1" onclick="saveParent('${key}')">Save Parent</button>
+    </div>
 
-      <div>
-        <label class="font-medium">Voter Address</label>
-        <textarea id="fieldAddress" rows="2" class="border w-full p-2 rounded mt-1">${escapeHtml(v.VoterAddress||'')}</textarea>
-        <button class="button-3d small-3d mt-2" onclick="saveVoterAddress('${key}')">Save Voter Address</button>
-      </div>
+    <div>
+      <label class="font-medium">Voter Image</label>
+      <input type="file" id="voterFile" accept="image/*" style="margin-top:6px"/>
+      ${v.Images && v.Images.length?`<img src="${v.Images[0]}" class="thumb" />`:""}
+      ${v.Images && v.Images.length?`<button class="button-3d small-3d bg-red-600 mt-2" onclick="deleteVoterImage('${key}')">Delete Image</button>`:""}
+    </div>
 
-      <div>
-        <label class="font-medium">Voting Address</label>
-        <textarea id="fieldVotingAddress" rows="2" class="border w-full p-2 rounded mt-1">${escapeHtml(v.VotingAddress||'')}</textarea>
-        <button class="button-3d small-3d mt-2" onclick="saveVotingAddress('${key}')">Save Voting Address</button>
-      </div>
+    <div>
+      <label class="font-medium">Voter Address</label>
+      <textarea id="fieldVoterAddress" rows="2" class="border w-full p-2 rounded mt-1">${escapeHtml(v.VoterAddress||'')}</textarea>
+      <button class="button-3d small-3d mt-1" onclick="saveVoterAddress('${key}')">Save Voter Address</button>
+    </div>
 
-      <div>
-        <label class="font-medium">Description / Notes</label>
-        <textarea id="fieldDesc" rows="2" class="border w-full p-2 rounded mt-1">${escapeHtml(v.Description||'')}</textarea>
-      </div>
+    <div>
+      <label class="font-medium">Voting Address</label>
+      <textarea id="fieldVotingAddress" rows="2" class="border w-full p-2 rounded mt-1">${escapeHtml(v.VotingAddress||'')}</textarea>
+      <button class="button-3d small-3d mt-1" onclick="saveVotingAddress('${key}')">Save Voting Address</button>
+    </div>
 
-      <div style="display:flex;gap:8px;margin-top:6px">
-        <button class="button-3d small-3d" id="saveBtn">Save</button>
-        <button class="button-3d small-3d" id="printBtn">Print</button>
-        <button class="button-3d small-3d" id="whatsappBtn">Send (WhatsApp)</button>
-      </div>
-    </div>`;
+    <div>
+      <label class="font-medium">Description / Notes</label>
+      <textarea id="fieldDesc" rows="2" class="border w-full p-2 rounded mt-1">${escapeHtml(v.Description||'')}</textarea>
+      <button class="button-3d small-3d mt-1" onclick="saveDescription('${key}')">Save Description</button>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:6px">
+      <button class="button-3d small-3d" id="whatsappBtn">Send (WhatsApp)</button>
+    </div>
+  </div>`;
   modalContent.appendChild(html);
-
-  // Save Description & Image
-  document.getElementById('saveBtn').onclick=async()=>{
-    if(!isAdmin) return alert("Only admin can save");
-    const f=document.getElementById('voterFile').files[0];
-    const updates={Description:document.getElementById('fieldDesc').value, ParentName:document.getElementById('fieldParentName').value};
-    if(f){
-      const storageRef=sRef(storage,`Voters/${key}.jpg`);
-      await uploadBytesResumable(storageRef,f);
-      const url=await getDownloadURL(storageRef);
-      updates.Images=[url];
-    }
-    await update(ref(db,'Voters/'+key),updates);
-    alert("Saved & Live Updated");
-  };
-
-  // Save Voter Address
-  window.saveVoterAddress=async function(k){
-    if(!isAdmin) return alert("Only admin can save");
-    const addr=document.getElementById('fieldAddress').value;
-    await update(ref(db,'Voters/'+k),{VoterAddress:addr});
-    alert("Voter Address Saved");
-  };
-
-  // Save Voting Address
-  window.saveVotingAddress=async function(k){
-    if(!isAdmin) return alert("Only admin can save");
-    const addr=document.getElementById('fieldVotingAddress').value;
-    await update(ref(db,'Voters/'+k),{VotingAddress:addr});
-    alert("Voting Address Saved");
-  };
-
-  // Print
-  document.getElementById('printBtn').onclick = async () => {
-    const v = voters[key];
-    const parentName = document.getElementById('fieldParentName')?.value || v.ParentName || '';
-    const voterAddr = document.getElementById('fieldAddress').value || '';
-    const votingAddr = document.getElementById('fieldVotingAddress').value || '';
-    const desc = document.getElementById('fieldDesc').value;
-    const senderSnap = (await get(ref(db, 'Sender'))).val() || {};
-
-    let printHTML = `
-      <div style="font-family:system-ui,sans-serif;padding:20px;border:1px solid #000;width:400px;">
-        <h2 style="text-align:center;">Voter Card</h2>
-        <p><strong>Name:</strong> ${escapeHtml(v.Name)}</p>
-        <p><strong>Father/Husband:</strong> ${escapeHtml(parentName)}</p>
-        <p><strong>EPIC:</strong> ${escapeHtml(v.Epic)}</p>
-        <p><strong>AC:</strong> ${escapeHtml(v.AcNo)}</p>
-        <p><strong>Part:</strong> ${escapeHtml(v.PartNo)}</p>
-        <p><strong>Voter Address:</strong> ${escapeHtml(voterAddr)}</p>
-        <p><strong>Voting Address:</strong> ${escapeHtml(votingAddr)}</p>
-        <p><strong>Description:</strong> ${escapeHtml(desc)}</p>
-        ${v.Images && v.Images.length ? `<img src="${v.Images[0]}" style="width:100%;margin-top:10px;border-radius:8px;">` : ''}
-        ${senderSnap.text ? `<p style="margin-top:10px;"><strong>Sender:</strong> ${escapeHtml(senderSnap.text)}</p>` : ''}
-        ${senderSnap.img ? `<img src="${senderSnap.img}" style="width:100%;margin-top:10px;border-radius:8px;">` : ''}
-      </div>
-    `;
-    const printWindow = window.open('', '', 'height=600,width=800');
-    printWindow.document.write('<html><head><title>Voter Card</title></head><body>');
-    printWindow.document.write(printHTML);
-    printWindow.document.write('</body></html>');
-    printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
-  };
+  document.getElementById('parentDropdown').value=v.ParentName||'Father';
 
   // WhatsApp
   document.getElementById('whatsappBtn').onclick=async()=>{
-    const name=v.Name||'';
-    const epic=v.Epic||'';
-    const desc=document.getElementById('fieldDesc').value;
-    const voterAddr=document.getElementById('fieldAddress').value;
+    const name=v.Name||''; const epic=v.Epic||'';
+    const desc=document.getElementById('fieldDesc').value; 
+    const voterAddr=document.getElementById('fieldVoterAddress').value;
     const votingAddr=document.getElementById('fieldVotingAddress').value;
-    const parentName=document.getElementById('fieldParentName').value;
+    const parentName=document.getElementById('parentInput').value;
+
     const senderSnap=(await get(ref(db,'Sender'))).val()||{};
-    let msg=`${encodeURIComponent(senderSnap.text||'')}\nVoter Details:\nName: ${encodeURIComponent(name)}\nFather/Husband: ${encodeURIComponent(parentName)}\nEPIC: ${encodeURIComponent(epic)}\nVoter Address: ${encodeURIComponent(voterAddr)}\nVoting Address: ${encodeURIComponent(votingAddr)}\nDesc: ${encodeURIComponent(desc)}`;
-    if(v.Images&&v.Images.length) msg+=`\nVoterImage: ${encodeURIComponent(v.Images[0])}`;
+    let msg=`${encodeURIComponent(senderSnap.text||'')}\nVoter Details:\nName: ${encodeURIComponent(name)}\nEPIC: ${encodeURIComponent(epic)}\nParent: ${encodeURIComponent(parentName)}\nVoter Address: ${encodeURIComponent(voterAddr)}\nVoting Address: ${encodeURIComponent(votingAddr)}\nDescription: ${encodeURIComponent(desc)}`;
     if(senderSnap.img) msg+=`\nSenderImage: ${encodeURIComponent(senderSnap.img)}`;
     if(navigator.share){
       navigator.share({text:decodeURIComponent(msg)}).catch(()=>window.open(`https://wa.me/?text=${msg}`,'_blank'));
@@ -329,6 +271,32 @@ window.openCard=async function(key){
   };
 
   modal.classList.remove('hidden');
+};
+
+// SAVE FUNCTIONS
+window.saveParent=async function(key){
+  if(!isAdmin) return alert("Only admin can save");
+  const parent=document.getElementById('parentInput').value;
+  await update(ref(db,'Voters/'+key),{ParentName:parent});
+  alert("Parent Name saved");
+};
+window.saveVoterAddress=async function(key){
+  if(!isAdmin) return alert("Only admin can save");
+  const addr=document.getElementById('fieldVoterAddress').value;
+  await update(ref(db,'Voters/'+key),{VoterAddress:addr});
+  alert("Voter Address saved");
+};
+window.saveVotingAddress=async function(key){
+  if(!isAdmin) return alert("Only admin can save");
+  const addr=document.getElementById('fieldVotingAddress').value;
+  await update(ref(db,'Voters/'+key),{VotingAddress:addr});
+  alert("Voting Address saved");
+};
+window.saveDescription=async function(key){
+  if(!isAdmin) return alert("Only admin can save");
+  const desc=document.getElementById('fieldDesc').value;
+  await update(ref(db,'Voters/'+key),{Description:desc});
+  alert("Description saved");
 };
 
 // DELETE VOTER IMAGE
@@ -344,7 +312,8 @@ async function saveSender(){
   const file=senderFile.files[0]; let updates={};
   if(file){
     const p=sRef(storage,'Sender/poster.jpg');
-    await uploadBytesResumable(p,file);
+    const uploadTask=uploadBytesResumable(p,file);
+    await uploadTask;
     updates.img=await getDownloadURL(p);
   }
   updates.text=senderText.value;
@@ -363,7 +332,6 @@ document.getElementById('modal').addEventListener('click',e=>{if(e.target.id==='
 function closeModal(){modal.classList.add('hidden');}
 function escapeHtml(s=''){return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');}
 window.saveSender=saveSender; window.deleteSenderPoster=deleteSenderPoster;
-
 </script>
 </body>
 </html>
