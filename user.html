@@ -1,441 +1,181 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="hi">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Voter System — ID Card Style</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>WARD-20 Election System</title>
 <script src="https://cdn.tailwindcss.com"></script>
+
 <style>
-  body { background:#f0f2f5; font-family:system-ui,Segoe UI,Roboto,"Noto Sans",sans-serif; }
-  .button-3d { background:linear-gradient(145deg,#4f46e5,#3b36c4); color:#fff; font-weight:700; padding:.35rem .6rem; border-radius:.5rem; box-shadow:3px 3px 6px rgba(0,0,0,.35), -3px -3px 6px rgba(255,255,255,.03); transition:.14s; font-size:.92rem; }
-  .small-3d { padding:.2rem .45rem; font-size:.82rem; border-radius:.4rem; box-shadow:2px 2px 4px rgba(0,0,0,.28), -2px -2px 4px rgba(255,255,255,.02);}
-  .color-btn { width:28px;height:28px;border-radius:50%;cursor:pointer;border:2px solid rgba(0,0,0,.12) }
-  .modal-bg { position:fixed; inset:0; background:rgba(0,0,0,.45); display:flex; align-items:center; justify-content:center; z-index:9999;padding:16px; }
-  .modal { width:100%; max-width:520px; background:transparent; border-radius:12px; position:relative; }
-  .card-wrapper { background:#fff; border-radius:12px; padding:10px; box-shadow:0 10px 30px rgba(0,0,0,.25); overflow:hidden; }
-  .id-card { border-radius:10px; padding:12px; display:flex; gap:12px; align-items:center; color:#111; }
-  .id-photo { width:120px; height:140px; border-radius:6px; object-fit:cover; background:#eee; display:block; }
-  .id-info { flex:1; }
-  .close-x { position:absolute; right:10px; top:8px; cursor:pointer; font-size:20px; background:#fff;border-radius:6px;padding:4px;box-shadow:0 4px 10px rgba(0,0,0,.15);}
-  .thumb { max-height:120px; border-radius:8px; display:block; margin-top:8px; }
-  .toast { position:fixed; left:50%; transform:translateX(-50%); bottom:24px; background:#111;color:#fff;padding:8px 14px;border-radius:8px;opacity:0;transition:opacity .18s; z-index:99999; }
-  .show { opacity:1; }
-  @media (max-width:520px){ .id-photo{width:100px;height:120px} .id-info{font-size:14px} }
+.card-bg{
+  background: var(--theme, #cbe7ff);
+}
 </style>
 </head>
-<body class="p-4">
 
-<!-- LOGIN SCREEN -->
-<div id="loginScreen" class="min-h-screen flex items-center justify-center">
-  <div class="text-center">
-    <h1 class="text-2xl font-bold mb-3">Voter Management — ID Card</h1>
-    <button id="loginBtn" class="button-3d px-6 py-3 text-lg">Login with Google</button>
-    <p class="text-sm text-gray-600 mt-3">Admin: ngogrant454@gmail.com, zarafix3@gmail.com</p>
-  </div>
-</div>
-
-<!-- APP -->
-<div id="app" class="hidden">
-
-  <!-- Sender panel -->
-  <div class="bg-white p-3 rounded shadow mb-4">
-    <div class="flex gap-4">
-      <div class="flex-1">
-        <label class="font-medium">Sender Message</label>
-        <textarea id="senderText" class="border rounded w-full p-2 mt-1" rows="2" placeholder="Sender ka description..."></textarea>
-      </div>
-      <div style="width:160px">
-        <label class="font-medium">Sender Poster</label>
-        <input id="senderFile" type="file" accept="image/*" class="mt-1"/>
-        <div id="senderPreviewWrap" class="mt-2 hidden"><img id="senderPreview" class="thumb" src="" alt="sender"/></div>
-        <div class="flex gap-2 mt-2">
-          <button class="button-3d small-3d" onclick="saveSender()">Save</button>
-          <button class="button-3d small-3d bg-red-600" onclick="deleteSenderPoster()">Delete</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Controls -->
-  <div class="flex gap-3 items-center mb-3">
-    <input id="searchInput" class="border p-2 rounded flex-1" placeholder="Search by Name / EPIC..." />
-    <button id="addDemo" class="button-3d small-3d">Add demo</button>
-  </div>
-
-  <!-- Table -->
-  <div class="bg-white rounded shadow overflow-auto">
-    <table id="voterTable" class="w-full">
-      <thead class="bg-gray-100">
-        <tr><th class="p-3 text-left">Name</th><th class="p-3 text-left">EPIC</th><th class="p-3 text-left">Part</th><th class="p-3 text-left">Action</th></tr>
-      </thead>
-      <tbody id="tableBody"></tbody>
-    </table>
-  </div>
-</div>
-
-<!-- MODAL (ID CARD style) -->
-<div id="modal" class="modal-bg hidden">
-  <div class="modal">
-    <div class="card-wrapper">
-      <div class="close-x" onclick="closeModal()">✖</div>
-      <div id="cardContainer"></div>
-    </div>
-  </div>
-</div>
-
-<div id="toast" class="toast"></div>
+<body class="bg-gray-100">
+<div id="app" class="p-4"></div>
 
 <script type="module">
-/* ===== Firebase imports ===== */
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-import { getDatabase, ref, onValue, get, update, set, remove } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
-import { getStorage, ref as sRef, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-storage.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
 
-/* ===== Config ===== */
+// ---------------- Firebase Setup ------------------
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc, collection, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+
 const firebaseConfig = {
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
   authDomain: "voter-25c94.firebaseapp.com",
-  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
   projectId: "voter-25c94",
   storageBucket: "voter-25c94.appspot.com",
-  messagingSenderId: "297773534400",
-  appId: "1:297773534400:web:3722c487b8c83e9b787125"
+  messagingSenderId: "5735107daf1af173af2008a3899a2496",
+  appId: "1:5735107daf1af173af2008a3899a2496:web:example"
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-const storage = getStorage(app);
+const appFirebase = initializeApp(firebaseConfig);
 const auth = getAuth();
+const db = getFirestore();
+const storage = getStorage();
 
-/* ===== Admin emails ===== */
-const ADMIN_EMAILS = ["ngogrant454@gmail.com","zarafix3@gmail.com"];
+const appDiv = document.getElementById("app");
 
-/* ===== Elements ===== */
-const loginScreen = document.getElementById('loginScreen');
-const loginBtn = document.getElementById('loginBtn');
-const appDiv = document.getElementById('app');
-const tableBody = document.getElementById('tableBody');
-const searchInput = document.getElementById('searchInput');
-
-const senderText = document.getElementById('senderText');
-const senderFile = document.getElementById('senderFile');
-const senderPreview = document.getElementById('senderPreview');
-const senderPreviewWrap = document.getElementById('senderPreviewWrap');
-
-const modal = document.getElementById('modal');
-const cardContainer = document.getElementById('cardContainer');
-const toastEl = document.getElementById('toast');
-
-let currentUser = null;
-let isAdmin = false;
-let voters = {};
-let sender = { text:'', img:'' };
-
-/* ===== Helpers ===== */
-function showToast(txt, time=1800){
-  toastEl.textContent = txt;
-  toastEl.classList.add('show');
-  setTimeout(()=>toastEl.classList.remove('show'), time);
+// ---------------- Google Login ------------------
+async function login(){
+  const provider = new GoogleAuthProvider();
+  const result = await signInWithPopup(auth, provider);
+  
+  const user = result.user;
+  renderApp(user);
 }
-function escapeHtml(s=''){ return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
-function nowId(){ return 'V'+Date.now(); }
 
-/* ===== Login ===== */
-loginBtn.onclick = async () => {
-  try{
-    const res = await signInWithPopup(auth, new GoogleAuthProvider());
-    currentUser = res.user;
-    isAdmin = ADMIN_EMAILS.includes(currentUser.email);
-    loginScreen.classList.add('hidden');
-    appDiv.classList.remove('hidden');
-    init();
-  } catch(e){
-    alert('Login failed: '+(e.message||e));
-    console.error(e);
+// ---------------- Load Sender Details ------------------
+async function loadSender(){
+  const snap = await getDoc(doc(db, "settings", "sender"));
+  return snap.exists() ? snap.data() : { name:"", mobile:"", desc:"", photo:"" };
+}
+
+// ---------------- Save Sender (ADMIN) ------------------
+async function saveSender(){
+  const name = document.getElementById("senderName").value;
+  const mobile = document.getElementById("senderMobile").value;
+  const desc = document.getElementById("senderDesc").value;
+  const photoFile = document.getElementById("senderPhoto").files[0];
+
+  let photoURL = "";
+
+  if(photoFile){
+    const senderRef = ref(storage, "sender/photo.jpg");
+    await uploadBytes(senderRef, photoFile);
+    photoURL = await getDownloadURL(senderRef);
   }
-};
 
-/* ===== Init listeners ===== */
-function init(){
-  // sender
-  onValue(ref(db, 'Sender'), snap=>{
-    sender = snap.val() || { text:'', img:'' };
-    senderText.value = sender.text || '';
-    if (sender.img) { senderPreview.src = sender.img; senderPreviewWrap.classList.remove('hidden'); }
-    else senderPreviewWrap.classList.add('hidden');
+  await setDoc(doc(db, "settings", "sender"), {
+    name, mobile, desc, photo: photoURL
   });
 
-  // voters list
-  onValue(ref(db, 'Voters'), snap=>{
-    voters = snap.val() || {};
-    renderTable();
-  });
-
-  // search
-  searchInput.oninput = renderTable;
-
-  // local preview for sender file
-  senderFile.onchange = ()=> {
-    const f = senderFile.files[0];
-    if (!f) return;
-    senderPreview.src = URL.createObjectURL(f);
-    senderPreviewWrap.classList.remove('hidden');
-  };
-
-  document.getElementById('addDemo').onclick = async ()=>{
-    if (!isAdmin) return showToast('Only admin can add demo');
-    const id = nowId();
-    await set(ref(db, 'Voters/'+id), {
-      Epic: id,
-      Name: 'Demo Voter '+id.slice(-4),
-      PartNo: Math.floor(Math.random()*500),
-      AcNo: 131,
-      Description: '',
-      Address: '',
-      Booth: '',
-      RelationType: 'Father',
-      Relation: '',
-      Color: '#fde68a',
-      Image: ''
-    });
-    showToast('Demo added');
-  };
+  alert("Sender Saved!");
 }
 
-/* ===== Render table (no delete in table) ===== */
-function renderTable(){
-  tableBody.innerHTML = '';
-  const q = (searchInput.value||'').toLowerCase();
-  Object.keys(voters).sort().forEach(key=>{
-    const v = voters[key]; if(!v) return;
-    const text = ((v.Name||'') + ' ' + (v.Epic||'') + ' ' + (v.PartNo||'')).toLowerCase();
-    if (q && text.indexOf(q)===-1) return;
-    const tr = document.createElement('tr');
-    tr.style.background = v.Color || '#fff';
-    tr.innerHTML = `
-      <td class="p-3">${escapeHtml(v.Name||'')}</td>
-      <td class="p-3">${escapeHtml(v.Epic||key)}</td>
-      <td class="p-3">${escapeHtml(v.PartNo||'')}</td>
-      <td class="p-3">
-        <button class="button-3d small-3d" onclick="openCard('${key}')">View</button>
-      </td>
-    `;
-    tableBody.appendChild(tr);
-  });
+// ---------------- Load Voters ------------------
+async function loadVoters(){
+  const q = await getDocs(collection(db, "voters"));
+  let arr = [];
+  q.forEach(doc => arr.push({ id: doc.id, ...doc.data() }));
+  return arr;
 }
 
-/* ===== Open card (ID card style) ===== */
-window.openCard = async function(key){
-  const v = voters[key];
-  if (!v) return showToast('Voter not found');
-  // build card html (ID card style)
-  cardContainer.innerHTML = `
-    <div class="id-card" style="background:${v.Color||'#fff'}; border:4px solid ${v.Color||'#fde68a'}; border-radius:10px; padding:12px;">
-      <div style="flex:0 0 140px; display:flex; flex-direction:column; align-items:center;">
-        <img id="photoPreview" src="${v.Image||''}" class="id-photo" onerror="this.style.background='#eee';this.src=''" />
-        <div style="margin-top:8px; display:flex; gap:6px;">
-          ${isAdmin?'<label class="small-3d button-3d" style="cursor:pointer"><input id="uploadVoterFile" type="file" accept="image/*" style="display:none"/></label>':''}
-          ${v.Image && isAdmin ? '<button id="delPhotoBtn" class="small-3d" title="Delete photo" style="background:#fff;color:#111">🗑</button>' : ''}
-        </div>
-      </div>
+// ---------------- Upload Voter Image ------------------
+async function uploadImage(voterId){
+  const input = document.getElementById("img-"+voterId).files[0];
+  if(!input) return alert("Select file");
 
-      <div class="id-info">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-          <div>
-            <div style="font-weight:800;font-size:18px">${escapeHtml(v.Name||'')}</div>
-            <div style="color:#333;margin-top:4px"><b>EPIC:</b> ${escapeHtml(v.Epic||'')}</div>
-          </div>
-          <div style="text-align:right;color:#333">
-            <div><b>AC:</b> ${escapeHtml(v.AcNo||'')}</div>
-            <div><b>Part:</b> ${escapeHtml(v.PartNo||'')}</div>
-          </div>
-        </div>
+  const storageRef = ref(storage, "voters/"+voterId+".jpg");
+  await uploadBytes(storageRef, input);
+  const url = await getDownloadURL(storageRef);
 
-        <div style="margin-top:8px">
-          <label class="font-medium">Description</label>
-          <textarea id="fieldDesc" rows="2" class="border rounded w-full p-2 mt-1">${escapeHtml(v.Description||'')}</textarea>
-        </div>
+  await updateDoc(doc(db, "voters", voterId), { photo:url });
+  alert("Uploaded!");
+  renderApp(auth.currentUser);
+}
 
-        <div style="display:flex;gap:8px;margin-top:8px">
-          <div style="flex:1">
-            <label class="font-medium">Relation Type</label>
-            <select id="fieldRelType" class="border w-full p-2 rounded mt-1">
-              <option ${v.RelationType==='Father'?'selected':''}>Father</option>
-              <option ${v.RelationType==='Husband'?'selected':''}>Husband</option>
-            </select>
-          </div>
-          <div style="flex:1">
-            <label class="font-medium">Relation Name</label>
-            <input id="fieldRel" class="border w-full p-2 rounded mt-1" value="${escapeHtml(v.Relation||'')}"/>
-          </div>
-        </div>
+// ---------------- Delete Voter Image ------------------
+async function deleteImage(voterId, url){
+  if(!confirm("Remove Photo?")) return;
 
-        <div style="margin-top:8px">
-          <label class="font-medium">Address</label>
-          <textarea id="fieldAddr" rows="2" class="border rounded w-full p-2 mt-1">${escapeHtml(v.Address||'')}</textarea>
-        </div>
+  await deleteObject(ref(storage, url));
+  await updateDoc(doc(db, "voters", voterId), { photo:"" });
 
-        <div style="margin-top:8px">
-          <label class="font-medium">Voting Booth Address</label>
-          <textarea id="fieldBooth" rows="2" class="border rounded w-full p-2 mt-1">${escapeHtml(v.Booth||'')}</textarea>
-        </div>
+  renderApp(auth.currentUser);
+}
 
-        <div style="display:flex;gap:8px;margin-top:10px">
-          <button id="saveBtn" class="button-3d small-3d">Save</button>
-          <button id="printBtn" class="button-3d small-3d">Print Card</button>
-          <button id="waBtn" class="button-3d small-3d">Send WhatsApp</button>
-        </div>
+// ---------------- Share Voter Card ------------------
+async function share(v){
+  const sender = await loadSender();
 
-        <div style="display:flex;gap:8px;align-items:center;margin-top:10px">
-          <div style="font-weight:700">Card Color</div>
-          <div class="color-btn" style="background:#fde68a" onclick="changeColor('${key}','#fde68a')"></div>
-          <div class="color-btn" style="background:#a5f3fc" onclick="changeColor('${key}','#a5f3fc')"></div>
-          <div class="color-btn" style="background:#fca5a5" onclick="changeColor('${key}','#fca5a5')"></div>
-        </div>
+  const msg = 
+`🗳 VOTER CARD  
 
-        <div style="margin-top:8px;color:#444;font-size:13px">Sender message and poster will be included when sending.</div>
-      </div>
+👤 Name: ${v.name}
+📍 Voting Address: ${v.voting}
+📄 EPIC: ${v.epic}
+
+--------------------------------
+📢 Sender Info
+
+👤 ${sender.name}
+📞 ${sender.mobile}
+📝 ${sender.desc}
+`;
+
+  const encoded = encodeURIComponent(msg);
+  window.open(`https://wa.me/?text=${encoded}`, "_blank");
+}
+
+// ---------------- UI Render ------------------
+async function renderApp(user){
+  const sender = await loadSender();
+  const voters = await loadVoters();
+
+  appDiv.innerHTML = `
+  <h1 class="text-xl font-bold mb-4">Welcome: ${user.email}</h1>
+
+  <!-- Sender Form (ADMIN ONLY = YOU) -->
+  ${user.email.includes("admin") ? `
+  <div class="bg-white p-4 shadow rounded mb-4">
+    <h2 class="font-bold">Sender Setup</h2>
+    <input id="senderName" placeholder="Sender Name" class="border p-2 w-full mb-2" value="${sender.name}">
+    <input id="senderMobile" placeholder="Mobile" class="border p-2 w-full mb-2" value="${sender.mobile}">
+    <textarea id="senderDesc" placeholder="Description" class="border p-2 w-full mb-2">${sender.desc}</textarea>
+    <input type="file" id="senderPhoto" class="mb-2">
+    <button class="bg-blue-600 text-white px-4 py-2 rounded" onclick="saveSender()">SAVE</button>
+  </div>` : ""}
+
+
+  <!-- Voter List -->
+  <div>
+  ${voters.map(v => `
+    <div class="card-bg p-4 rounded mb-4 shadow">
+      <h3 class="font-bold">${v.name}</h3>
+      <p>📄 EPIC: ${v.epic}</p>
+      <p>🏠 Address: ${v.address}</p>
+      <p>🗳 Voting: ${v.voting}</p>
+
+      ${v.photo ? `<img src="${v.photo}" class="w-24 h-24 rounded my-2" />` : ""}
+      <input type="file" id="img-${v.id}" class="my-1">
+      <button onclick="uploadImage('${v.id}')" class="bg-green-600 text-white px-3 py-1">Upload</button>
+
+      ${v.photo ? `<button onclick="deleteImage('${v.id}', '${v.photo}')" class="bg-red-600 text-white px-3 py-1 ml-2">Remove Photo</button>` : ""}
+
+      <button onclick='share(${JSON.stringify(v)})' class="bg-black text-white px-4 py-2 mt-2 block">📩 Share</button>
     </div>
-  `;
-
-  // wire up buttons
-  modal.classList.remove('hidden');
-
-  // upload input (if admin)
-  const upInput = document.getElementById('uploadVoterFile');
-  if (upInput) {
-    upInput.onchange = async () => {
-      if (!isAdmin) return showToast('Only admin can upload');
-      const f = upInput.files[0]; if (!f) return;
-      const stRef = sRef(storage, `Voters/${key}/${key}.jpg`);
-      await uploadBytes(stRef, f);
-      const url = await getDownloadURL(stRef);
-      await update(ref(db, 'Voters/' + key), { Image: url });
-      showToast('Photo uploaded');
-    };
-  }
-
-  // delete photo (admin)
-  const delBtn = document.getElementById('delPhotoBtn');
-  if (delBtn) {
-    delBtn.onclick = async () => {
-      if (!isAdmin) return showToast('Only admin can delete photo');
-      if (!confirm('Delete voter photo?')) return;
-      try { await deleteObject(sRef(storage, `Voters/${key}/${key}.jpg`)); } catch(e){}
-      await update(ref(db, 'Voters/' + key), { Image: '' });
-      showToast('Photo deleted');
-    };
-  }
-
-  // save
-  document.getElementById('saveBtn').onclick = async () => {
-    if (!isAdmin) return showToast('Only admin can save');
-    const updates = {
-      Description: document.getElementById('fieldDesc').value,
-      RelationType: document.getElementById('fieldRelType').value,
-      Relation: document.getElementById('fieldRel').value,
-      Address: document.getElementById('fieldAddr').value,
-      Booth: document.getElementById('fieldBooth').value
-    };
-    await update(ref(db, 'Voters/' + key), updates);
-    showToast('Saved (visible to all)');
-  };
-
-  // print (ID-card styled)
-  document.getElementById('printBtn').onclick = () => {
-    const html = buildPrintHtml(key);
-    const w = window.open('','printwin','width=700,height=900');
-    w.document.write(html);
-    w.document.close();
-    w.focus();
-    setTimeout(()=>w.print(), 400);
-  };
-
-  // WhatsApp send (sender + voter + images links)
-  document.getElementById('waBtn').onclick = async () => {
-    const freshSender = (await get(ref(db, 'Sender'))).val() || {};
-    const desc = document.getElementById('fieldDesc').value;
-    const name = v.Name || '';
-    const epic = v.Epic || '';
-    const addr = document.getElementById('fieldAddr').value || '';
-    const booth = document.getElementById('fieldBooth').value || '';
-    const rel = document.getElementById('fieldRel').value || '';
-    let msg = `${encodeURIComponent(freshSender.text || '')}%0A%0AVoter Details:%0AName: ${encodeURIComponent(name)}%0AEPIC: ${encodeURIComponent(epic)}%0ARelation: ${encodeURIComponent(rel)}%0AAddress: ${encodeURIComponent(addr)}%0ABooth: ${encodeURIComponent(booth)}%0ADescription: ${encodeURIComponent(desc)}`;
-    if (v.Image) msg += `%0AImage: ${encodeURIComponent(v.Image)}`;
-    if (freshSender.img) msg += `%0ASenderPoster: ${encodeURIComponent(freshSender.img)}`;
-    window.open(`https://wa.me/?text=${msg}`, '_blank');
-  };
-};
-
-/* ===== Build print HTML (ID card) ===== */
-function buildPrintHtml(key){
-  const v = voters[key] || {};
-  const senderSnap = sender || {};
-  const cardColor = v.Color || '#fde68a';
-  const photo = v.Image ? `<img src="${v.Image}" style="width:140px;height:170px;object-fit:cover;border-radius:8px;"/>` : `<div style="width:140px;height:170px;background:#eee;border-radius:8px;display:flex;align-items:center;justify-content:center">No Image</div>`;
-  return `
-    <html><head><title>Print ID</title>
-      <style>
-        body{font-family:Arial,Helvetica,sans-serif;padding:20px}
-        .id{width:360px;border:6px solid ${cardColor};border-radius:10px;padding:12px;display:flex;gap:12px;align-items:flex-start}
-        .info{flex:1}
-        h2{margin:0 0 6px 0;font-size:18px}
-        p{margin:4px 0}
-      </style>
-    </head><body>
-      <div class="id">
-        <div>${photo}</div>
-        <div class="info">
-          <h2>${escapeHtml(v.Name||'')}</h2>
-          <p><b>EPIC:</b> ${escapeHtml(v.Epic||'')}</p>
-          <p><b>AC:</b> ${escapeHtml(v.AcNo||'')}</p>
-          <p><b>Part:</b> ${escapeHtml(v.PartNo||'')}</p>
-          <p><b>Relation:</b> ${escapeHtml(v.RelationType||'')} - ${escapeHtml(v.Relation||'')}</p>
-          <p><b>Address:</b> ${escapeHtml(v.Address||'')}</p>
-          <p><b>Booth:</b> ${escapeHtml(v.Booth||'')}</p>
-          <hr/>
-          <p><b>Sender:</b> ${escapeHtml(senderSnap.text||'')}</p>
-        </div>
-      </div>
-    </body></html>
+  `).join("")}
+  </div>
   `;
 }
 
-/* ===== Sender save and delete ===== */
-window.saveSender = async function(){
-  if (!currentUser) return showToast('Login first');
-  // upload poster if file selected
-  const file = senderFile.files[0];
-  const updates = {};
-  if (file){
-    const refStorage = sRef(storage, 'Sender/poster.jpg');
-    await uploadBytes(refStorage, file);
-    updates.img = await getDownloadURL(refStorage);
-  }
-  updates.text = senderText.value;
-  await set(ref(db, 'Sender'), updates);
-  showToast('Sender saved');
-};
-window.deleteSenderPoster = async function(){
-  if (!isAdmin) return showToast('Only admin');
-  try { await deleteObject(sRef(storage, 'Sender/poster.jpg')); } catch(e){}
-  await update(ref(db, 'Sender'), { img: '' });
-  senderPreview.src = '';
-  senderPreviewWrap.classList.add('hidden');
-  showToast('Sender poster deleted');
-};
+login();
 
-/* ===== changeColor, closeModal, escapeHtml ===== */
-window.changeColor = async function(key, color){
-  await update(ref(db, 'Voters/' + key), { Color: color });
-  showToast('Color changed');
-};
-window.closeModal = function(){ modal.classList.add('hidden'); };
-document.getElementById('modal').addEventListener('click', (e)=> { if (e.target.id === 'modal') closeModal(); });
-
-/* ===== end ===== */
 </script>
-
 </body>
 </html>
