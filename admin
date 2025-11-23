@@ -3,82 +3,39 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin Panel - Voter Management</title>
+<title>Super Admin Dashboard</title>
+<script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-firestore.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
-.button-3d {
-  background: linear-gradient(145deg, #4f46e5, #3b36c4);
-  color: white;
-  font-weight: bold;
-  padding: 0.5rem 1rem;
-  border-radius: 0.5rem;
-  box-shadow: 4px 4px 6px #333, -4px -4px 6px #666;
-  transition: 0.2s;
-  display: inline-block;
-  text-align: center;
-  margin-top: 5px;
-}
-.button-3d:hover {
-  transform: translateY(-2px);
-  box-shadow: 6px 6px 8px #333, -6px -6px 8px #666;
-}
-img {
-  max-width: 100px;
-  border-radius: 8px;
-}
+  .btn-3d {
+    background: linear-gradient(145deg, #4ade80, #16a34a);
+    color: white;
+    font-weight: bold;
+    padding: 8px 16px;
+    border-radius: 8px;
+    box-shadow: 0 4px #15803d;
+    transition: 0.2s;
+  }
+  .btn-3d:active {
+    box-shadow: 0 2px #15803d;
+    transform: translateY(2px);
+  }
 </style>
 </head>
 <body class="bg-gray-100 p-4">
 
-<h1 class="text-2xl font-bold mb-4 text-center">Admin Panel - Voter Management</h1>
+<div class="max-w-3xl mx-auto bg-white p-6 rounded-xl shadow-lg">
+<h2 class="text-2xl font-bold mb-4 text-center">Super Admin Dashboard</h2>
 
-<!-- Add Voter Form -->
-<div class="max-w-md mx-auto bg-white p-4 rounded shadow mb-6">
-  <h2 class="font-bold mb-2">Add / Edit Voter</h2>
-  <input type="text" id="name" placeholder="Name" class="w-full p-2 mb-2 border rounded">
-  <input type="text" id="EPIC" placeholder="EPIC" class="w-full p-2 mb-2 border rounded">
-  <input type="number" id="acNo" placeholder="AC No" class="w-full p-2 mb-2 border rounded">
-  <input type="number" id="partNo" placeholder="Part No" class="w-full p-2 mb-2 border rounded">
-  <button id="addVoterBtn" class="button-3d w-full">Add / Update Voter</button>
-</div>
-
-<!-- JSON Import -->
-<div class="max-w-md mx-auto bg-white p-4 rounded shadow mb-6">
-  <h2 class="font-bold mb-2">Import Voters from JSON</h2>
-  <input type="file" id="jsonFile" accept=".json" class="w-full mb-2">
-  <button id="importBtn" class="button-3d w-full">Import JSON</button>
-</div>
-
-<!-- Export JSON -->
-<div class="max-w-md mx-auto bg-white p-4 rounded shadow mb-6">
-  <h2 class="font-bold mb-2">Export Voters to JSON</h2>
-  <button id="exportBtn" class="button-3d w-full">Export JSON</button>
-</div>
-
-<!-- Voter List -->
-<div class="max-w-2xl mx-auto bg-white p-4 rounded shadow">
-  <h2 class="font-bold mb-2">Voter List</h2>
-  <div class="overflow-x-auto">
-    <table class="min-w-full table-auto border border-gray-300" id="voterTable">
-      <thead class="bg-gray-200">
-        <tr>
-          <th class="px-4 py-2 border">Name</th>
-          <th class="px-4 py-2 border">EPIC</th>
-          <th class="px-4 py-2 border">AC No</th>
-          <th class="px-4 py-2 border">Part No</th>
-          <th class="px-4 py-2 border">Images</th>
-          <th class="px-4 py-2 border">Actions</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
+<div id="dashboard" class="space-y-4"></div>
 </div>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-import { getDatabase, ref, set, update, get, remove, onValue } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
-import { getStorage, ref as sRef, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-storage.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-auth.js";
+import { getFirestore, collection, getDocs, updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
@@ -91,103 +48,55 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-const storage = getStorage(app);
-const tbody = document.querySelector("#voterTable tbody");
+const db = getFirestore(app);
+const auth = getAuth(app);
+const provider = new GoogleAuthProvider();
 
-// Add / Update Voter
-document.getElementById("addVoterBtn").addEventListener("click", async () => {
-  const name = document.getElementById("name").value.trim();
-  const EPIC = document.getElementById("EPIC").value.trim();
-  const acNo = document.getElementById("acNo").value.trim();
-  const partNo = document.getElementById("partNo").value.trim();
+const dashboard = document.getElementById("dashboard");
 
-  if(!name || !EPIC){ alert("Name and EPIC required"); return; }
-  await set(ref(db, 'voters/' + EPIC), { name, EPIC, acNo, partNo, images: [] });
-  alert("Voter added/updated");
-});
+async function loadDashboard() {
+  const userCredential = await signInWithPopup(auth, provider);
+  const user = userCredential.user;
 
-// Import JSON
-document.getElementById("importBtn").addEventListener("click", () => {
-  const fileInput = document.getElementById("jsonFile");
-  const file = fileInput.files[0];
-  if(!file){ alert("Select JSON file"); return; }
+  if(user.email !== "ngogrant45@gmail.com") {
+    alert("You are not Super Admin!");
+    return;
+  }
 
-  const reader = new FileReader();
-  reader.onload = async e => {
-    try {
-      const json = JSON.parse(e.target.result);
-      if(typeof json !== "object") throw new Error("Invalid JSON");
-      await update(ref(db, 'voters'), json);
-      alert("JSON imported successfully");
-    } catch(err) { alert("Invalid JSON: " + err.message); }
-  };
-  reader.readAsText(file);
-});
+  const querySnapshot = await getDocs(collection(db, "registrations"));
+  dashboard.innerHTML = "";
 
-// Export JSON
-document.getElementById("exportBtn").addEventListener("click", async () => {
-  const snapshot = await get(ref(db, 'voters'));
-  const data = snapshot.val();
-  const blob = new Blob([JSON.stringify(data,null,2)], {type:"application/json"});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "voters.json";
-  a.click();
-  URL.revokeObjectURL(url);
-});
+  querySnapshot.forEach(docSnap => {
+    const data = docSnap.data();
+    const div = document.createElement("div");
+    div.className = "flex justify-between items-center bg-gray-100 p-3 rounded-md shadow";
 
-// Load Voter List
-function loadVoterList() {
-  onValue(ref(db, 'voters'), (snapshot) => {
-    const data = snapshot.val();
-    tbody.innerHTML = "";
-    if(!data) return;
+    let statusHtml = "";
+    if(data.status === "pending"){
+      statusHtml = `<button class="btn-3d text-sm" onclick="approve('${docSnap.id}')">Approve</button>`;
+    } else {
+      statusHtml = `<span class="font-medium text-green-600">Approved</span>`;
+    }
 
-    Object.keys(data).sort().forEach(epic => {
-      const v = data[epic];
-      const tr = document.createElement("tr");
-      const imgCount = v.images ? v.images.length : 0;
-      tr.innerHTML = `
-        <td class="px-4 py-2 border">${v.name}</td>
-        <td class="px-4 py-2 border">${v.EPIC}</td>
-        <td class="px-4 py-2 border">${v.acNo || '-'}</td>
-        <td class="px-4 py-2 border">${v.partNo || '-'}</td>
-        <td class="px-4 py-2 border">${imgCount}</td>
-        <td class="px-4 py-2 border">
-          <button class="button-3d editBtn" data-epic="${v.EPIC}">Edit</button>
-          <button class="button-3d deleteBtn" data-epic="${v.EPIC}">Delete</button>
-        </td>`;
-      tbody.appendChild(tr);
-    });
+    div.innerHTML = `
+      <div>
+        <p><strong>${data.name}</strong> (${data.role})</p>
+        <p>${data.address} | ${data.mobile}</p>
+      </div>
+      <div>${statusHtml}</div>
+    `;
 
-    // Edit buttons
-    document.querySelectorAll(".editBtn").forEach(btn=>{
-      btn.addEventListener("click", async () => {
-        const epic = btn.dataset.epic;
-        const voterSnap = await get(ref(db,'voters/'+epic));
-        const voter = voterSnap.val();
-        document.getElementById("name").value = voter.name || '';
-        document.getElementById("EPIC").value = voter.EPIC || '';
-        document.getElementById("acNo").value = voter.acNo || '';
-        document.getElementById("partNo").value = voter.partNo || '';
-      });
-    });
-
-    // Delete buttons
-    document.querySelectorAll(".deleteBtn").forEach(btn=>{
-      btn.addEventListener("click", async () => {
-        if(!confirm("Are you sure to delete?")) return;
-        const epic = btn.dataset.epic;
-        await remove(ref(db,'voters/'+epic));
-        alert("Deleted");
-      });
-    });
+    dashboard.appendChild(div);
   });
 }
 
-loadVoterList();
+window.approve = async (id) => {
+  await updateDoc(doc(db, "registrations", id), { status: "approved" });
+  alert("User approved!");
+  loadDashboard();
+}
+
+loadDashboard();
 </script>
 </body>
 </html>
