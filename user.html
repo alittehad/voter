@@ -19,6 +19,8 @@ input, button { padding: 10px; width: 100%; margin-top: 10px; font-size: 18px; }
 <h2>🔐 Login</h2>
 <input id="email" placeholder="Enter Email">
 <button id="loginBtn">Login</button>
+<br><br>
+<button id="googleLogin" style="background:#4285F4;color:white;">🔑 Login with Google</button>
 
 <hr>
 
@@ -39,6 +41,7 @@ input, button { padding: 10px; width: 100%; margin-top: 10px; font-size: 18px; }
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-database.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-auth.js"></script>
 
 <script>
 const firebaseConfig = {
@@ -53,17 +56,18 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
+const auth = firebase.auth();
 
 let voters = {};
 let users = {};
 let logged = null;
 let selectedVoter = null;
 
-// Load Data from Firebase
+// Load Users & Voters
 db.ref("Users").on("value", snap => { users = snap.val() || {}; });
 db.ref("Voters").on("value", snap => { voters = snap.val() || {}; });
 
-// Login Function
+// Manual Login
 document.getElementById("loginBtn").addEventListener("click", function(){
  let email = document.getElementById("email").value.trim();
  if(users[email]){
@@ -74,7 +78,28 @@ document.getElementById("loginBtn").addEventListener("click", function(){
  }
 });
 
-// Search Function
+// GOOGLE LOGIN
+document.getElementById("googleLogin").addEventListener("click", async () => {
+  const provider = new firebase.auth.GoogleAuthProvider();
+
+  try {
+    const result = await auth.signInWithPopup(provider);
+    const email = result.user.email;
+
+    if(users[email]){ 
+      logged = users[email]; 
+      alert(`✅ Google Login Success: ${logged.Name}`); 
+    } else {
+      alert("❌ Your email is not registered in user list.");
+      auth.signOut();
+    }
+
+  } catch (err) {
+    alert("⚠ Google login failed.");
+  }
+});
+
+// Search
 document.getElementById("search").addEventListener("input", function(){
  if(!logged){ alert("Login Required!"); return; }
 
@@ -96,7 +121,7 @@ document.getElementById("search").addEventListener("input", function(){
  });
 });
 
-// Popup Show
+// Popup
 function openPopup(v){
  selectedVoter = v;
  document.getElementById("details").innerHTML = `
@@ -108,7 +133,7 @@ function openPopup(v){
  document.getElementById("popup").style.display = "block";
 }
 
-// Print Card
+// Print
 function printCard(){
  if(!selectedVoter) return;
  let win = window.open("", "", "width=400,height=500");
@@ -117,18 +142,19 @@ function printCard(){
    Name: ${selectedVoter.Name}<br>
    EPIC: ${selectedVoter.Epic}<br>
    AC No: ${selectedVoter.AcNo}<br>
-   Part No: ${selectedVoter.PartNo}<br>
+   Part No: ${selectedVoter.PartNo}<br><br>
+   Message: ${document.getElementById("desc").value}
  `);
  win.print();
  win.close();
 }
 
-// Send Button
+// Send
 function send(){
  alert("📩 Message sent:\n" + document.getElementById("desc").value);
 }
 
-// Close Popup
+// Close
 function closePopup(){
  document.getElementById("popup").style.display = "none";
 }
