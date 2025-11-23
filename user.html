@@ -70,11 +70,11 @@ img.thumb{max-height:110px;border-radius:8px;display:block;margin-top:8px;}
     <table id="voterTable" class="w-full">
       <thead class="bg-gray-100">
         <tr>
-          <th style="width:30%">Name</th>
-          <th style="width:20%">EPIC</th>
+          <th style="width:25%">Name</th>
+          <th style="width:15%">EPIC</th>
           <th style="width:10%">AC</th>
           <th style="width:10%">Part</th>
-          <th style="width:30%">Action</th>
+          <th style="width:40%">Action</th>
         </tr>
       </thead>
       <tbody id="tableBody"></tbody>
@@ -195,23 +195,49 @@ window.openCard=async function(key){
   html.innerHTML=`
     <div style="display:flex;flex-direction:column;gap:8px;background:${v.Color||'#fff'};padding:10px;border-radius:10px">
       <div style="display:flex;justify-content:space-between;align-items:center">
-        <div><div style="font-weight:700;font-size:18px">${escapeHtml(v.Name)}</div><div style="color:#555">EPIC: ${escapeHtml(v.Epic)}</div></div>
-        <div style="text-align:right"><div style="color:#444">AC: ${escapeHtml(v.AcNo||'')}</div><div style="color:#444">Part: ${escapeHtml(v.PartNo||'')}</div></div>
+        <div>
+          <div style="font-weight:700;font-size:18px">${escapeHtml(v.Name)}</div>
+          <div style="color:#555">EPIC: ${escapeHtml(v.Epic)}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="color:#444">AC: ${escapeHtml(v.AcNo||'')}</div>
+          <div style="color:#444">Part: ${escapeHtml(v.PartNo||'')}</div>
+        </div>
       </div>
+
+      <div>
+        <label class="font-medium">Father/Husband Name</label>
+        <select id="fieldParentName" class="border p-2 w-full rounded mt-1">
+          <option value="">Select</option>
+          <option value="Father">Father</option>
+          <option value="Husband">Husband</option>
+        </select>
+      </div>
+
       <div>
         <label class="font-medium">Voter image</label>
         <input type="file" id="voterFile" accept="image/*" style="margin-top:6px"/>
         ${v.Images&&v.Images.length?`<img src="${v.Images[0]}" class="thumb" />`:""}
         ${v.Images&&v.Images.length?`<button class="button-3d small-3d bg-red-600 mt-2" onclick="deleteVoterImage('${key}')">Delete Image</button>`:""}
       </div>
+
+      <div>
+        <label class="font-medium">Voter Address</label>
+        <textarea id="fieldAddress" rows="2" class="border w-full p-2 rounded mt-1">${escapeHtml(v.VoterAddress||'')}</textarea>
+        <button class="button-3d small-3d mt-2" onclick="saveVoterAddress('${key}')">Save Voter Address</button>
+      </div>
+
       <div>
         <label class="font-medium">Voting Address</label>
-        <textarea id="fieldAddress" rows="2" class="border w-full p-2 rounded mt-1">${escapeHtml(v.VotingAddress||'')}</textarea>
+        <textarea id="fieldVotingAddress" rows="2" class="border w-full p-2 rounded mt-1">${escapeHtml(v.VotingAddress||'')}</textarea>
+        <button class="button-3d small-3d mt-2" onclick="saveVotingAddress('${key}')">Save Voting Address</button>
       </div>
+
       <div>
         <label class="font-medium">Description / Notes</label>
         <textarea id="fieldDesc" rows="2" class="border w-full p-2 rounded mt-1">${escapeHtml(v.Description||'')}</textarea>
       </div>
+
       <div style="display:flex;gap:8px;margin-top:6px">
         <button class="button-3d small-3d" id="saveBtn">Save</button>
         <button class="button-3d small-3d" id="printBtn">Print</button>
@@ -220,19 +246,14 @@ window.openCard=async function(key){
     </div>`;
   modalContent.appendChild(html);
 
-  // Save Button
+  // Save Description & Image
   document.getElementById('saveBtn').onclick=async()=>{
     if(!isAdmin) return alert("Only admin can save");
     const f=document.getElementById('voterFile').files[0];
-    const updates={Description:document.getElementById('fieldDesc').value, VotingAddress:document.getElementById('fieldAddress').value};
+    const updates={Description:document.getElementById('fieldDesc').value, ParentName:document.getElementById('fieldParentName').value};
     if(f){
       const storageRef=sRef(storage,`Voters/${key}.jpg`);
-      const uploadTask=uploadBytesResumable(storageRef,f);
-      uploadTask.on('state_changed',snapshot=>{
-        const percent=Math.round((snapshot.bytesTransferred/snapshot.totalBytes)*100);
-        console.log("Upload: "+percent+"%");
-      });
-      await uploadTask;
+      await uploadBytesResumable(storageRef,f);
       const url=await getDownloadURL(storageRef);
       updates.Images=[url];
     }
@@ -240,11 +261,50 @@ window.openCard=async function(key){
     alert("Saved & Live Updated");
   };
 
+  // Save Voter Address
+  window.saveVoterAddress=async function(k){
+    if(!isAdmin) return alert("Only admin can save");
+    const addr=document.getElementById('fieldAddress').value;
+    await update(ref(db,'Voters/'+k),{VoterAddress:addr});
+    alert("Voter Address Saved");
+  };
+
+  // Save Voting Address
+  window.saveVotingAddress=async function(k){
+    if(!isAdmin) return alert("Only admin can save");
+    const addr=document.getElementById('fieldVotingAddress').value;
+    await update(ref(db,'Voters/'+k),{VotingAddress:addr});
+    alert("Voting Address Saved");
+  };
+
   // Print
-  document.getElementById('printBtn').onclick=()=>{
-    const printWindow=window.open('','PRINT','height=600,width=800');
+  document.getElementById('printBtn').onclick = async () => {
+    const v = voters[key];
+    const parentName = document.getElementById('fieldParentName')?.value || v.ParentName || '';
+    const voterAddr = document.getElementById('fieldAddress').value || '';
+    const votingAddr = document.getElementById('fieldVotingAddress').value || '';
+    const desc = document.getElementById('fieldDesc').value;
+    const senderSnap = (await get(ref(db, 'Sender'))).val() || {};
+
+    let printHTML = `
+      <div style="font-family:system-ui,sans-serif;padding:20px;border:1px solid #000;width:400px;">
+        <h2 style="text-align:center;">Voter Card</h2>
+        <p><strong>Name:</strong> ${escapeHtml(v.Name)}</p>
+        <p><strong>Father/Husband:</strong> ${escapeHtml(parentName)}</p>
+        <p><strong>EPIC:</strong> ${escapeHtml(v.Epic)}</p>
+        <p><strong>AC:</strong> ${escapeHtml(v.AcNo)}</p>
+        <p><strong>Part:</strong> ${escapeHtml(v.PartNo)}</p>
+        <p><strong>Voter Address:</strong> ${escapeHtml(voterAddr)}</p>
+        <p><strong>Voting Address:</strong> ${escapeHtml(votingAddr)}</p>
+        <p><strong>Description:</strong> ${escapeHtml(desc)}</p>
+        ${v.Images && v.Images.length ? `<img src="${v.Images[0]}" style="width:100%;margin-top:10px;border-radius:8px;">` : ''}
+        ${senderSnap.text ? `<p style="margin-top:10px;"><strong>Sender:</strong> ${escapeHtml(senderSnap.text)}</p>` : ''}
+        ${senderSnap.img ? `<img src="${senderSnap.img}" style="width:100%;margin-top:10px;border-radius:8px;">` : ''}
+      </div>
+    `;
+    const printWindow = window.open('', '', 'height=600,width=800');
     printWindow.document.write('<html><head><title>Voter Card</title></head><body>');
-    printWindow.document.write(modalContent.innerHTML);
+    printWindow.document.write(printHTML);
     printWindow.document.write('</body></html>');
     printWindow.document.close();
     printWindow.focus();
@@ -253,9 +313,14 @@ window.openCard=async function(key){
 
   // WhatsApp
   document.getElementById('whatsappBtn').onclick=async()=>{
-    const name=v.Name||''; const epic=v.Epic||''; const desc=document.getElementById('fieldDesc').value; const addr=document.getElementById('fieldAddress').value;
+    const name=v.Name||'';
+    const epic=v.Epic||'';
+    const desc=document.getElementById('fieldDesc').value;
+    const voterAddr=document.getElementById('fieldAddress').value;
+    const votingAddr=document.getElementById('fieldVotingAddress').value;
+    const parentName=document.getElementById('fieldParentName').value;
     const senderSnap=(await get(ref(db,'Sender'))).val()||{};
-    let msg=`${encodeURIComponent(senderSnap.text||'')}\nVoter Details:\nName: ${encodeURIComponent(name)}\nEPIC: ${encodeURIComponent(epic)}\nAddress: ${encodeURIComponent(addr)}\nDesc: ${encodeURIComponent(desc)}`;
+    let msg=`${encodeURIComponent(senderSnap.text||'')}\nVoter Details:\nName: ${encodeURIComponent(name)}\nFather/Husband: ${encodeURIComponent(parentName)}\nEPIC: ${encodeURIComponent(epic)}\nVoter Address: ${encodeURIComponent(voterAddr)}\nVoting Address: ${encodeURIComponent(votingAddr)}\nDesc: ${encodeURIComponent(desc)}`;
     if(v.Images&&v.Images.length) msg+=`\nVoterImage: ${encodeURIComponent(v.Images[0])}`;
     if(senderSnap.img) msg+=`\nSenderImage: ${encodeURIComponent(senderSnap.img)}`;
     if(navigator.share){
@@ -279,12 +344,7 @@ async function saveSender(){
   const file=senderFile.files[0]; let updates={};
   if(file){
     const p=sRef(storage,'Sender/poster.jpg');
-    const uploadTask=uploadBytesResumable(p,file);
-    uploadTask.on('state_changed',snap=>{
-      const percent=Math.round((snap.bytesTransferred/snap.totalBytes)*100);
-      console.log("Sender Upload: "+percent+"%");
-    });
-    await uploadTask;
+    await uploadBytesResumable(p,file);
     updates.img=await getDownloadURL(p);
   }
   updates.text=senderText.value;
