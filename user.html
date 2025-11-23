@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Voter Cards</title>
+<title>Voter Management System</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
 body{font-family:system-ui,sans-serif;background:#f0f2f5;}
@@ -24,14 +24,19 @@ img.thumb{max-height:110px;border-radius:8px;display:block;margin-top:8px;}
 <!-- Login Screen -->
 <div id="loginScreen" class="min-h-screen flex items-center justify-center">
   <div class="text-center">
-    <h1 class="text-2xl font-bold mb-4">Voter Management</h1>
+    <h1 class="text-2xl font-bold mb-4">Voter Management System</h1>
     <button id="loginBtn" class="button-3d px-6 py-3 text-lg">Login with Google</button>
-    <p class="text-sm text-gray-600 mt-3">Admin can set sender info; others can view & send.</p>
+    <p class="text-sm text-gray-600 mt-3">Super Admin can control all, Admins limited, Users view only.</p>
   </div>
 </div>
 
 <!-- App -->
 <div id="app" class="hidden">
+
+  <!-- Role Info -->
+  <div class="mb-3">
+    <span id="roleInfo" class="font-semibold text-lg"></span>
+  </div>
 
   <!-- AC Filter + Search -->
   <div class="flex gap-3 mb-3 items-center">
@@ -45,7 +50,7 @@ img.thumb{max-height:110px;border-radius:8px;display:block;margin-top:8px;}
   </div>
 
   <!-- Sender Panel -->
-  <div class="bg-white p-3 rounded shadow mb-4">
+  <div id="senderPanel" class="bg-white p-3 rounded shadow mb-4 hidden">
     <div class="flex items-start gap-4">
       <div class="flex-1">
         <label class="block font-medium">Sender description</label>
@@ -70,12 +75,12 @@ img.thumb{max-height:110px;border-radius:8px;display:block;margin-top:8px;}
     <table id="voterTable" class="w-full">
       <thead class="bg-gray-100">
         <tr>
-          <th style="width:25%">Name</th>
+          <th style="width:20%">Name</th>
           <th style="width:15%">EPIC</th>
           <th style="width:10%">AC</th>
           <th style="width:10%">Part</th>
           <th style="width:15%">Parent</th>
-          <th style="width:25%">Action</th>
+          <th style="width:30%">Action</th>
         </tr>
       </thead>
       <tbody id="tableBody"></tbody>
@@ -111,7 +116,12 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const storage = getStorage(app);
 const auth = getAuth();
-const ADMIN_EMAILS = ["ngogrant454@gmail.com","zarafix3@gmail.com"];
+
+let currentUser = null;
+let role = "";
+let permissions = {};
+let voters = {};
+let sender = {};
 
 const loginScreen = document.getElementById('loginScreen');
 const loginBtn = document.getElementById('loginBtn');
@@ -125,48 +135,48 @@ const senderText = document.getElementById('senderText');
 const senderFile = document.getElementById('senderFile');
 const senderPreview = document.getElementById('senderPreview');
 const senderPreviewWrap = document.getElementById('senderPreviewWrap');
-
-let currentUser=null, isAdmin=false, voters={}, sender={text:"",img:""};
+const senderPanel = document.getElementById('senderPanel');
+const roleInfo = document.getElementById('roleInfo');
 
 // LOGIN
-loginBtn.onclick=async()=>{
-  try{
-    const result=await signInWithPopup(auth,new GoogleAuthProvider());
-    currentUser=result.user;
-    isAdmin=ADMIN_EMAILS.includes(currentUser.email);
-    loginScreen.classList.add('hidden');
-    appDiv.classList.remove('hidden');
-    init();
-  }catch(e){alert("Login failed: "+e.message);}
+loginBtn.onclick = async () => {
+  try {
+    const result = await signInWithPopup(auth,new GoogleAuthProvider());
+    currentUser = result.user;
+    await loadRoleAndInit();
+  } catch(e){alert("Login failed: "+e.message);}
 };
 
 // Persistent Login
 onAuthStateChanged(auth,user=>{
-  if(user){
-    currentUser=user;
-    isAdmin=ADMIN_EMAILS.includes(currentUser.email);
-    loginScreen.classList.add('hidden');
-    appDiv.classList.remove('hidden');
-    init();
-  }
+  if(user){currentUser = user; loadRoleAndInit();}
 });
+
+// Load role and init
+async function loadRoleAndInit(){
+  const rolesSnap = await get(ref(db,'Roles'));
+  const roles = rolesSnap.val() || {};
+  if(currentUser.email === roles.SuperAdmin){
+    role = "SuperAdmin"; permissions = {all:true};
+    senderPanel.classList.remove('hidden');
+  } else if(roles.Admins && roles.Admins[currentUser.email]){
+    role = "Admin"; permissions = roles.Admins[currentUser.email].permissions || {};
+    senderPanel.classList.remove('hidden');
+  } else if(roles.Users && roles.Users[currentUser.email]){
+    role = "User"; permissions = {};
+    senderPanel.classList.add('hidden');
+  } else {alert("No role assigned!"); return;}
+  roleInfo.innerText = role + " — " + currentUser.email;
+  loginScreen.classList.add('hidden'); appDiv.classList.remove('hidden');
+  init();
+}
 
 // INIT
 function init(){
-  onValue(ref(db,'Sender'),snap=>{
-    sender=snap.val()||{};
-    senderText.value=sender.text||"";
-    if(sender.img){senderPreview.src=sender.img;senderPreviewWrap.classList.remove('hidden');}else senderPreviewWrap.classList.add('hidden');
-  });
-
-  onValue(ref(db,'Voters'),snap=>{
-    voters=snap.val()||{};
-    renderTable();
-  });
-
-  searchInput.oninput=renderTable;
-  acFilter.onchange=renderTable;
-
+  onValue(ref(db,'Sender'),snap=>{sender = snap.val() || {}; senderText.value = sender.text||""; if(sender.img){senderPreview.src=sender.img; senderPreviewWrap.classList.remove('hidden');} else senderPreviewWrap.classList.add('hidden');});
+  onValue(ref(db,'Voters'),snap=>{voters = snap.val()||{}; renderTable();});
+  searchInput.oninput = renderTable;
+  acFilter.onchange = renderTable;
   senderFile.onchange=()=>{const f=senderFile.files[0]; if(!f) return; senderPreview.src=URL.createObjectURL(f); senderPreviewWrap.classList.remove('hidden');};
 }
 
@@ -174,158 +184,113 @@ function init(){
 function renderTable(){
   tableBody.innerHTML='';
   const q=(searchInput.value||'').toLowerCase();
-  const ac=acFilter.value;
-
+  const ac = acFilter.value;
   Object.keys(voters).sort().forEach(key=>{
     const v=voters[key]; if(!v) return;
     if(ac && String(v.AcNo)!==ac) return;
     const searchText=(v.Name+" "+v.Epic+" "+v.PartNo+" "+(v.ParentName||"")+" "+(v.Description||"")+" "+(v.VoterAddress||"")+" "+(v.VotingAddress||"")).toLowerCase();
     if(q && !searchText.includes(q)) return;
-
-    const tr=document.createElement('tr');
-    tr.style.background=v.Color||'#fff';
+    const tr = document.createElement('tr');
+    tr.style.background = v.Color||'#fff';
     tr.innerHTML=`<td>${escapeHtml(v.Name||'')}</td>
-                    <td>${escapeHtml(v.Epic||key)}</td>
-                    <td>${escapeHtml(v.AcNo||'')}</td>
-                    <td>${escapeHtml(v.PartNo||'')}</td>
-                    <td>${escapeHtml(v.ParentName||'')}</td>
-                    <td><button class="button-3d small-3d" onclick="openCard('${key}')">View</button></td>`;
+                  <td>${escapeHtml(v.Epic||key)}</td>
+                  <td>${escapeHtml(v.AcNo||'')}</td>
+                  <td>${escapeHtml(v.PartNo||'')}</td>
+                  <td>${escapeHtml(v.ParentName||'')}</td>
+                  <td><button class="button-3d small-3d" onclick="openCard('${key}')">View</button></td>`;
     tableBody.appendChild(tr);
   });
 }
 
-// OPEN CARD
+// OPEN CARD (same as before, with save functions)
 window.openCard=async function(key){
   const v=voters[key]; if(!v) return alert("Voter data missing");
   modalContent.innerHTML='';
   const html=document.createElement('div');
-  html.innerHTML=`
-  <div style="display:flex;flex-direction:column;gap:8px;background:${v.Color||'#fff'};padding:10px;border-radius:10px">
+  html.innerHTML=`<div style="display:flex;flex-direction:column;gap:8px;background:${v.Color||'#fff'};padding:10px;border-radius:10px">
     <div style="display:flex;justify-content:space-between;align-items:center">
-      <div>
-        <div style="font-weight:700;font-size:18px">${escapeHtml(v.Name)}</div>
-        <div style="color:#555">EPIC: ${escapeHtml(v.Epic)}</div>
-      </div>
-      <div style="text-align:right">
-        <div style="color:#444">AC: ${escapeHtml(v.AcNo||'')}</div>
-        <div style="color:#444">Part: ${escapeHtml(v.PartNo||'')}</div>
-      </div>
+      <div><div style="font-weight:700;font-size:18px">${escapeHtml(v.Name)}</div><div style="color:#555">EPIC: ${escapeHtml(v.Epic)}</div></div>
+      <div style="text-align:right"><div style="color:#444">AC: ${escapeHtml(v.AcNo||'')}</div><div style="color:#444">Part: ${escapeHtml(v.PartNo||'')}</div></div>
     </div>
 
     <div>
       <label class="font-medium">Parent Name</label>
-      <select id="parentDropdown">
-        <option value="Father">Father</option>
-        <option value="Husband">Husband</option>
-      </select>
+      <select id="parentDropdown"><option value="Father">Father</option><option value="Husband">Husband</option></select>
       <input id="parentInput" type="text" class="border w-full p-2 rounded mt-1" placeholder="Type parent name" value="${escapeHtml(v.ParentName||'')}"/>
-      <button class="button-3d small-3d mt-1" onclick="saveParent('${key}')">Save Parent</button>
+      ${permissions.all || permissions.voterAddress?`<button class="button-3d small-3d mt-1" onclick="saveParent('${key}')">Save Parent</button>`:""}
     </div>
 
     <div>
       <label class="font-medium">Voter Image</label>
       <input type="file" id="voterFile" accept="image/*" style="margin-top:6px"/>
       ${v.Images && v.Images.length?`<img src="${v.Images[0]}" class="thumb" />`:""}
-      ${v.Images && v.Images.length?`<button class="button-3d small-3d bg-red-600 mt-2" onclick="deleteVoterImage('${key}')">Delete Image</button>`:""}
+      ${v.Images && v.Images.length && (permissions.all || permissions.voterAddress)?`<button class="button-3d small-3d bg-red-600 mt-2" onclick="deleteVoterImage('${key}')">Delete Image</button>`:""}
     </div>
 
     <div>
       <label class="font-medium">Voter Address</label>
       <textarea id="fieldVoterAddress" rows="2" class="border w-full p-2 rounded mt-1">${escapeHtml(v.VoterAddress||'')}</textarea>
-      <button class="button-3d small-3d mt-1" onclick="saveVoterAddress('${key}')">Save Voter Address</button>
+      ${permissions.all || permissions.voterAddress?`<button class="button-3d small-3d mt-1" onclick="saveVoterAddress('${key}')">Save Voter Address</button>`:""}
     </div>
 
     <div>
       <label class="font-medium">Voting Address</label>
       <textarea id="fieldVotingAddress" rows="2" class="border w-full p-2 rounded mt-1">${escapeHtml(v.VotingAddress||'')}</textarea>
-      <button class="button-3d small-3d mt-1" onclick="saveVotingAddress('${key}')">Save Voting Address</button>
+      ${permissions.all || permissions.votingAddress?`<button class="button-3d small-3d mt-1" onclick="saveVotingAddress('${key}')">Save Voting Address</button>`:""}
     </div>
 
     <div>
       <label class="font-medium">Description / Notes</label>
       <textarea id="fieldDesc" rows="2" class="border w-full p-2 rounded mt-1">${escapeHtml(v.Description||'')}</textarea>
-      <button class="button-3d small-3d mt-1" onclick="saveDescription('${key}')">Save Description</button>
+      ${permissions.all || permissions.description?`<button class="button-3d small-3d mt-1" onclick="saveDescription('${key}')">Save Description</button>`:""}
     </div>
 
     <div style="display:flex;gap:8px;margin-top:6px">
-      <button class="button-3d small-3d" id="whatsappBtn">Send (WhatsApp)</button>
+      ${permissions.all || permissions.sendMessage?`<button class="button-3d small-3d" id="whatsappBtn">Send (WhatsApp)</button>`:""}
     </div>
   </div>`;
   modalContent.appendChild(html);
   document.getElementById('parentDropdown').value=v.ParentName||'Father';
 
   // WhatsApp
-  document.getElementById('whatsappBtn').onclick=async()=>{
-    const name=v.Name||''; const epic=v.Epic||'';
-    const desc=document.getElementById('fieldDesc').value; 
-    const voterAddr=document.getElementById('fieldVoterAddress').value;
-    const votingAddr=document.getElementById('fieldVotingAddress').value;
-    const parentName=document.getElementById('parentInput').value;
-
-    const senderSnap=(await get(ref(db,'Sender'))).val()||{};
-    let msg=`${encodeURIComponent(senderSnap.text||'')}\nVoter Details:\nName: ${encodeURIComponent(name)}\nEPIC: ${encodeURIComponent(epic)}\nParent: ${encodeURIComponent(parentName)}\nVoter Address: ${encodeURIComponent(voterAddr)}\nVoting Address: ${encodeURIComponent(votingAddr)}\nDescription: ${encodeURIComponent(desc)}`;
-    if(senderSnap.img) msg+=`\nSenderImage: ${encodeURIComponent(senderSnap.img)}`;
-    if(navigator.share){
-      navigator.share({text:decodeURIComponent(msg)}).catch(()=>window.open(`https://wa.me/?text=${msg}`,'_blank'));
-    }else window.open(`https://wa.me/?text=${msg}`,'_blank');
-  };
+  if(permissions.all || permissions.sendMessage){
+    document.getElementById('whatsappBtn').onclick=async()=>{
+      const name=v.Name||''; const epic=v.Epic||'';
+      const desc=document.getElementById('fieldDesc').value; 
+      const voterAddr=document.getElementById('fieldVoterAddress').value;
+      const votingAddr=document.getElementById('fieldVotingAddress').value;
+      const parentName=document.getElementById('parentInput').value;
+      const senderSnap = sender || {};
+      let msg=`${encodeURIComponent(senderSnap.text||'')}\nVoter Details:\nName: ${encodeURIComponent(name)}\nEPIC: ${encodeURIComponent(epic)}\nParent: ${encodeURIComponent(parentName)}\nVoter Address: ${encodeURIComponent(voterAddr)}\nVoting Address: ${encodeURIComponent(votingAddr)}\nDescription: ${encodeURIComponent(desc)}`;
+      if(senderSnap.img) msg+=`\nSenderImage: ${encodeURIComponent(senderSnap.img)}`;
+      if(navigator.share){
+        navigator.share({text:decodeURIComponent(msg)}).catch(()=>window.open(`https://wa.me/?text=${msg}`,'_blank'));
+      }else window.open(`https://wa.me/?text=${msg}`,'_blank');
+    };
+  }
 
   modal.classList.remove('hidden');
 };
 
 // SAVE FUNCTIONS
-window.saveParent=async function(key){
-  if(!isAdmin) return alert("Only admin can save");
-  const parent=document.getElementById('parentInput').value;
-  await update(ref(db,'Voters/'+key),{ParentName:parent});
-  alert("Parent Name saved");
-};
-window.saveVoterAddress=async function(key){
-  if(!isAdmin) return alert("Only admin can save");
-  const addr=document.getElementById('fieldVoterAddress').value;
-  await update(ref(db,'Voters/'+key),{VoterAddress:addr});
-  alert("Voter Address saved");
-};
-window.saveVotingAddress=async function(key){
-  if(!isAdmin) return alert("Only admin can save");
-  const addr=document.getElementById('fieldVotingAddress').value;
-  await update(ref(db,'Voters/'+key),{VotingAddress:addr});
-  alert("Voting Address saved");
-};
-window.saveDescription=async function(key){
-  if(!isAdmin) return alert("Only admin can save");
-  const desc=document.getElementById('fieldDesc').value;
-  await update(ref(db,'Voters/'+key),{Description:desc});
-  alert("Description saved");
-};
+window.saveParent = async function(key){ if(!permissions.all && !permissions.voterAddress) return alert("No permission"); await update(ref(db,'Voters/'+key),{ParentName:document.getElementById('parentInput').value}); alert("Parent Name saved");};
+window.saveVoterAddress = async function(key){ if(!permissions.all && !permissions.voterAddress) return alert("No permission"); await update(ref(db,'Voters/'+key),{VoterAddress:document.getElementById('fieldVoterAddress').value}); alert("Voter Address saved");};
+window.saveVotingAddress = async function(key){ if(!permissions.all && !permissions.votingAddress) return alert("No permission"); await update(ref(db,'Voters/'+key),{VotingAddress:document.getElementById('fieldVotingAddress').value}); alert("Voting Address saved");};
+window.saveDescription = async function(key){ if(!permissions.all && !permissions.description) return alert("No permission"); await update(ref(db,'Voters/'+key),{Description:document.getElementById('fieldDesc').value}); alert("Description saved");};
 
 // DELETE VOTER IMAGE
-window.deleteVoterImage=async function(key){
-  if(!isAdmin) return alert("Only admin can delete voter image");
-  try{await deleteObject(sRef(storage,`Voters/${key}.jpg`));}catch(e){}
-  await update(ref(db,'Voters/'+key),{Images:[]});
-};
+window.deleteVoterImage = async function(key){ if(!permissions.all && !permissions.voterAddress) return alert("No permission"); try{await deleteObject(sRef(storage,`Voters/${key}.jpg`));}catch(e){} await update(ref(db,'Voters/'+key),{Images:[]});};
 
 // SAVE / DELETE SENDER
 async function saveSender(){
-  if(!currentUser || !isAdmin) return alert("Only admin can save");
+  if(!permissions.all && role!="Admin") return alert("No permission");
   const file=senderFile.files[0]; let updates={};
-  if(file){
-    const p=sRef(storage,'Sender/poster.jpg');
-    const uploadTask=uploadBytesResumable(p,file);
-    await uploadTask;
-    updates.img=await getDownloadURL(p);
-  }
+  if(file){ const p=sRef(storage,'Sender/poster.jpg'); const uploadTask=uploadBytesResumable(p,file); await uploadTask; updates.img=await getDownloadURL(p);}
   updates.text=senderText.value;
   await set(ref(db,'Sender'),updates);
   alert("Sender saved");
 }
-async function deleteSenderPoster(){
-  if(!isAdmin) return alert("Only admin can delete sender poster");
-  try{await deleteObject(sRef(storage,'Sender/poster.jpg'));}catch(e){}
-  await update(ref(db,'Sender'),{img:""});
-  senderPreview.src=''; senderPreviewWrap.classList.add('hidden');
-}
+async function deleteSenderPoster(){ if(!permissions.all && role!="Admin") return alert("No permission"); try{await deleteObject(sRef(storage,'Sender/poster.jpg'));}catch(e){} await update(ref(db,'Sender'),{img:""}); senderPreview.src=''; senderPreviewWrap.classList.add('hidden');}
 
 // CLOSE MODAL
 document.getElementById('modal').addEventListener('click',e=>{if(e.target.id==='modal') modal.classList.add('hidden');});
