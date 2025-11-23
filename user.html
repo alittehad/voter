@@ -4,19 +4,24 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Voter List App</title>
+
 <style>
+    :root {
+        --themeColor: #4caf50;
+    }
+
     body {
         font-family: Arial, sans-serif;
-        margin: 0;
         background: #f5f5f5;
+        margin: 0;
     }
 
     header {
-        background: #4caf50;
+        background: var(--themeColor);
         color: white;
         padding: 15px;
-        text-align: center;
         font-size: 22px;
+        text-align: center;
         font-weight: bold;
     }
 
@@ -24,92 +29,113 @@
         width: 90%;
         display: block;
         margin: 15px auto;
-        padding: 10px;
+        padding: 12px;
         font-size: 18px;
-        border-radius: 8px;
-        border: 2px solid #888;
+        border-radius: 10px;
+        border: 2px solid #999;
     }
 
     .list-item {
         background: white;
         margin: 10px;
         padding: 14px;
-        border-radius: 10px;
+        border-radius: 12px;
         cursor: pointer;
+        border-left: 6px solid var(--themeColor);
         transition: 0.3s;
-        border-left: 6px solid var(--themeColor, #4caf50);
     }
 
     .list-item:hover {
         transform: scale(1.03);
-        background: #e7ffe7;
     }
 
-    /* ===== Popup Fullscreen Card ===== */
     #popup {
         display: none;
         position: fixed;
         top: 0; left: 0;
-        width: 100%;
-        height: 100%;
+        width: 100%; height: 100%;
         background: rgba(0,0,0,0.7);
         justify-content: center;
         align-items: center;
         padding: 10px;
+        overflow-y: auto;
     }
 
     .card {
-        background: var(--themeColor, #4caf50);
+        background: var(--themeColor);
         width: 100%;
-        max-width: 400px;
+        max-width: 480px;
         padding: 25px;
-        border-radius: 12px;
-        color: white;
+        border-radius: 15px;
         text-align: center;
+        color: white;
         position: relative;
     }
 
     .close-btn {
         position: absolute;
-        top: 8px;
-        right: 12px;
-        font-size: 25px;
+        top: 6px; right: 10px;
         cursor: pointer;
+        font-size: 28px;
+        font-weight: bold;
+    }
+
+    .img-preview {
+        width: 140px;
+        height: 140px;
+        border-radius: 8px;
+        border: 2px solid white;
+        object-fit: cover;
+        display: block;
+        margin: 10px auto;
     }
 
     .btn {
-        display: block;
         width: 100%;
-        padding: 12px;
+        padding: 13px;
+        margin-top: 10px;
         background: white;
         color: black;
-        margin-top: 12px;
-        border-radius: 10px;
-        border: none;
         font-size: 18px;
+        border: none;
+        border-radius: 12px;
         cursor: pointer;
+        font-weight: bold;
+        box-shadow: 3px 3px 6px rgba(0,0,0,0.2);
     }
 
     .color-box {
         display: flex;
-        gap: 10px;
         justify-content: center;
+        gap: 12px;
         margin-top: 10px;
     }
 
     .color-option {
-        width: 35px;
-        height: 35px;
+        width: 40px;
+        height: 40px;
         border-radius: 50%;
         cursor: pointer;
-        border: 2px solid white;
+        border: 3px solid #fff;
+    }
+
+    @media print {
+        .close-btn, .btn, .color-box, #search, .list-item, input[type="file"], textarea {
+            display: none !important;
+        }
+
+        #popup { position: static; background: white; }
+        .card { background:white !important; color:black !important; border:2px solid black; }
+        .img-preview { border:2px solid black; }
     }
 </style>
 </head>
+
 <body>
 
 <header>📋 Voter List</header>
-<input type="text" id="search" class="search-box" placeholder="Search Name or EPIC...">
+
+<input type="text" id="search" class="search-box" placeholder="Search by Name / EPIC...">
 
 <div id="list"></div>
 
@@ -117,79 +143,94 @@
 <div id="popup">
     <div class="card" id="cardBox">
         <span class="close-btn" onclick="closePopup()">✖</span>
-        <h2 id="pName"></h2>
-        <p><b>Epic:</b> <span id="pEpic"></span></p>
-        <p><b>AC No:</b> <span id="pAc"></span></p>
-        <p><b>Part No:</b> <span id="pPart"></span></p>
 
-        <h3>🎨 Change Card Theme</h3>
+        <img id="voterImg" class="img-preview" src="" alt="No Image">
+
+        <input type="file" id="uploadImg" accept="image/*" onchange="uploadImage(event)" class="btn">
+
+        <h2 id="pName"></h2>
+        <p><b>🆔 EPIC:</b> <span id="pEpic"></span></p>
+        <p><b>🏛 AC No:</b> <span id="pAc"></span></p>
+        <p><b>📍 Part No:</b> <span id="pPart"></span></p>
+        <p><b>🏠 Address:</b> <span id="pAddress"></span></p>
+        <p><b>🗳 Voting Address:</b> <span id="pVoteAddress"></span></p>
+
+        <h3>🎨 Change Theme</h3>
         <div class="color-box">
             <div class="color-option" style="background:#4caf50" onclick="changeColor('#4caf50')"></div>
             <div class="color-option" style="background:#2196f3" onclick="changeColor('#2196f3')"></div>
             <div class="color-option" style="background:#ff5722" onclick="changeColor('#ff5722')"></div>
         </div>
 
+        <textarea id="senderNote" placeholder="Sender message..." style="width:100%;height:80px;margin-top:12px;border-radius:10px;padding:10px;font-size:16px;"></textarea>
+
         <button class="btn" onclick="printCard()">🖨 Print</button>
-        <button class="btn" onclick="sendWhatsApp()">📩 Send WhatsApp</button>
+        <button class="btn" onclick="sendWhatsApp()">📩 Share WhatsApp</button>
     </div>
 </div>
 
 <script>
 const data = {
-  "Bcd0598334": { Epic: "BCD0598334", Name: "Sanjay Malakar", AcNo: 131, PartNo: 92 },
-  "Djm1162627": { Epic: "DJM1162627", Name: "Jagdish Gurav", AcNo: 131, PartNo: 237 },
-  "Ltv1989003": { Epic: "LTV1989003", Name: "Jayprakash Shende", AcNo: 131, PartNo: 14 }
+  "Bcd0598334": {Epic:"BCD0598334",Name:"Sanjay Malakar",AcNo:131,PartNo:92,Address:"Nalasopara",VotingAddress:"Vasai Booth No 45"},
+  "Djm1162627": {Epic:"DJM1162627",Name:"Jagdish Gurav",AcNo:131,PartNo:237,Address:"Virar",VotingAddress:"Booth 18"},
+  "Ltv1989003": {Epic:"LTV1989003",Name:"Jayprakash Shende",AcNo:131,PartNo:14,Address:"Bolinj",VotingAddress:"Booth 22"}
 };
 
-const listDiv = document.getElementById("list");
 let selected = null;
 
 function loadList() {
-  listDiv.innerHTML = "";
-  for (let key in data) {
-    let v = data[key];
-    let div = document.createElement("div");
-    div.className = "list-item";
-    div.innerHTML = `<b>${v.Name}</b><br>🆔 ${v.Epic}`;
-    div.onclick = () => openPopup(v);
-    listDiv.appendChild(div);
+  document.getElementById("list").innerHTML = "";
+  for (let k in data) {
+      let v = data[k];
+      let div = document.createElement("div");
+      div.className = "list-item";
+      div.innerHTML = `<b>${v.Name}</b><br>🆔 ${v.Epic}`;
+      div.onclick = () => openPopup(v);
+      document.getElementById("list").appendChild(div);
   }
 }
 loadList();
 
-function openPopup(voter) {
-  selected = voter;
-  document.getElementById("pName").innerText = voter.Name;
-  document.getElementById("pEpic").innerText = voter.Epic;
-  document.getElementById("pAc").innerText = voter.AcNo;
-  document.getElementById("pPart").innerText = voter.PartNo;
-  document.getElementById("popup").style.display = "flex";
+function openPopup(v) {
+  selected=v;
+  document.getElementById("pName").innerText=v.Name;
+  document.getElementById("pEpic").innerText=v.Epic;
+  document.getElementById("pAc").innerText=v.AcNo;
+  document.getElementById("pPart").innerText=v.PartNo;
+  document.getElementById("pAddress").innerText=v.Address;
+  document.getElementById("pVoteAddress").innerText=v.VotingAddress;
+  document.getElementById("voterImg").src=localStorage.getItem(v.Epic) || "";
+
+  document.getElementById("popup").style.display="flex";
 }
 
-function closePopup() {
-  document.getElementById("popup").style.display = "none";
+function uploadImage(e){
+    if(selected){
+        const url=URL.createObjectURL(e.target.files[0]);
+        document.getElementById("voterImg").src=url;
+        localStorage.setItem(selected.Epic,url);
+    }
 }
 
-function changeColor(color) {
-  document.documentElement.style.setProperty("--themeColor", color);
+function closePopup(){ document.getElementById("popup").style.display="none"; }
+
+function changeColor(color){ document.documentElement.style.setProperty("--themeColor",color); }
+
+function printCard(){ window.print(); }
+
+function sendWhatsApp(){
+  const note=document.getElementById("senderNote").value||"No message";
+  let msg=`📌 Voter Details:\n\n👤 ${selected.Name}\n🆔 ${selected.Epic}\n🏛 AC No: ${selected.AcNo}\n📍 Part No: ${selected.PartNo}\n🏠 Address: ${selected.Address}\n🗳 Booth: ${selected.VotingAddress}\n\n📝 Sender: ${note}`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,"_blank");
 }
 
-function printCard() {
-  window.print();
-}
-
-function sendWhatsApp() {
-  let msg = `📌 Voter Details:\n👤 Name: ${selected.Name}\n🆔 EPIC: ${selected.Epic}\n🏛 AC No: ${selected.AcNo}\n📍 Part No: ${selected.PartNo}`;
-  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
-}
-
-document.getElementById("search").addEventListener("input", function(){
-  let val = this.value.toLowerCase();
-  document.querySelectorAll(".list-item").forEach(item => {
-    item.style.display = item.innerText.toLowerCase().includes(val) ? "block" : "none";
-  });
+document.getElementById("search").addEventListener("input",()=>{
+   let val=document.getElementById("search").value.toLowerCase();
+   document.querySelectorAll(".list-item").forEach(i=>{
+     i.style.display=i.innerText.toLowerCase().includes(val)?"block":"none";
+   });
 });
-
 </script>
+
 </body>
 </html>
