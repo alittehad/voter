@@ -1,188 +1,551 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Smart Voter System</title>
+<meta charset="utf-8" />
+<title>Complete Voter System — Firebase + Google Login + Search + Print + WhatsApp</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
 <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
+  :root{ --card-width:420px; --accent:#0b84ff; }
+  body{ font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial; background:#f3f6fb; margin:0; padding:20px; color:#0b1724;}
+  header{ display:flex; align-items:center; gap:16px; justify-content:space-between; margin-bottom:16px;}
+  h1{ font-size:18px; margin:0; }
+  #authArea{ display:flex; gap:8px; align-items:center; }
 
-    input { padding: 8px; width: 300px; margin-bottom: 10px; }
+  input[type="text"], textarea, select {
+    font-size:15px; padding:8px 10px; border:1px solid #cbd5e1; border-radius:8px;
+  }
 
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+  #search { width:100%; max-width:720px; }
 
-    th, td { border: 1px solid #ccc; padding: 8px; }
+  table { width:100%; border-collapse:collapse; background:white; box-shadow:0 6px 18px rgba(11,24,36,0.06); border-radius:8px; overflow:hidden; }
+  thead th { text-align:left; padding:12px 14px; background:#f8fafc; font-weight:600; color:#0b1724; border-bottom:1px solid #e6eef8; }
+  tbody tr { cursor:pointer; transition:background .12s; }
+  tbody tr:hover { background:#fbfbff; }
+  td{ padding:12px 14px; border-bottom:1px solid #f1f5fb; vertical-align:middle; }
 
-    tr:hover { background: #f0f0f0; cursor: pointer; }
+  .selected { outline:4px solid rgba(11,24,36,0.06); box-shadow:0 3px 10px rgba(0,0,0,0.04) inset; }
 
-    .card {
-        width: 350px;
-        padding: 15px;
-        background: #ffe6e6;
-        border-radius: 10px;
-        display: none;
-        position: fixed;
-        top: 50%; left: 50%;
-        transform: translate(-50%, -50%);
-        box-shadow: 0 0 15px rgba(0,0,0,0.3);
-    }
+  /* popup card */
+  #overlay{ display:none; position:fixed; inset:0; background:rgba(6,10,20,0.45); z-index:40; }
+  #card {
+    width:var(--card-width); max-width:95vw;
+    position:fixed; left:50%; top:50%; transform:translate(-50%,-50%) scale(0.9);
+    background:white; border-radius:10px; padding:16px; box-shadow:0 20px 60px rgba(7,12,20,0.35);
+    z-index:50; display:none; transition:transform .18s ease,opacity .18s ease;
+  }
+  #card.show{ display:block; transform:translate(-50%,-50%) scale(1); }
 
-    .btn { padding: 8px 12px; cursor: pointer; margin: 5px; }
+  .card-row{ display:flex; gap:10px; margin:8px 0; }
+  .card-label{ width:140px; color:#334155; font-weight:600; }
+  .card-val{ color:#0b1724; }
 
-    #printArea { display: none; }
+  .controls{ display:flex; gap:8px; margin-top:12px; align-items:center; flex-wrap:wrap; }
+  .btn{ background:var(--accent); color:white; padding:8px 12px; border-radius:8px; border:none; cursor:pointer; font-weight:600; }
+  .btn.ghost{ background:#e6eef8; color:#0b1724; }
 
+  .color-swatch{ width:30px; height:30px; border-radius:6px; border:1px solid rgba(2,6,23,.08); cursor:pointer; }
+
+  #senderNote { width:100%; min-height:64px; margin-top:8px; resize:vertical; }
+
+  /* print area styling (used in print window) */
+  .print-card { width:100%; max-width:600px; margin:0 auto; font-family:inherit; padding:18px; border-radius:8px; border:1px solid #e6eef8; background: #fff; }
+  .print-title{ text-align:center; font-size:20px; margin-bottom:8px; }
+  .print-row{ display:flex; gap:6px; margin:6px 0; }
+  .print-label{ width:130px; font-weight:700; color:#0b1724; }
+  .print-note{ margin-top:12px; padding:8px; border-radius:6px; border:1px dashed #e6eef8; background:#fbfdff; }
+
+  /* small screens */
+  @media (max-width:640px){
+    .card-label{ width:120px; font-size:13px; }
+    .card-row{ flex-wrap:wrap; }
+  }
 </style>
 </head>
 <body>
 
-<h2>🗳️ Voter Management System</h2>
+<header>
+  <h1>🔎 Voter Directory</h1>
+  <div id="authArea">
+    <div id="userInfo" style="display:none;">
+      <span id="userEmail" style="font-weight:600;"></span>
+      <button id="logoutBtn" class="btn btn-small" style="background:#ef4444;border-radius:8px;padding:8px 10px;">Logout</button>
+    </div>
+    <button id="loginBtn" class="btn">Login with Google</button>
+  </div>
+</header>
 
-<button id="loginBtn" class="btn">🔐 Login With Google</button>
-<p id="userDisplay"></p>
+<!-- Paste JSON (optional) -->
+<section style="margin-bottom:12px;">
+  <label style="display:block;font-weight:600;margin-bottom:6px;">Paste JSON (optional) — or keep Firebase as source</label>
+  <textarea id="jsonInput" rows="5" style="width:100%;border-radius:8px;border:1px solid #e6eef8;padding:10px;" placeholder='Paste your full JSON object here (the structure with "Voters": {...} )'></textarea>
+  <div style="margin-top:8px;">
+    <button id="useJsonBtn" class="btn">Load From Text JSON</button>
+    <button id="clearJsonBtn" class="btn btn-ghost" onclick="document.getElementById('jsonInput').value=''">Clear</button>
+  </div>
+</section>
 
-<input type="text" id="search" placeholder="Search: Name, EPIC, Part No, Address...">
+<section style="margin-bottom:14px;">
+  <input id="search" type="text" placeholder="Search name / epic / ac / part / booth / address / relation ..." />
+</section>
 
-<table>
+<section>
+  <table id="voterTable" aria-label="Voter table">
     <thead>
-        <tr>
-            <th>EPIC</th><th>Name</th><th>Part No</th><th>Action</th>
-        </tr>
+      <tr><th style="width:24%;">Name</th><th style="width:20%;">EPIC</th><th style="width:12%;">AC No</th><th style="width:12%;">Part No</th><th style="width:20%;">Booth / Area</th><th style="width:12%;">Actions</th></tr>
     </thead>
-    <tbody id="voterList"></tbody>
-</table>
+    <tbody></tbody>
+  </table>
+</section>
 
-<!-- Card Popup -->
-<div class="card" id="card">
-    <h3 id="cName"></h3>
-    <p><b>EPIC:</b> <span id="cEpic"></span></p>
-    <p><b>AC No:</b> <span id="cAc"></span></p>
-    <p><b>Part No:</b> <span id="cPart"></span></p>
-    <p><b>Address:</b> <span id="cAddress"></span></p>
-    <p><b>Description:</b> <span id="cDesc"></span></p>
+<!-- Overlay + Card -->
+<div id="overlay"></div>
+<div id="card" role="dialog" aria-modal="true" aria-labelledby="cName">
+  <h2 id="cName" style="margin:0 0 8px 0;"></h2>
 
-    <label>🎨 Change Card Color:</label>
-    <input type="color" id="colorPicker">
+  <div id="cardContent">
+    <!-- dynamic rows -->
+  </div>
 
-    <br><br>
-    <button class="btn" onclick="printVoter()">🖨 Print</button>
-    <button class="btn" onclick="sendWhatsApp()">📩 Send</button>
-    <button class="btn" onclick="closeCard()">❌ Close</button>
+  <label style="display:block;margin-top:10px;font-weight:700;">Sender message (optional)</label>
+  <textarea id="senderNote" placeholder="Enter a message that will be included in Print & WhatsApp"></textarea>
+
+  <div style="margin-top:10px;">
+    <span style="font-weight:700;margin-right:8px;">Color:</span>
+    <div style="display:inline-flex;gap:8px;vertical-align:middle;">
+      <div class="color-swatch" style="background:#fca5a5" data-color="#fca5a5" onclick="pickColor('#fca5a5')"></div>
+      <div class="color-swatch" style="background:#fffb91" data-color="#fffb91" onclick="pickColor('#fffb91')"></div>
+      <div class="color-swatch" style="background:#baffc9" data-color="#baffc9" onclick="pickColor('#baffc9')"></div>
+      <input type="color" id="colorPicker" style="margin-left:6px;vertical-align:middle;border-radius:6px" />
+    </div>
+  </div>
+
+  <div class="controls" style="justify-content:flex-end;">
+    <button class="btn" onclick="onPrint()">🖨 Print</button>
+    <button class="btn" onclick="onSend()">📩 Send (WhatsApp)</button>
+    <button class="btn btn-ghost" onclick="onClose()">Close</button>
+  </div>
 </div>
 
-<!-- Hidden Print Area -->
-<div id="printArea"></div>
-
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
-import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-database.js";
-import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
+/* -------------------------
+   Full working single-file app:
+   - Firebase realtime read (optional)
+   - Google Login (Firebase Auth)
+   - Paste JSON as fallback
+   - Universal search, opens popup card with full fields
+   - Card color update saved to Firebase (if using Firebase)
+   - Print: styled card in new window
+   - WhatsApp send: formatted + sender note
+   -------------------------- */
 
-// ---- Firebase Config ----
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+import { getDatabase, ref, onValue, update, set } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+
+/* --------- CONFIG: replace with your project's values --------- */
 const firebaseConfig = {
-  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com/"
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com/",
+  projectId: "YOUR_PROJECT",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "SENDER_ID",
+  appId: "APP_ID"
 };
+/* -------------------------------------------------------------- */
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-const auth = getAuth();
+const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 
-let VOTERS = {};
+/* State */
+let VOTERS = {};              // object loaded from Firebase or pasted JSON
+let usingRealtime = true;     // whether current live source is Firebase (true) or pasted JSON (false)
+let selectedKey = null;       // stores the active key (exact key under Voters) for updates
+const tableBody = document.querySelector("#voterTable tbody");
+const overlay = document.getElementById("overlay");
+const card = document.getElementById("card");
 
-// Login
-document.getElementById("loginBtn").onclick = () => {
-    signInWithPopup(auth, provider).then(result => {
-        document.getElementById("userDisplay").innerHTML = "👋 Welcome, " + result.user.email;
-    });
-};
+/* UI elements */
+const loginBtn = document.getElementById("loginBtn");
+const userInfo = document.getElementById("userInfo");
+const userEmail = document.getElementById("userEmail");
+const logoutBtn = document.getElementById("logoutBtn");
+const jsonInput = document.getElementById("jsonInput");
+const useJsonBtn = document.getElementById("useJsonBtn");
+const clearJsonBtn = document.getElementById("clearJsonBtn");
+const searchInput = document.getElementById("search");
+const colorPicker = document.getElementById("colorPicker");
 
-// Read Voters
-onValue(ref(db, "Voters"), snapshot => {
-    VOTERS = snapshot.val() || {};
-    loadTable();
+/* ---------- Authentication ---------- */
+loginBtn.addEventListener("click", async () => {
+  try {
+    await signInWithPopup(auth, provider);
+    // onAuthStateChanged will update UI
+  } catch (err) {
+    alert("Login failed: " + (err.message || err));
+    console.error(err);
+  }
 });
 
-// Load Table
-function loadTable() {
-    const tbody = document.getElementById("voterList");
-    tbody.innerHTML = "";
+logoutBtn.addEventListener("click", async () => {
+  try {
+    await signOut(auth);
+  } catch (err) {
+    console.error(err);
+  }
+});
 
-    const query = document.getElementById("search").value.toLowerCase();
+onAuthStateChanged(auth, user => {
+  if (user) {
+    loginBtn.style.display = "none";
+    userInfo.style.display = "flex";
+    userEmail.textContent = user.email;
+  } else {
+    loginBtn.style.display = "inline-flex";
+    userInfo.style.display = "none";
+    userEmail.textContent = "";
+  }
+});
 
-    Object.values(VOTERS).forEach(v => {
-        if(JSON.stringify(v).toLowerCase().includes(query)){
-            const row = document.createElement("tr");
-            row.style.background = v.Color || "";
-            row.innerHTML = `
-                <td>${v.Epic}</td>
-                <td>${v.Name}</td>
-                <td>${v.PartNo}</td>
-                <td><button onclick='openCard("${v.Epic}")'>View</button></td>
-            `;
-            tbody.appendChild(row);
-        }
-    });
+/* ---------- Firebase realtime load ---------- */
+const votersRef = ref(db, "Voters");
+onValue(votersRef, snapshot => {
+  const val = snapshot.val();
+  if (val && Object.keys(val).length) {
+    VOTERS = val;
+    usingRealtime = true;
+    renderTable();
+  } else {
+    // keep previous data - don't override if none
+  }
+});
+
+/* ---------- Paste JSON handling (fallback / manual) ---------- */
+useJsonBtn.addEventListener("click", () => {
+  const txt = jsonInput.value.trim();
+  if (!txt) { alert("Paste JSON with top-level 'Voters' object."); return; }
+  try {
+    const parsed = JSON.parse(txt);
+    if (!parsed.Voters || typeof parsed.Voters !== "object") {
+      alert("JSON must contain top-level 'Voters' object.");
+      return;
+    }
+    VOTERS = parsed.Voters;
+    usingRealtime = false;
+    renderTable();
+    alert("Loaded voters from pasted JSON (local only).");
+  } catch (err) {
+    alert("Invalid JSON: " + err.message);
+  }
+});
+
+/* Clear JSON button (keeps Firebase source) */
+clearJsonBtn.addEventListener("click", () => {
+  jsonInput.value = "";
+});
+
+/* ---------- Render Table (universal search) ---------- */
+function normalizeString(s){ return (s === null || s === undefined) ? "" : String(s).toLowerCase(); }
+
+function renderTable() {
+  tableBody.innerHTML = "";
+  const q = normalizeString(searchInput.value);
+
+  // iterate keys to preserve Firebase keys exactly
+  Object.entries(VOTERS || {}).forEach(([k, vRaw]) => {
+    // defensively map the voter object to ensure fields exist
+    const v = vRaw || {};
+    // Build a searchable combined string of all important fields
+    const searchable = [
+      v.Name, v.Epic, v.AcNo, v.PartNo, v.Booth, v.Address, v.VoterAddress,
+      v.VotingAddress, v.ParentName, v.Relation, v.RelationType, v.Description
+    ].map(normalizeString).join(" ");
+
+    // show row if matches search (or if search empty)
+    if (!q || searchable.includes(q)) {
+      const tr = document.createElement("tr");
+      tr.dataset.key = k;
+      // use stored Color for row left border highlight
+      tr.style.borderLeft = "6px solid " + (v.Color || "#ffffff00");
+      if (k === selectedKey) { tr.classList.add("selected"); tr.style.background = v.Color || "#fff"; }
+
+      const tdName = document.createElement("td");
+      tdName.textContent = v.Name || "-";
+
+      const tdEpic = document.createElement("td");
+      tdEpic.textContent = v.Epic || "-";
+
+      const tdAc = document.createElement("td");
+      tdAc.textContent = v.AcNo ?? "-";
+
+      const tdPart = document.createElement("td");
+      tdPart.textContent = v.PartNo ?? "-";
+
+      const tdArea = document.createElement("td");
+      tdArea.textContent = (v.Booth || v.Address || v.VoterAddress || "-");
+
+      const tdAction = document.createElement("td");
+      const viewBtn = document.createElement("button");
+      viewBtn.className = "btn";
+      viewBtn.textContent = "Open";
+      viewBtn.onclick = (ev) => { ev.stopPropagation(); openCard(k); };
+      tdAction.appendChild(viewBtn);
+
+      tr.appendChild(tdName);
+      tr.appendChild(tdEpic);
+      tr.appendChild(tdAc);
+      tr.appendChild(tdPart);
+      tr.appendChild(tdArea);
+      tr.appendChild(tdAction);
+
+      // row click opens card as well
+      tr.onclick = () => openCard(k);
+
+      tableBody.appendChild(tr);
+    }
+  });
 }
 
-document.getElementById("search").oninput = loadTable;
+/* Search field */
+searchInput.addEventListener("input", () => renderTable());
 
-// Open Card
-let currentEpic = null;
+/* ---------- Card open / close / populate ---------- */
+function buildCardContent(v) {
+  // Show every field present in object (sorted predictable order for readability)
+  // We'll build rows for known keys and then for any extra keys too.
+  const knownOrder = ["Epic","Name","AcNo","PartNo","Booth","Address","VoterAddress","VotingAddress","ParentName","RelationType","Relation","Description","Color","Images"];
+  const container = document.createElement("div");
 
-window.openCard = (epic) => {
-    currentEpic = epic;
-    const v = VOTERS[ Object.keys(VOTERS).find(k => VOTERS[k].Epic === epic) ];
+  const addRow = (label, val) => {
+    const row = document.createElement("div");
+    row.className = "card-row";
+    const lab = document.createElement("div"); lab.className = "card-label"; lab.textContent = label;
+    const valEl = document.createElement("div"); valEl.className = "card-val";
+    if (Array.isArray(val)) {
+      if (val.length === 0) valEl.innerHTML = "<i>No images</i>";
+      else {
+        val.forEach(src => {
+          const img = document.createElement("img");
+          img.src = src;
+          img.style.width = "72px"; img.style.height = "72px"; img.style.objectFit = "cover";
+          img.style.borderRadius = "6px"; img.style.marginRight = "6px"; img.style.border = "1px solid #e6eef8";
+          valEl.appendChild(img);
+        });
+      }
+    } else {
+      valEl.textContent = (val === undefined || val === null || val === "") ? "-" : String(val);
+    }
+    row.appendChild(lab); row.appendChild(valEl);
+    container.appendChild(row);
+  };
 
-    document.getElementById("cName").innerText = v.Name;
-    document.getElementById("cEpic").innerText = v.Epic;
-    document.getElementById("cAc").innerText = v.AcNo;
-    document.getElementById("cPart").innerText = v.PartNo;
-    document.getElementById("cAddress").innerText = v.Address || "N/A";
-    document.getElementById("cDesc").innerText = v.Description || "";
+  // add known fields in order
+  knownOrder.forEach(k => { if (k in v) addRow(k, v[k]); });
 
-    document.getElementById("colorPicker").value = v.Color || "#ffffff";
-    document.getElementById("card").style.background = v.Color || "#fff";
-    document.getElementById("card").style.display = "block";
-};
+  // add any other keys not in knownOrder
+  Object.keys(v).sort().forEach(k => {
+    if (!knownOrder.includes(k)) addRow(k, v[k]);
+  });
 
-// Color Change
-document.getElementById("colorPicker").onchange = (e) => {
-    const color = e.target.value;
-    document.getElementById("card").style.background = color;
-
-    update(ref(db, "Voters/" + currentEpic.toLowerCase()), { Color: color });
-    loadTable();
-};
-
-// Close Card
-window.closeCard = () => {
-    document.getElementById("card").style.display = "none";
-};
-
-// Print
-window.printVoter = () => {
-    const printContent = document.getElementById("card").innerHTML;
-    const win = window.open("");
-    win.document.write(printContent);
-    win.print();
-    win.close();
-};
-
-// WhatsApp Send
-window.sendWhatsApp = () => {
-    const msg = prompt("Message before sending:");
-    const text = `
-${msg ? msg + "\n\n" : ""}
-VOTER DETAILS:
-Name: ${document.getElementById("cName").innerText}
-EPIC: ${document.getElementById("cEpic").innerText}
-Part No: ${document.getElementById("cPart").innerText}
-Address: ${document.getElementById("cAddress").innerText}
-Description: ${document.getElementById("cDesc").innerText}
-    `;
-    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`);
+  return container;
 }
+
+function openCard(key) {
+  selectedKey = key; // save exact key for updates
+  const v = VOTERS[key] || {};
+  // highlight selected row
+  document.querySelectorAll("#voterTable tbody tr").forEach(r => {
+    r.classList.toggle("selected", r.dataset.key === key);
+    // set row background if selected
+    if (r.dataset.key === key) {
+      r.style.background = v.Color || "#fff";
+    } else {
+      r.style.background = "";
+    }
+  });
+
+  // set title & content
+  document.getElementById("cName").textContent = v.Name || ("EPIC: " + (v.Epic || key));
+  const content = buildCardContent(v);
+  const cardContent = document.getElementById("cardContent");
+  cardContent.innerHTML = ""; // clear
+  cardContent.appendChild(content);
+
+  // senderNote preserve if any (keep last typed)
+  document.getElementById("senderNote").value = "";
+
+  // color picker setup
+  colorPicker.value = v.Color || "#ffffff";
+  // set card background
+  card.style.background = v.Color || "#fff";
+
+  overlay.style.display = "block";
+  card.classList.add("show");
+  card.style.display = "block";
+}
+
+/* close */
+function onClose(){
+  overlay.style.display = "none";
+  card.classList.remove("show");
+  setTimeout(()=>{ card.style.display = "none"; }, 220);
+}
+
+/* allow picking custom color */
+function pickColor(hex){ colorPicker.value = hex; onColorChange(hex); }
+
+/* update color (and save to Firebase when usingRealtime) */
+async function onColorChange(hex) {
+  if (!selectedKey) return;
+  // update UI immediately
+  card.style.background = hex;
+  // update local state so table will re-render correctly
+  if (VOTERS[selectedKey]) VOTERS[selectedKey].Color = hex;
+  renderTable();
+
+  if (usingRealtime) {
+    try {
+      await update(ref(db, "Voters/" + selectedKey), { Color: hex });
+    } catch (err) {
+      console.error("Color update failed:", err);
+    }
+  }
+}
+
+/* wire color picker change */
+colorPicker.addEventListener("change", (e) => onColorChange(e.target.value));
+
+/* ---------- Print the card (styled) ---------- */
+function onPrint(){
+  if (!selectedKey) return alert("Select a voter first.");
+  const v = VOTERS[selectedKey] || {};
+  const senderText = document.getElementById("senderNote").value || "";
+
+  const html = `
+  <html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Voter Card - ${escapeHtml(v.Name || v.Epic || selectedKey)}</title>
+    <style>
+      body{ font-family: Arial, Helvetica, sans-serif; background:#f6f8fb; padding:18px; color:#0b1724; }
+      .print-card{ max-width:700px; margin:0 auto; background:white; padding:20px; border-radius:10px; box-shadow:0 8px 24px rgba(8,12,20,0.08); }
+      .head{ text-align:center; margin-bottom:12px; }
+      .head h2{ margin:0; font-size:20px; }
+      .row{ display:flex; gap:12px; margin:8px 0; }
+      .label{ width:180px; font-weight:700; color:#374151; }
+      .val{ flex:1; }
+      .note{ margin-top:12px; padding:10px; border-radius:8px; background:#fcfcff; border:1px dashed #e6eef8; }
+    </style>
+  </head>
+  <body>
+    <div class="print-card" style="border-left:8px solid ${escapeHtml(v.Color || "#0b84ff")}">
+      <div class="head">
+        <h2>Voter Information Card</h2>
+        <div style="color:#475569;font-size:13px;margin-top:6px;">Generated by Voter System</div>
+      </div>
+
+      ${renderPrintRow("Name", v.Name)}
+      ${renderPrintRow("EPIC", v.Epic)}
+      ${renderPrintRow("AC No", v.AcNo)}
+      ${renderPrintRow("Part No", v.PartNo)}
+      ${renderPrintRow("Booth", v.Booth)}
+      ${renderPrintRow("Address", v.Address)}
+      ${renderPrintRow("Voter Address", v.VoterAddress)}
+      ${renderPrintRow("Voting Address", v.VotingAddress)}
+      ${renderPrintRow("Parent/Relation", (v.ParentName ? v.ParentName + " / " : "") + (v.Relation || "") + (v.RelationType ? " (" + v.RelationType + ")" : ""))}
+      ${renderPrintRow("Description", v.Description)}
+
+      ${ v.Images && v.Images.length ? '<div style="margin-top:12px;"><strong>Images:</strong><div style="display:flex;gap:8px;margin-top:8px;">' + v.Images.map(s => `<img src="${escapeHtml(s)}" style="width:120px;height:80px;object-fit:cover;border-radius:6px;border:1px solid #eef2ff">`).join("") + '</div></div>' : '' }
+
+      <div class="note"><strong>Sender Note:</strong><div style="margin-top:6px;">${escapeHtml(senderText || "-")}</div></div>
+    </div>
+  </body>
+  </html>
+  `;
+
+  const w = window.open("", "_blank", "toolbar=0,location=0,menubar=0,width=900,height=800");
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
+  w.focus();
+  // print after a short delay so styles load
+  setTimeout(()=>{ w.print(); }, 500);
+}
+
+/* ---------- WhatsApp send (formatted) ---------- */
+function onSend(){
+  if (!selectedKey) return alert("Select a voter first.");
+  const v = VOTERS[selectedKey] || {};
+  const senderText = document.getElementById("senderNote").value || "";
+
+  const lines = [];
+  if (senderText) { lines.push(senderText); lines.push(""); }
+  lines.push("🗳 VOTER DETAILS");
+  lines.push("");
+  lines.push("Name: " + (v.Name || "-"));
+  lines.push("EPIC: " + (v.Epic || "-"));
+  lines.push("AC No: " + (v.AcNo ?? "-"));
+  lines.push("Part No: " + (v.PartNo ?? "-"));
+  lines.push("Booth: " + (v.Booth || "-"));
+  lines.push("Address: " + (v.Address || "-"));
+  if (v.VoterAddress) lines.push("Voter Address: " + v.VoterAddress);
+  if (v.VotingAddress) lines.push("Voting Address: " + v.VotingAddress);
+  if (v.ParentName || v.Relation) lines.push("Relation: " + ((v.ParentName ? v.ParentName + " " : "") + (v.Relation || "-") + (v.RelationType ? " ("+v.RelationType+")" : "")));
+  if (v.Description) { lines.push(""); lines.push("Note: " + v.Description); }
+  lines.push("");
+  lines.push("Sent via Voter System");
+
+  const msg = encodeURIComponent(lines.join("\n"));
+  const url = "https://wa.me/?text=" + msg;
+  window.open(url, "_blank");
+}
+
+/* ---------- small helpers ---------- */
+function escapeHtml(s){
+  if (s === undefined || s === null) return "";
+  return String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
+}
+
+function renderPrintRow(label, value){
+  return `<div class="row"><div class="label">${escapeHtml(label)}</div><div class="val">${escapeHtml(value === undefined || value === null ? "-" : value)}</div></div>`;
+}
+
+/* expose to global for inline handlers (used by color swatches) */
+window.pickColor = pickColor;
+function pickColor(hex){ colorPicker.value = hex; onColorChange(hex); }
+
+/* alias of onColorChange for color swatches */
+function onColorChange(hex) { onColorChangeAsync(hex).catch(console.error); }
+async function onColorChangeAsync(hex) {
+  if (!selectedKey) {
+    // only update UI locally if no selection key
+    colorPicker.value = hex;
+    card.style.background = hex;
+    return;
+  }
+  // update local state & UI
+  if (VOTERS[selectedKey]) VOTERS[selectedKey].Color = hex;
+  card.style.background = hex;
+  renderTable();
+
+  // if using firebase realtime, persist color change
+  if (usingRealtime) {
+    try {
+      await update(ref(db, "Voters/" + selectedKey), { Color: hex });
+    } catch (err) {
+      console.error("Failed to update color in Firebase:", err);
+    }
+  }
+}
+
+/* close if overlay clicked */
+overlay.addEventListener("click", onClose);
+
+/* initialize by rendering (if some data already present) */
+renderTable();
 
 </script>
-
 </body>
 </html>
