@@ -1,9 +1,42 @@
-<table id="voterTable">
-  <thead>
-    <tr><th>Name</th><th>EPIC</th><th>Part No</th><th>Action</th></tr>
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voter List</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+.button-3d {
+  background: linear-gradient(145deg, #4f46e5, #3b36c4);
+  color: white;
+  font-weight: bold;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  box-shadow: 4px 4px 6px #333, -4px -4px 6px #666;
+  transition: 0.2s;
+}
+.button-3d:hover {
+  transform: translateY(-2px);
+  box-shadow: 6px 6px 8px #333, -6px -6px 8px #666;
+}
+</style>
+</head>
+<body class="bg-gray-100 p-4">
+
+<h1 class="text-2xl font-bold mb-4">Voter List</h1>
+<div class="overflow-x-auto">
+<table class="min-w-full border border-gray-300" id="voterTable">
+  <thead class="bg-gray-200">
+    <tr>
+      <th class="px-4 py-2 border">Name</th>
+      <th class="px-4 py-2 border">EPIC</th>
+      <th class="px-4 py-2 border">Part No</th>
+      <th class="px-4 py-2 border">Action</th>
+    </tr>
   </thead>
   <tbody></tbody>
 </table>
+</div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
@@ -21,17 +54,26 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-
 const tbody = document.querySelector("#voterTable tbody");
 
 onValue(ref(db, 'voters'), (snapshot) => {
   const data = snapshot.val();
   tbody.innerHTML = "";
-  Object.values(data).forEach(v => {
+  if (!data) return;
+
+  Object.keys(data).forEach(epic => {
+    const v = data[epic];
     const tr = document.createElement("tr");
-    tr.innerHTML = `<td>${v.name}</td><td>${v.EPIC}</td><td>${v.partNo}</td>
-      <td><a href="voter.html?id=${v.EPIC}">View</a></td>`;
+    tr.innerHTML = `
+      <td class="px-4 py-2 border">${v.name || ''}</td>
+      <td class="px-4 py-2 border">${v.EPIC || epic}</td>
+      <td class="px-4 py-2 border">${v.partNo || ''}</td>
+      <td class="px-4 py-2 border">
+        <a href="voter.html?id=${v.EPIC || epic}" class="button-3d">View</a>
+      </td>`;
     tbody.appendChild(tr);
   });
 });
 </script>
+</body>
+</html>
