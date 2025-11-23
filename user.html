@@ -1,68 +1,114 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Voter Management System</title>
+<title>Voter List System</title>
+
 <style>
+:root{
+  --theme:#f2f2f2;
+}
 body{
-    font-family: Arial, sans-serif;
-    background: var(--theme, #ffffff);
+  background:var(--theme);
+  font-family:Arial, sans-serif;
 }
 .container{
-    width: 90%;
-    margin: auto;
-    margin-top: 30px;
+  width:90%;
+  margin:auto;
+  margin-top:30px;
 }
+
+/* Search Input */
 .search-box{
-    margin-bottom: 15px;
+  width:100%;
+  padding:10px;
+  font-size:18px;
+  margin-bottom:10px;
 }
-input{
-    width: 100%;
-    padding: 8px;
-    font-size: 16px;
-}
+
+/* Table */
 table{
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 10px;
-    background: var(--theme, #f3f3f3);
-    transition: .4s;
+  width:100%;
+  border-collapse:collapse;
+  background:white;
+  border-radius:10px;
+  overflow:hidden;
+  box-shadow:0px 0px 10px rgba(0,0,0,.3);
 }
-th, td{
-    border: 1px solid #ccc;
-    padding: 10px;
-    cursor: pointer;
+th,td{
+  padding:12px;
+  text-align:left;
+  border-bottom:1px solid #ddd;
+  cursor:pointer;
+}
+tr:hover{
+  background:#dadada;
+}
+
+/* Theme Buttons */
+.theme-btn{
+  width:40px;
+  height:40px;
+  border:none;
+  cursor:pointer;
+  margin:4px;
+  border-radius:10px;
+  box-shadow:0 0 10px rgba(0,0,0,.4);
+}
+
+/* Popup Modal */
+.modal{
+  display:none;
+  position:fixed;
+  top:0; left:0;
+  width:100%;
+  height:100%;
+  background:rgba(0,0,0,0.5);
+  justify-content:center;
+  align-items:center;
 }
 .card{
-    width: 350px;
-    margin: 20px auto;
-    padding: 20px;
-    background: var(--theme, #f3f3f3);
-    border-radius: 12px;
-    display: none;
-    transition: .4s;
-    text-align: center;
-    box-shadow: 0 0 16px rgba(0,0,0,0.3);
+  width:400px;
+  background:white;
+  padding:20px;
+  border-radius:15px;
+  text-align:center;
+  box-shadow:0 0 15px rgba(0,0,0,.5);
+  animation:popup .3s ease;
 }
+@keyframes popup{
+  from{transform:scale(0.5);opacity:0;}
+  to{transform:scale(1);opacity:1;}
+}
+
+.close{
+  background:red;
+  color:white;
+  border:none;
+  padding:6px 10px;
+  float:right;
+  margin-bottom:10px;
+  cursor:pointer;
+  border-radius:5px;
+}
+
 .btn{
-    margin: 10px;
-    padding: 8px 15px;
-    cursor: pointer;
-    border: none;
-    font-size: 16px;
-    border-radius: 5px;
+  margin:8px;
+  padding:10px 15px;
+  font-size:16px;
+  cursor:pointer;
+  border:none;
+  border-radius:5px;
+  background:#008cff;
+  color:white;
 }
-.theme-btn{
-    border: none;
-    margin: 5px;
-    width: 35px;
-    height: 35px;
-    border-radius: 8px;
-    cursor: pointer;
-    box-shadow: 0 0 10px rgba(0,0,0,.4);
+
+.info{
+  font-size:18px;
+  margin:10px;
 }
-.footer{
-    margin-top: 15px;
-    font-size: 14px;
+.small{
+  font-size:13px;
+  color:gray;
 }
 </style>
 </head>
@@ -70,83 +116,86 @@ th, td{
 <body>
 
 <div class="container">
+<h2>🗳 Election Voter List</h2>
 
-<h2>📋 Voter List</h2>
+<!-- Theme Buttons -->
+<button class="theme-btn" style="background:#ffb9b9" onclick="theme('#ffb9b9')"></button>
+<button class="theme-btn" style="background:#b8ffd6" onclick="theme('#b8ffd6')"></button>
+<button class="theme-btn" style="background:#b9d9ff" onclick="theme('#b9d9ff')"></button>
 
-<div>
-<button class="theme-btn" style="background:red;" onclick="changeTheme('#ffb9b9')"></button>
-<button class="theme-btn" style="background:green;" onclick="changeTheme('#b8ffd6')"></button>
-<button class="theme-btn" style="background:blue;" onclick="changeTheme('#b9d9ff')"></button>
-</div>
-
-
-
-<input type="text" class="search-box" id="search" placeholder="🔍 Search voter..." onkeyup="filterTable()">
+<input id="search" class="search-box" placeholder="🔍 Search voter..." onkeyup="searchFilter()">
 
 <table id="voterTable">
-<tr>
-<th>ID</th>
-<th>Name</th>
-<th>Mobile</th>
-<th>Village</th>
-</tr>
-
-<tr onclick="showCard('101','Rahul Sharma','9876543210','Delhi','Student')">
-<td>101</td><td>Rahul Sharma</td><td>9876543210</td><td>Delhi</td>
-</tr>
-
-<tr onclick="showCard('102','Priya Verma','9696969696','Mumbai','Teacher')">
-<td>102</td><td>Priya Verma</td><td>9696969696</td><td>Mumbai</td>
-</tr>
-
-<tr onclick="showCard('103','Amit Singh','9090909090','Lucknow','Businessman')">
-<td>103</td><td>Amit Singh</td><td>9090909090</td><td>Lucknow</td>
-</tr>
-
+<thead><tr><th>ID</th><th>Name</th><th>Mobile</th><th>Village</th></tr></thead>
+<tbody></tbody>
 </table>
+</div>
 
-<div class="card" id="voterCard">
-<h3 id="name"></h3>
-<p><b>ID:</b> <span id="id"></span></p>
-<p><b>Mobile:</b> <span id="mobile"></span></p>
-<p><b>Village:</b> <span id="village"></span></p>
-<p><b>Description:</b> <span id="desc"></span></p>
 
-<hr>
+<!-- POPUP CARD -->
+<div class="modal" id="modal">
+<div class="card">
+<button class="close" onclick="closeCard()">X</button>
+
+<h2 id="cname"></h2>
+<p class="info"><b>🆔 ID:</b> <span id="cid"></span></p>
+<p class="info"><b>📞 Mobile:</b> <span id="cmobile"></span></p>
+<p class="info"><b>🏘 Village:</b> <span id="cvillage"></span></p>
+<p class="info"><b>ℹ Description:</b> <span id="cdesc"></span></p>
 
 <button class="btn" onclick="window.print()">🖨 Print</button>
-<button class="btn" id="whatsappBtn">📩 WhatsApp</button>
+<a id="waLink" target="_blank"><button class="btn">📩 WhatsApp</button></a>
 
-<div class="footer">Sender: Election Management System</div>
+<p class="small">Sender: Election Management System</p>
+</div>
 </div>
 
-</div>
 
 <script>
-function filterTable(){
-    let input = document.getElementById("search").value.toLowerCase();
-    let rows = document.querySelectorAll("#voterTable tr");
+// ---- JSON DATA ---- //
+const voters=[
+  {id:"101",name:"Rahul Sharma",mobile:"9876543210",village:"Delhi",desc:"Student"},
+  {id:"102",name:"Priya Verma",mobile:"9696969696",village:"Mumbai",desc:"Teacher"},
+  {id:"103",name:"Amit Singh",mobile:"9090909090",village:"Lucknow",desc:"Businessman"},
+  {id:"104",name:"Mohit Patel",mobile:"7788778877",village:"Surat",desc:"Farmer"},
+];
 
-    rows.forEach((row, index)=>{
-        if(index !== 0){
-            row.style.display = row.innerText.toLowerCase().includes(input) ? "" : "none";
-        }
-    });
+// ---- LOAD TABLE ---- //
+const tbody=document.querySelector("#voterTable tbody");
+voters.forEach(v=>{
+let row=document.createElement("tr");
+row.innerHTML=`<td>${v.id}</td><td>${v.name}</td><td>${v.mobile}</td><td>${v.village}</td>`;
+row.onclick=()=>openCard(v);
+tbody.appendChild(row);
+});
+
+// ---- OPEN MODAL ---- //
+function openCard(v){
+document.getElementById("modal").style.display="flex";
+document.getElementById("cid").innerText=v.id;
+document.getElementById("cname").innerText=v.name;
+document.getElementById("cmobile").innerText=v.mobile;
+document.getElementById("cvillage").innerText=v.village;
+document.getElementById("cdesc").innerText=v.desc;
+document.getElementById("waLink").href=`https://wa.me/${v.mobile}?text=Hello ${v.name}`;
 }
 
-function showCard(id,name,mobile,village,desc){
-    document.getElementById("voterCard").style.display="block";
-    document.getElementById("name").innerText=name;
-    document.getElementById("id").innerText=id;
-    document.getElementById("mobile").innerText=mobile;
-    document.getElementById("village").innerText=village;
-    document.getElementById("desc").innerText=desc;
-
-    document.getElementById("whatsappBtn").href=`https://wa.me/${mobile}?text=Hello ${name}`;
+// ---- CLOSE ---- //
+function closeCard(){
+document.getElementById("modal").style.display="none";
 }
 
-function changeTheme(color){
-    document.documentElement.style.setProperty("--theme", color);
+// ---- SEARCH ---- //
+function searchFilter(){
+let input=document.getElementById("search").value.toLowerCase();
+document.querySelectorAll("#voterTable tbody tr").forEach(row=>{
+row.style.display=row.innerText.toLowerCase().includes(input)? "":"none";
+});
+}
+
+// ---- THEME ---- //
+function theme(color){
+document.documentElement.style.setProperty("--theme",color);
 }
 </script>
 
