@@ -3,119 +3,108 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Voter 2025 Login</title>
+<title>Voter Registration & List</title>
+<script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-firestore.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
-body{font-family:system-ui,sans-serif;background:#f0f2f5;margin:0;padding:0;}
-.logo-3d{
-  font-size:4rem;
-  font-weight:bold;
-  color:#ff3c00;
-  text-shadow: 3px 3px 0 #fff, 6px 6px 0 #00f, 9px 9px 0 #0f0;
-  text-align:center;
-  margin-bottom:2rem;
-}
-.button-3d{
-  background: linear-gradient(145deg,#ff6b6b,#f06595);
-  color:#fff;
-  font-weight:700;
-  padding:.7rem 1.5rem;
-  border-radius:12px;
-  box-shadow:5px 5px 10px rgba(0,0,0,.3), -5px -5px 10px rgba(255,255,255,.1);
-  transition: transform .14s, box-shadow .14s;
-  font-size:1.2rem;
-  margin:1rem;
-}
-.button-3d:active{
-  transform: translateY(2px);
-}
-#dashboard{display:none;text-align:center;padding-top:5rem;}
-.dashboard-btn{
-  background: linear-gradient(145deg,#0d6efd,#6610f2);
-  color:white;
-  font-weight:bold;
-  padding:1rem 2rem;
-  border-radius:12px;
-  box-shadow:5px 5px 10px rgba(0,0,0,.3), -5px -5px 10px rgba(255,255,255,.1);
-  margin:1rem;
-  font-size:1.5rem;
-  transition: transform .14s, box-shadow .14s;
-}
-.dashboard-btn:active{transform: translateY(2px);}
-#logoutBtn{
-  background: linear-gradient(145deg,#ff8800,#ffcc00);
-}
+  .btn-3d {
+    background: linear-gradient(145deg, #4ade80, #16a34a);
+    color: white;
+    font-weight: bold;
+    padding: 10px 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px #15803d;
+    transition: 0.2s;
+  }
+  .btn-3d:active {
+    box-shadow: 0 2px #15803d;
+    transform: translateY(2px);
+  }
 </style>
 </head>
-<body>
+<body class="bg-gray-100 p-4">
 
-<div id="loginScreen" class="flex flex-col items-center justify-center min-h-screen">
-  <div class="logo-3d">VOTER 2025</div>
-  <button id="loginBtn" class="button-3d">Login with Google</button>
+<div class="max-w-md mx-auto bg-white p-6 rounded-xl shadow-lg mb-6">
+<h2 class="text-2xl font-bold mb-4 text-center">Voter Registration</h2>
+
+<form id="regForm" class="space-y-4">
+  <input type="text" id="name" placeholder="Name" required class="w-full border p-2 rounded-md">
+  <input type="text" id="address" placeholder="Address" required class="w-full border p-2 rounded-md">
+  <input type="text" id="mobile" placeholder="Mobile No" required class="w-full border p-2 rounded-md">
+  <input type="text" id="epic" placeholder="EPIC / Voter ID" required class="w-full border p-2 rounded-md">
+  <button type="submit" class="btn-3d w-full text-lg">Register</button>
+</form>
 </div>
 
-<div id="dashboard">
-  <h1 class="text-4xl font-bold mb-8" style="color:#ff8800;">Welcome to Voter Dashboard</h1>
-  <div>
-    <button class="dashboard-btn" id="btn131">131</button>
-    <button class="dashboard-btn" id="btn132">132</button>
-    <button class="dashboard-btn" id="btn133">133</button>
-  </div>
-  <button class="button-3d" id="logoutBtn">Logout</button>
+<div class="max-w-3xl mx-auto bg-white p-6 rounded-xl shadow-lg">
+<h2 class="text-2xl font-bold mb-4 text-center">Voter List</h2>
+<table class="w-full table-auto border-collapse border border-gray-300">
+  <thead class="bg-gray-200">
+    <tr>
+      <th class="border px-2 py-1">Name</th>
+      <th class="border px-2 py-1">Address</th>
+      <th class="border px-2 py-1">Mobile</th>
+      <th class="border px-2 py-1">EPIC</th>
+    </tr>
+  </thead>
+  <tbody id="voterList" class="text-center"></tbody>
+</table>
 </div>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js";
+  import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
   authDomain: "voter-25c94.firebaseapp.com",
+  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
   projectId: "voter-25c94",
+  storageBucket: "voter-25c94.appspot.com",
+  messagingSenderId: "297773534400",
   appId: "1:297773534400:web:3722c487b8c83e9b787125"
 };
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
 
-const loginBtn = document.getElementById("loginBtn");
-const loginScreen = document.getElementById("loginScreen");
-const dashboard = document.getElementById("dashboard");
-const logoutBtn = document.getElementById("logoutBtn");
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
 
-// Login button click
-loginBtn.onclick = async () => {
-  try {
-    await signInWithPopup(auth, new GoogleAuthProvider());
-  } catch(e) {
-    alert("Login failed: "+e.message);
+  const regForm = document.getElementById("regForm");
+  const voterList = document.getElementById("voterList");
+
+  // 🔹 Register voter
+  regForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const name = document.getElementById("name").value;
+    const address = document.getElementById("address").value;
+    const mobile = document.getElementById("mobile").value;
+    const epic = document.getElementById("epic").value;
+
+    await addDoc(collection(db, "voters"), { name, address, mobile, epic });
+    alert("Voter registered!");
+    regForm.reset();
+    loadVoterList();
+  });
+
+  // 🔹 Load voter list
+  async function loadVoterList() {
+    voterList.innerHTML = "";
+    const querySnapshot = await getDocs(collection(db, "voters"));
+    querySnapshot.forEach(docSnap => {
+      const data = docSnap.data();
+      voterList.innerHTML += `
+        <tr>
+          <td class="border px-2 py-1">${data.name}</td>
+          <td class="border px-2 py-1">${data.address}</td>
+          <td class="border px-2 py-1">${data.mobile}</td>
+          <td class="border px-2 py-1">${data.epic}</td>
+        </tr>
+      `;
+    });
   }
-};
 
-// Persistent login
-onAuthStateChanged(auth, user => {
-  if(user){
-    // User is logged in
-    loginScreen.style.display = "none";
-    dashboard.style.display = "block";
-  } else {
-    // User is logged out
-    loginScreen.style.display = "flex";
-    dashboard.style.display = "none";
-  }
-});
-
-// Logout
-logoutBtn.onclick = async ()=>{
-  await signOut(auth);
-};
-
-// Dashboard buttons
-document.getElementById("btn131").onclick = ()=>{ window.location.href="PAGE_LINK_131.html"; }
-document.getElementById("btn132").onclick = ()=>{ window.location.href="PAGE_LINK_132.html"; }
-document.getElementById("btn133").onclick = ()=>{ window.location.href="PAGE_LINK_133.html"; }
-
+  loadVoterList();
 </script>
-
 </body>
 </html>
