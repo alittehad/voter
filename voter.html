@@ -14,47 +14,165 @@
   max-width: 400px;
   margin: 2rem auto;
 }
+.button-3d {
+  background: linear-gradient(145deg, #4f46e5, #3b36c4);
+  color: white;
+  font-weight: bold;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  box-shadow: 4px 4px 6px #333, -4px -4px 6px #666;
+  transition: 0.2s;
+  margin: 5px 0;
+}
+.button-3d:hover {
+  transform: translateY(-2px);
+  box-shadow: 6px 6px 8px #333, -6px -6px 8px #666;
+}
+img.voter-img {
+  max-width: 100%;
+  margin-top: 10px;
+  border-radius: 0.5rem;
+}
 </style>
 </head>
 <body class="bg-gray-100">
 
 <div id="voterCard" class="card-3d"></div>
 
+<textarea id="descInput" placeholder="Enter description" class="border p-2 rounded w-full mt-2"></textarea>
+<br>
+<button id="saveDescBtn" class="button-3d">Save Description</button>
+<button id="deleteDescBtn" class="button-3d">Delete Description</button>
+<br>
+<button id="printBtn" class="button-3d">Print</button>
+<button id="whatsappBtn" class="button-3d">Send WhatsApp</button>
+<br>
+<input type="file" id="imageInput" class="hidden" accept="image/*">
+<button id="uploadBtn" class="button-3d">Upload Image</button>
+<div id="imagesContainer" class="mt-2"></div>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-import { getDatabase, ref, get, child } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
+import { getDatabase, ref, get, child, update } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
+import { getStorage, ref as sRef, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-storage.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
   authDomain: "voter-25c94.firebaseapp.com",
   databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
   projectId: "voter-25c94",
-  storageBucket: "voter-25c94.firebasestorage.app",
+  storageBucket: "voter-25c94.appspot.com",
   messagingSenderId: "297773534400",
   appId: "1:297773534400:web:3722c487b8c83e9b787125"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
+const storage = getStorage(app);
 
 const urlParams = new URLSearchParams(window.location.search);
 const epic = urlParams.get('id');
 
-get(child(ref(db), `voters/${epic}`)).then(snapshot => {
-  const v = snapshot.val();
-  const card = document.getElementById("voterCard");
-  if(v){
-    card.innerHTML = `
-      <h2 class="text-xl font-bold mb-2">${v.name}</h2>
-      <p><strong>EPIC:</strong> ${v.EPIC}</p>
-      <p><strong>State:</strong> ${v.state}</p>
-      <p><strong>District:</strong> ${v.district}</p>
-      <p><strong>AC No:</strong> ${v.acNo}</p>
-      <p><strong>Part No:</strong> ${v.partNo}</p>
-    `;
-  } else {
-    card.innerHTML = "<p>Voter not found</p>";
+const card = document.getElementById("voterCard");
+const uploadBtn = document.getElementById("uploadBtn");
+const imageInput = document.getElementById("imageInput");
+const imagesContainer = document.getElementById("imagesContainer");
+const descInput = document.getElementById("descInput");
+const saveDescBtn = document.getElementById("saveDescBtn");
+const deleteDescBtn = document.getElementById("deleteDescBtn");
+const printBtn = document.getElementById("printBtn");
+const whatsappBtn = document.getElementById("whatsappBtn");
+
+let voterData = {};
+
+// Fetch voter
+async function fetchVoter(){
+  const snapshot = await get(child(ref(db), `voters/${epic}`));
+  voterData = snapshot.val();
+  if(!voterData){ card.innerHTML = "<p>Voter not found</p>"; return; }
+  displayVoter();
+  descInput.value = voterData.description || "";
+}
+fetchVoter();
+
+// Display voter + images
+function displayVoter(){
+  card.innerHTML = `
+    <h2 class="text-xl font-bold mb-2">${voterData.name}</h2>
+    <p><strong>EPIC:</strong> ${voterData.EPIC}</p>
+    <p><strong>State:</strong> ${voterData.state}</p>
+    <p><strong>District:</strong> ${voterData.district}</p>
+    <p><strong>AC No:</strong> ${voterData.acNo}</p>
+    <p><strong>Part No:</strong> ${voterData.partNo}</p>
+  `;
+  imagesContainer.innerHTML = "";
+  if(voterData.images){
+    voterData.images.forEach(url=>{
+      const div = document.createElement("div");
+      div.className = "relative";
+      const img = document.createElement("img");
+      img.src = url;
+      img.className = "voter-img";
+      const delBtn = document.createElement("button");
+      delBtn.className = "button-3d absolute top-0 right-0 text-sm";
+      delBtn.innerText = "Delete";
+      delBtn.onclick = ()=> deleteImage(url);
+      div.appendChild(img);
+      div.appendChild(delBtn);
+      imagesContainer.appendChild(div);
+    });
   }
+}
+
+// Upload image
+uploadBtn.addEventListener("click", ()=> imageInput.click());
+imageInput.addEventListener("change", async(e)=>{
+  const file = e.target.files[0]; if(!file) return;
+  const storageRef = sRef(storage, `voters/${epic}/${file.name}`);
+  await uploadBytes(storageRef, file);
+  const url = await getDownloadURL(storageRef);
+  voterData.images = voterData.images || [];
+  voterData.images.push(url);
+  await update(ref(db, `voters/${epic}`), { images: voterData.images });
+  displayVoter();
+});
+
+// Delete image
+async function deleteImage(url){
+  const storageRef = sRef(storage, `voters/${epic}/${url.split('/').pop()}`);
+  await deleteObject(storageRef).catch(()=>{});
+  voterData.images = voterData.images.filter(u=>u!==url);
+  await update(ref(db, `voters/${epic}`), { images: voterData.images });
+  displayVoter();
+}
+
+// Description
+saveDescBtn.addEventListener("click", async()=>{
+  const desc = descInput.value;
+  await update(ref(db, `voters/${epic}`), { description: desc });
+  alert("Description saved");
+});
+deleteDescBtn.addEventListener("click", async()=>{
+  await update(ref(db, `voters/${epic}`), { description: "" });
+  descInput.value = "";
+});
+
+// Print (images hide)
+printBtn.addEventListener("click", ()=>{
+  const style = document.createElement("style");
+  style.innerHTML = "@media print { img { display: none; } }";
+  document.head.appendChild(style);
+  window.print();
+  document.head.removeChild(style);
+});
+
+// WhatsApp send
+whatsappBtn.addEventListener("click", ()=>{
+  const desc = encodeURIComponent(descInput.value || "");
+  const message = `Name: ${encodeURIComponent(voterData.name)}
+EPIC: ${encodeURIComponent(voterData.EPIC)}
+Description: ${desc}`;
+  window.open(`https://wa.me/?text=${message}`, "_blank");
 });
 </script>
 </body>
