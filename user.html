@@ -17,29 +17,27 @@ input, button { padding: 10px; width: 100%; margin-top: 10px; font-size: 18px; }
 .popup button{ width:100%; padding:10px; margin-top:10px; }
 
 .color-btn { width: 30%; padding: 10px; border-radius: 5px; cursor: pointer; margin: 4px; }
+.hidden { display:none; }
 </style>
 </head>
 <body>
 
-<h2 id="loginTitle">🔐 Login</h2>
+<h2>🔐 Google Login Required</h2>
 
-<div id="loginBox">
-<input id="email" placeholder="Enter Email">
-<button id="loginBtn">Login</button>
+<div id="loginSection">
 <button id="googleLogin" style="background:#4285F4;color:white;">🔑 Login with Google</button>
 </div>
 
-<div id="logoutBox" style="display:none;">
-<p><b>Logged in as:</b> <span id="userName"></span></p>
-<button onclick="logout()">🚪 Logout</button>
-</div>
-
+<div id="userPanel" class="hidden">
+<p><b>Logged in as: </b><span id="userName"></span></p>
+<button onclick="logout()" style="background:#ef4444;color:white;">🚪 Logout</button>
 <hr>
 
 <h2>🔍 Search Voter</h2>
 <input id="search" placeholder="Search Name / EPIC / AC / Part">
 
 <div id="list"></div>
+</div>
 
 <div id="popup" class="popup">
 <h3>🪪 Voter Details</h3>
@@ -81,48 +79,42 @@ const auth = firebase.auth();
 
 let voters = {};
 let users = {};
-let logged = null;
+let loggedUser = null;
 let selectedVoter = null;
 
-// Load Data
 db.ref("Users").on("value", s => users = s.val() || {});
 db.ref("Voters").on("value", s => voters = s.val() || {});
 
-// Manual Login
-loginBtn.onclick = ()=>{
- let email = email.value.trim();
- checkLogin(email);
-};
-
-// Google Login
+// GOOGLE LOGIN
 googleLogin.onclick = async ()=>{
- let provider = new firebase.auth.GoogleAuthProvider();
- let result = await auth.signInWithPopup(provider);
- checkLogin(result.user.email);
+  let provider = new firebase.auth.GoogleAuthProvider();
+  let result = await auth.signInWithPopup(provider);
+  let email = result.user.email;
+
+  if(users[email]){
+    loggedUser = users[email];
+    document.getElementById("userName").innerText = loggedUser.Name;
+    loginSection.classList.add("hidden");
+    userPanel.classList.remove("hidden");
+  } else {
+    alert("❌ Access Denied: Email Not Registered");
+    auth.signOut();
+  }
 };
 
-function checkLogin(email){
- if(users[email]){
-   logged = users[email];
-   document.getElementById("userName").innerText = logged.Name;
-   loginBox.style.display = "none";
-   logoutBox.style.display = "block";
- } else {
-   alert("❌ Email Not Registered");
- }
-}
-
+// LOGOUT
 function logout(){
- logged = null;
- loginBox.style.display="block";
- logoutBox.style.display="none";
- alert("Logged out");
+  auth.signOut();
+  loggedUser = null;
+  userPanel.classList.add("hidden");
+  loginSection.classList.remove("hidden");
 }
 
-// Search
+// SEARCH
 search.oninput = ()=>{
  list.innerHTML="";
- if(!logged) return;
+ if(!loggedUser) return;
+
  let q = search.value.toLowerCase();
 
  Object.values(voters).forEach(v=>{
@@ -135,11 +127,12 @@ search.oninput = ()=>{
  });
 };
 
-// Popup
+// Popup Show
 function openPopup(v, el){
  selectedVoter=v;
  document.querySelectorAll("#list div").forEach(x=>x.classList.remove("selected"));
  el.classList.add("selected");
+
  let html="";
  for(let k in v) html+= `<b>${k}</b>: ${v[k]}<br>`;
  details.innerHTML=html;
@@ -170,7 +163,6 @@ function sendWhatsApp(){
 function closePopup(){
  popup.style.display="none";
 }
-
 </script>
 
 </body>
