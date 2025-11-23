@@ -67,7 +67,7 @@ input {
     body * { visibility: hidden; }
     #popup, #popup * { visibility: visible; }
     #popup { position: absolute; top:0; left:0; width:100%; }
-    .btn, .close-btn, .color-box, textarea, #themeTitle { display: none !important; }
+    .btn, .close-btn, .color-box, #themeTitle, input { display: none !important; }
 }
 
 /* Mobile tweaks */
@@ -186,16 +186,16 @@ function setColor(c){
     showList(voters);
 }
 
-// Print
+// Print (includes sender note)
 function printCard(){ window.print(); }
 
-// WhatsApp Sender
+// WhatsApp Sender (includes sender note)
 function sendWA(){
     let note = document.getElementById("senderNote").value || "—";
 
-    let text = `*Voter Information*\n\n👤 *${selected.Name}*\n🆔 EPIC: ${selected.Epic}\n🏛 AC No: ${selected.AcNo}\n📍 Part No: ${selected.PartNo}\n🏠 Address: ${selected.Address}\n🗳 Booth: ${selected.VotingAddress}\n\n📝 *Message:* ${note}`;
+    let text = `*Voter Information*%0A%0A👤 *${selected.Name}*%0A🆔 EPIC: ${selected.Epic}%0A🏛 AC No: ${selected.AcNo}%0A📍 Part No: ${selected.PartNo}%0A🏠 Address: ${selected.Address}%0A🗳 Booth: ${selected.VotingAddress}%0A%0A📝 *Message:* ${note}`;
 
-    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`);
+    window.open(`https://wa.me/?text=${text}`);
 }
 
 // Search
