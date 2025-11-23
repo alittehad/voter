@@ -1,82 +1,91 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Voter List System</title>
+<title>JSON Based Voter App</title>
 
 <style>
 :root{
-  --theme:#f2f2f2;
+  --theme:#ffffff;
+  --border:#999;
+  --text:#000;
 }
+
 body{
   background:var(--theme);
   font-family:Arial, sans-serif;
 }
+
 .container{
   width:90%;
   margin:auto;
-  margin-top:30px;
+  margin-top:20px;
 }
 
-/* Search Input */
+/* Search */
 .search-box{
   width:100%;
-  padding:10px;
+  padding:12px;
   font-size:18px;
-  margin-bottom:10px;
+  margin:10px 0;
 }
 
 /* Table */
 table{
   width:100%;
   border-collapse:collapse;
-  background:white;
+  background:var(--theme);
   border-radius:10px;
   overflow:hidden;
-  box-shadow:0px 0px 10px rgba(0,0,0,.3);
-}
-th,td{
-  padding:12px;
-  text-align:left;
-  border-bottom:1px solid #ddd;
-  cursor:pointer;
-}
-tr:hover{
-  background:#dadada;
+  box-shadow:0 0 10px rgba(0,0,0,.3);
 }
 
-/* Theme Buttons */
+th,td{
+  padding:12px;
+  border-bottom:2px solid var(--border);
+  cursor:pointer;
+  color:var(--text);
+}
+
+tr:hover{
+  background:rgba(0,0,0,0.1);
+}
+
+/* Theme buttons */
 .theme-btn{
   width:40px;
   height:40px;
+  margin:4px;
   border:none;
   cursor:pointer;
-  margin:4px;
   border-radius:10px;
-  box-shadow:0 0 10px rgba(0,0,0,.4);
+  box-shadow:0 0 10px rgba(0,0,0,.3);
 }
 
-/* Popup Modal */
+/* Popup */
 .modal{
   display:none;
   position:fixed;
   top:0; left:0;
   width:100%;
   height:100%;
-  background:rgba(0,0,0,0.5);
+  background:rgba(0,0,0,.4);
   justify-content:center;
   align-items:center;
 }
+
 .card{
   width:400px;
-  background:white;
+  background:var(--theme);
   padding:20px;
   border-radius:15px;
   text-align:center;
-  box-shadow:0 0 15px rgba(0,0,0,.5);
-  animation:popup .3s ease;
+  border:2px solid var(--border);
+  box-shadow:0 0 20px rgba(0,0,0,.5);
+  animation:scale .3s;
 }
-@keyframes popup{
-  from{transform:scale(0.5);opacity:0;}
+
+@keyframes scale{
+  from{transform:scale(.5);opacity:0;}
   to{transform:scale(1);opacity:1;}
 }
 
@@ -84,31 +93,27 @@ tr:hover{
   background:red;
   color:white;
   border:none;
-  padding:6px 10px;
   float:right;
-  margin-bottom:10px;
+  padding:6px 10px;
   cursor:pointer;
-  border-radius:5px;
+  border-radius:6px;
 }
 
 .btn{
   margin:8px;
   padding:10px 15px;
   font-size:16px;
-  cursor:pointer;
-  border:none;
-  border-radius:5px;
   background:#008cff;
+  border:none;
+  cursor:pointer;
   color:white;
+  border-radius:8px;
 }
 
 .info{
   font-size:18px;
-  margin:10px;
-}
-.small{
-  font-size:13px;
-  color:gray;
+  margin:8px;
+  color:var(--text);
 }
 </style>
 </head>
@@ -116,86 +121,115 @@ tr:hover{
 <body>
 
 <div class="container">
-<h2>🗳 Election Voter List</h2>
 
-<!-- Theme Buttons -->
-<button class="theme-btn" style="background:#ffb9b9" onclick="theme('#ffb9b9')"></button>
-<button class="theme-btn" style="background:#b8ffd6" onclick="theme('#b8ffd6')"></button>
-<button class="theme-btn" style="background:#b9d9ff" onclick="theme('#b9d9ff')"></button>
+<h2>🗳 JSON Voter Database</h2>
 
-<input id="search" class="search-box" placeholder="🔍 Search voter..." onkeyup="searchFilter()">
+<!-- Theme buttons -->
+<button class="theme-btn" style="background:#ffb9b9" onclick="setTheme('#ffb9b9','#d84c4c','#000')"></button>
+<button class="theme-btn" style="background:#b8ffd6" onclick="setTheme('#b8ffd6','#339966','#000')"></button>
+<button class="theme-btn" style="background:#b9d9ff" onclick="setTheme('#b9d9ff','#185adb','#000')"></button>
 
-<table id="voterTable">
-<thead><tr><th>ID</th><th>Name</th><th>Mobile</th><th>Village</th></tr></thead>
-<tbody></tbody>
+<input class="search-box" id="search" placeholder="🔍 Search voter..." onkeyup="filterTable()">
+
+<table>
+<thead>
+<tr><th>EPIC</th><th>Name</th><th>AC No.</th><th>Part No.</th></tr>
+</thead>
+<tbody id="voterBody"></tbody>
 </table>
 </div>
 
 
-<!-- POPUP CARD -->
+<!-- POPUP -->
 <div class="modal" id="modal">
 <div class="card">
 <button class="close" onclick="closeCard()">X</button>
 
-<h2 id="cname"></h2>
-<p class="info"><b>🆔 ID:</b> <span id="cid"></span></p>
-<p class="info"><b>📞 Mobile:</b> <span id="cmobile"></span></p>
-<p class="info"><b>🏘 Village:</b> <span id="cvillage"></span></p>
-<p class="info"><b>ℹ Description:</b> <span id="cdesc"></span></p>
+<h2 id="cName"></h2>
+<p class="info"><b>EPIC:</b> <span id="cEpic"></span></p>
+<p class="info"><b>AC No:</b> <span id="cAc"></span></p>
+<p class="info"><b>Part No:</b> <span id="cPart"></span></p>
+<p class="info"><b>Description:</b> <span id="cDesc"></span></p>
 
 <button class="btn" onclick="window.print()">🖨 Print</button>
 <a id="waLink" target="_blank"><button class="btn">📩 WhatsApp</button></a>
-
-<p class="small">Sender: Election Management System</p>
 </div>
 </div>
 
 
 <script>
-// ---- JSON DATA ---- //
-const voters=[
-  {id:"101",name:"Rahul Sharma",mobile:"9876543210",village:"Delhi",desc:"Student"},
-  {id:"102",name:"Priya Verma",mobile:"9696969696",village:"Mumbai",desc:"Teacher"},
-  {id:"103",name:"Amit Singh",mobile:"9090909090",village:"Lucknow",desc:"Businessman"},
-  {id:"104",name:"Mohit Patel",mobile:"7788778877",village:"Surat",desc:"Farmer"},
-];
+// ------------ JSON DATA -------------
+const data = {
+  "Voters": {
+    "Bcd0598334": {
+      "Epic": "BCD0598334",
+      "Name": "Sanjay Malakar",
+      "AcNo": 131,
+      "PartNo": 92,
+      "Description": "",
+      "Images": []
+    },
+    "Djm1162627": {
+      "Epic": "DJM1162627",
+      "Name": "Jagdish Gajanan Gurav",
+      "AcNo": 131,
+      "PartNo": 237,
+      "Description": "",
+      "Images": []
+    },
+    "Ltv1989003": {
+      "Epic": "LTV1989003",
+      "Name": "Jayprakash Gopal Shende",
+      "AcNo": 131,
+      "PartNo": 14,
+      "Description": "",
+      "Images": []
+    }
+  }
+};
 
-// ---- LOAD TABLE ---- //
-const tbody=document.querySelector("#voterTable tbody");
-voters.forEach(v=>{
-let row=document.createElement("tr");
-row.innerHTML=`<td>${v.id}</td><td>${v.name}</td><td>${v.mobile}</td><td>${v.village}</td>`;
-row.onclick=()=>openCard(v);
-tbody.appendChild(row);
+
+// -------- LOAD VOTER LIST ----------
+const body = document.getElementById("voterBody");
+
+Object.values(data.Voters).forEach(voter=>{
+  let row=document.createElement("tr");
+  row.innerHTML=`<td>${voter.Epic}</td><td>${voter.Name}</td><td>${voter.AcNo}</td><td>${voter.PartNo}</td>`;
+  row.onclick=()=>openCard(voter);
+  body.appendChild(row);
 });
 
-// ---- OPEN MODAL ---- //
+
+// -------- POPUP CARD ----------
 function openCard(v){
-document.getElementById("modal").style.display="flex";
-document.getElementById("cid").innerText=v.id;
-document.getElementById("cname").innerText=v.name;
-document.getElementById("cmobile").innerText=v.mobile;
-document.getElementById("cvillage").innerText=v.village;
-document.getElementById("cdesc").innerText=v.desc;
-document.getElementById("waLink").href=`https://wa.me/${v.mobile}?text=Hello ${v.name}`;
+  document.getElementById("modal").style.display="flex";
+  document.getElementById("cName").innerText=v.Name;
+  document.getElementById("cEpic").innerText=v.Epic;
+  document.getElementById("cAc").innerText=v.AcNo;
+  document.getElementById("cPart").innerText=v.PartNo;
+  document.getElementById("cDesc").innerText=v.Description || "—";
+  document.getElementById("waLink").href=`https://wa.me/?text=Voter: ${v.Name} | EPIC: ${v.Epic}`;
 }
 
-// ---- CLOSE ---- //
 function closeCard(){
-document.getElementById("modal").style.display="none";
+  document.getElementById("modal").style.display="none";
 }
 
-// ---- SEARCH ---- //
-function searchFilter(){
-let input=document.getElementById("search").value.toLowerCase();
-document.querySelectorAll("#voterTable tbody tr").forEach(row=>{
-row.style.display=row.innerText.toLowerCase().includes(input)? "":"none";
-});
+
+// -------- SEARCH FILTER ----------
+function filterTable(){
+  let text=document.getElementById("search").value.toLowerCase();
+  document.querySelectorAll("#voterBody tr").forEach(row=>{
+    row.style.display=row.innerText.toLowerCase().includes(text)?"":"none";
+  });
 }
 
-// ---- THEME ---- //
-function theme(color){
-document.documentElement.style.setProperty("--theme",color);
+
+// -------- THEME CHANGE ----------
+function setTheme(bg,border,text){
+  document.documentElement.style.setProperty("--theme",bg);
+  document.documentElement.style.setProperty("--border",border);
+  document.documentElement.style.setProperty("--text",text);
 }
 </script>
 
