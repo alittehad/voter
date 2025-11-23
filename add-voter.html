@@ -1,23 +1,64 @@
-<!DOCTYPE html>
-<html lang="hi">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Add Voter</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script type="module" src="main.js"></script>
-</head>
-<body class="bg-gray-100 p-4">
-<h2 class="text-xl font-bold mb-2">Add Voter</h2>
-
-<form id="voterForm" class="bg-white p-4 rounded shadow max-w-md mx-auto">
-  <input type="text" id="name" placeholder="Name" class="border p-2 w-full mb-2"><br>
-  <input type="text" id="epic" placeholder="EPIC" class="border p-2 w-full mb-2"><br>
-  <input type="text" id="booth" placeholder="Booth" class="border p-2 w-full mb-2"><br>
-  <input type="text" id="phone" placeholder="Phone" class="border p-2 w-full mb-2"><br>
-  <input type="text" id="address" placeholder="Address" class="border p-2 w-full mb-2"><br>
-  <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded">Add Voter</button>
+<h2>Add New Voter</h2>
+<form id="addVoterForm">
+  <input type="text" placeholder="Name" id="name" required>
+  <input type="text" placeholder="EPIC" id="epic" required>
+  <input type="text" placeholder="State" id="state" required>
+  <input type="text" placeholder="District" id="district" required>
+  <input type="text" placeholder="AC No" id="acNo" required>
+  <input type="text" placeholder="Part No" id="partNo" required>
+  <button type="submit">Add Voter</button>
 </form>
 
-</body>
-</html>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
+  authDomain: "voter-25c94.firebaseapp.com",
+  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
+  projectId: "voter-25c94",
+  storageBucket: "voter-25c94.firebasestorage.app",
+  messagingSenderId: "297773534400",
+  appId: "1:297773534400:web:3722c487b8c83e9b787125"
+};
+
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+const form = document.getElementById("addVoterForm");
+
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const name = document.getElementById("name").value;
+  const epic = document.getElementById("epic").value;
+  const state = document.getElementById("state").value;
+  const district = document.getElementById("district").value;
+  const acNo = document.getElementById("acNo").value;
+  const partNo = document.getElementById("partNo").value;
+
+  // Check if voter exists
+  const dbRef = ref(db);
+  const snapshot = await get(child(dbRef, `voters/${epic}`));
+  if (snapshot.exists()) {
+    alert("Voter already exists!");
+    return;
+  }
+
+  // Add voter
+  await set(ref(db, `voters/${epic}`), {
+    name,
+    EPIC: epic,
+    state,
+    district,
+    acNo,
+    partNo,
+    images: []
+  });
+
+  alert("Voter added successfully!");
+  form.reset();
+});
+</script>
