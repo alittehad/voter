@@ -3,105 +3,98 @@
 <head>
 <meta charset="UTF-8">
 <title>Voter List Search</title>
+
 <style>
-    body {
-        font-family: Arial, sans-serif;
-        padding: 10px;
-        margin: 0;
-        background: #f3f3f3;
-    }
+body {
+    font-family: Arial, sans-serif;
+    padding: 10px;
+    margin: 0;
+    background: #f3f3f3;
+}
 
-    h2 {
-        text-align: center;
-        margin-bottom: 15px;
-    }
+h2 { text-align: center; margin-bottom: 15px; }
 
-    input {
-        width: 100%;
-        padding: 10px;
-        margin-bottom: 12px;
-        border-radius: 8px;
-        border: 2px solid #aaa;
-    }
+input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 12px;
+    border-radius: 8px;
+    border: 2px solid #aaa;
+}
 
-    .list-item {
-        padding: 12px;
-        background: white;
-        border: 2px solid #ccc;
-        margin-bottom: 10px;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: 0.3s;
-    }
+/* Voter List Card */
+.list-item {
+    padding: 12px;
+    background: white;
+    border: 2px solid #ccc;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+.list-item:hover {
+    transform: scale(1.03);
+    box-shadow: 0 0 10px #aaa;
+}
 
-    .list-item:hover {
-        transform: scale(1.03);
-        box-shadow: 0 0 10px #aaa;
-    }
+/* Popup ⭐*/
+#popup {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
 
-    /* Popup */
-    #popup {
-        display: none;
-        position: fixed;
-        top: 0; left: 0;
-        width: 100%; height: 100%;
-        background: rgba(0,0,0,0.6);
-        justify-content: center;
-        align-items: center;
-    }
+.card {
+    width: 95%;
+    max-width: 400px;
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    text-align: left;
+    animation: pop .3s ease-in-out;
+}
 
-    .card {
-        width: 90%;
-        max-width: 400px;
-        background: white;
-        padding: 20px;
-        border-radius: 15px;
-        border: 3px solid black;
-        text-align: left;
-        transition: 0.4s;
-    }
+@keyframes pop {
+    from { transform: scale(0.6); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
 
-    .btn {
-        padding: 10px;
-        border: none;
-        background: #008cff;
-        color: white;
-        width: 100%;
-        margin-top: 10px;
-        border-radius: 10px;
-        font-size: 16px;
-        cursor: pointer;
-        box-shadow: 0 5px 0 #005bb5;
-    }
+/* Buttons 3D */
+.btn {
+    padding: 12px;
+    border: none;
+    background: #008cff;
+    color: white;
+    width: 100%;
+    margin-top: 10px;
+    border-radius: 10px;
+    font-size: 16px;
+    cursor: pointer;
+    box-shadow: 0 6px 0 #005bb5;
+}
 
-    .btn:active {
-        transform: translateY(4px);
-        box-shadow: 0 2px 0 #004;
-    }
+.btn:active {
+    transform: translateY(5px);
+    box-shadow: 0 2px 0 #003f7f;
+}
 
-    .color-box {
-        width: 40px;
-        height: 40px;
-        border-radius: 10px;
-        cursor: pointer;
-        margin: 6px;
-        border: 2px solid black;
-        display: inline-block;
-    }
+/* Color buttons */
+.color-box {
+    width: 40px; height: 40px;
+    border-radius: 8px;
+    margin: 5px;
+    display: inline-block;
+    border: 2px solid black;
+}
 
-    .close-btn {
-        background: red;
-        color: white;
-        margin-top: 10px;
-    }
-
-
-/* PRINT MODE FIXED */
-
+/* Print Mode */
 @media print {
-    .close-btn, .btn, #themeLabel, img, textarea, .color-box, input {
-        display: none !important;
-    }
+    .btn, .color-box, textarea, #themeTitle, #closeBtn { display: none !important; }
 
     #popup {
         display: block !important;
@@ -112,7 +105,7 @@
     .card {
         width: 100% !important;
         border: 2px solid black;
-        color: black !important;
+        box-shadow: none !important;
     }
 }
 
@@ -121,11 +114,8 @@
 <body>
 
 <h2>🗳 Voter List</h2>
-
-<input id="search" placeholder="Search by Name, EPIC, AC No, Part No...">
-
+<input id="search" placeholder="Search Name or EPIC...">
 <div id="list"></div>
-
 
 <!-- POPUP -->
 <div id="popup">
@@ -134,71 +124,70 @@
         <p><b>🆔 EPIC:</b> <span id="pEpic"></span></p>
         <p><b>🏛 AC No:</b> <span id="pAc"></span></p>
         <p><b>📍 Part No:</b> <span id="pPart"></span></p>
-        <p><b>🏠 Address:</b> <span id="pAddress"></span></p>
-        <p><b>🗳 Booth:</b> <span id="pVoteAddress"></span></p>
+        <p><b>🏠 Address:</b> <span id="pAdr"></span></p>
+        <p><b>🗳 Booth:</b> <span id="pBooth"></span></p>
 
         <label><b>Sender Note:</b></label>
-        <textarea id="senderNote" placeholder="Write your message..." style="width:100%;height:80px;border-radius:10px;"></textarea>
+        <textarea id="note" placeholder="Write your message..." style="width:100%;height:80px;"></textarea>
 
-        <h3 id="themeLabel">🎨 Theme</h3>
+        <h3 id="themeTitle">🎨 Theme</h3>
         <div>
-            <div class="color-box" onclick="changeColor('#fca5a5')"
-                 style="background:#fca5a5;"></div>
-            <div class="color-box" onclick="changeColor('#a5f7c5')"
-                 style="background:#a5f7c5;"></div>
-            <div class="color-box" onclick="changeColor('#9fd1ff')"
-                 style="background:#9fd1ff;"></div>
+            <div class="color-box" onclick="changeColor('#ffb3b3')" style="background:#ffb3b3"></div>
+            <div class="color-box" onclick="changeColor('#b3ffd1')" style="background:#b3ffd1"></div>
+            <div class="color-box" onclick="changeColor('#b3d9ff')" style="background:#b3d9ff"></div>
         </div>
 
         <button class="btn" onclick="printCard()">🖨 Print</button>
-        <button class="btn" onclick="sendWhatsApp()">📩 Send WhatsApp</button>
-        <button class="btn close-btn" onclick="closePopup()">❌ Close</button>
+        <button class="btn" onclick="sendWA()">📩 Send WhatsApp</button>
+        <button class="btn" id="closeBtn" onclick="closePopup()" style="background:red;">❌ Close</button>
     </div>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase.js"></script>
 
 <script>
 const firebaseConfig = {
-  apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
-  authDomain: "voter-25c94.firebaseapp.com",
-  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
-  projectId: "voter-25c94",
-  storageBucket: "voter-25c94.appspot.com",
-  messagingSenderId: "297773534400",
-  appId: "1:297773534400:web:3722c487b8c83e9b787125"
+    apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
+    authDomain: "voter-25c94.firebaseapp.com",
+    databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
+    projectId: "voter-25c94",
+    storageBucket: "voter-25c94.appspot.com",
+    messagingSenderId: "297773534400",
+    appId: "1:297773534400:web:3722c487b8c83e9b787125"
 };
 
 firebase.initializeApp(firebaseConfig);
+
 let voters = {};
 let selected = null;
 
-firebase.database().ref("Voters").on("value", snap => {
+firebase.database().ref("Voters").on("value", snap=>{
     voters = snap.val() || {};
-    displayList(voters);
+    render(voters);
 });
 
-function displayList(data) {
-    document.getElementById("list").innerHTML = "";
-    Object.values(data).forEach(voter => {
-        let div = document.createElement("div");
-        div.className = "list-item";
-        div.style.borderColor = voter.Color || "#ccc";
-        div.style.background = voter.Color || "white";
-        div.innerHTML = `${voter.Name} - ${voter.Epic}`;
-        div.onclick = () => openPopup(voter);
-        document.getElementById("list").appendChild(div);
+function render(list){
+    const box = document.getElementById("list");
+    box.innerHTML = "";
+
+    Object.values(list).forEach(v=>{
+        let d = document.createElement("div");
+        d.className = "list-item";
+        d.innerHTML = `${v.Name} - ${v.Epic}`;
+        d.style.background = v.Color || "white";
+        d.onclick = () => openPopup(v);
+        box.appendChild(d);
     });
 }
 
-function openPopup(voter){
-    selected = voter;
-    document.getElementById("pName").innerText = voter.Name;
-    document.getElementById("pEpic").innerText = voter.Epic;
-    document.getElementById("pAc").innerText = voter.AcNo;
-    document.getElementById("pPart").innerText = voter.PartNo;
-    document.getElementById("pAddress").innerText = voter.Address || "Not Available";
-    document.getElementById("pVoteAddress").innerText = voter.VotingAddress || "Not Available";
-
+function openPopup(v){
+    selected = v;
+    document.getElementById("pName").innerText = v.Name;
+    document.getElementById("pEpic").innerText = v.Epic;
+    document.getElementById("pAc").innerText = v.AcNo;
+    document.getElementById("pPart").innerText = v.PartNo;
+    document.getElementById("pAdr").innerText = v.Address;
+    document.getElementById("pBooth").innerText = v.VotingAddress;
     document.getElementById("popup").style.display = "flex";
 }
 
@@ -206,25 +195,16 @@ function closePopup(){
     document.getElementById("popup").style.display = "none";
 }
 
-function changeColor(color){
-    document.getElementById("cardBox").style.background = color;
-
-    let items = document.querySelectorAll(".list-item");
-    items.forEach(i => {
-        if(i.innerText.includes(selected.Epic)) {
-            i.style.background = color;
-        }
-    });
+function changeColor(c){
+    document.getElementById("cardBox").style.background = c;
 }
 
 function printCard(){
     window.print();
 }
 
-function sendWhatsApp(){
-    const msg = `
-📌 Voter Details:
-
+function sendWA(){
+    let msg = `
 👤 Name: ${selected.Name}
 🆔 EPIC: ${selected.Epic}
 🏛 AC No: ${selected.AcNo}
@@ -232,26 +212,20 @@ function sendWhatsApp(){
 🏠 Address: ${selected.Address}
 🗳 Booth: ${selected.VotingAddress}
 
-📝 Sender Note:
-${document.getElementById("senderNote").value}
+📝 Note: ${document.getElementById("note").value}
     `;
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`);
 }
 
-document.getElementById("search").addEventListener("input", function(){
-    let text = this.value.toLowerCase();
-    let filtered = Object.values(voters).filter(v =>
+document.getElementById("search").addEventListener("input", e=>{
+    let text = e.target.value.toLowerCase();
+    let f = Object.values(voters).filter(v =>
         v.Name.toLowerCase().includes(text) ||
-        v.Epic.toLowerCase().includes(text) ||
-        String(v.AcNo).includes(text) ||
-        String(v.PartNo).includes(text)
+        v.Epic.toLowerCase().includes(text)
     );
-    displayList(filtered);
+    render(f);
 });
 </script>
-
-<script src="https://www.gstatic.com/firebasejs/9.6.2/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.6.2/firebase-database.js"></script>
 
 </body>
 </html>
