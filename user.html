@@ -2,262 +2,179 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Election Voter List</title>
-
+<title>Voter Directory</title>
 <style>
-    body { font-family: Arial, sans-serif; }
-    h2{text-align:center;}
+    body { font-family: Arial, sans-serif; background: #f3f4f6; padding: 20px;}
+
+    h1 { text-align: center; }
 
     #searchBox {
-        width:90%;
-        padding:12px;
-        margin:15px auto;
-        display:block;
-        font-size:18px;
-        border-radius:10px;
-        border: 2px solid black;
+        width: 100%; padding: 10px; margin-bottom: 10px;
+        border: 2px solid #777; font-size: 16px; border-radius: 6px;
     }
 
     table {
-        width: 95%;
-        margin:auto;
-        border-collapse: collapse;
-        font-size:18px;
+        width: 100%; border-collapse: collapse; background: white;
+        border-radius: 8px; overflow: hidden;
     }
 
     th, td {
-        padding:10px;
-        border-bottom: 2px solid black;
-        cursor:pointer;
+        padding: 10px; border-bottom: 1px solid #ddd; cursor: pointer;
     }
 
-    .selectedRow{
-        font-weight:bold;
-        color:white;
+    tr:hover { background: #d1fae5; }
+
+    .activeRow { background: var(--selectedColor, #ffd166) !important; }
+
+    /* Popup Card */
+    #card {
+        width: 350px; padding: 20px; background: white;
+        position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0);
+        border-radius: 15px; box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+        transition: 0.3s; z-index: 1000;
     }
 
-    #popup {
-        position:fixed;
-        top:50%; left:50%;
-        transform: translate(-50%, -50%);
-        width:380px;
-        padding:20px;
-        background:white;
-        border-radius:15px;
-        display:none;
-        box-shadow:0px 0px 25px rgba(0,0,0,0.3);
-        animation: zoom .3s ease-in-out;
+    #card.show { transform: translate(-50%, -50%) scale(1); }
+
+    #overlay {
+        position: fixed; top:0; left:0; width:100%; height:100%;
+        background: rgba(0,0,0,0.55); display:none;
     }
 
-    @keyframes zoom{from{scale:0.4;}to{scale:1;}}
+    #overlay.active { display: block;}
 
-    #popup button {
-        width:100%;
-        padding:10px;
-        border-radius:10px;
-        margin-top:7px;
-        cursor:pointer;
-        font-size:16px;
+    button {
+        padding:10px; margin:5px; border:none; border-radius:10px;
+        cursor:pointer; font-size:15px;
     }
 
-    .close-btn{
-        background:red;
-        color:white;
-    }
-
-    .color-btns{
-        display:flex;
-        gap:5px;
-        margin:10px 0;
-    }
-
-    .color-btns button{
-        flex:1;
-        padding:8px;
-        border-radius:10px;
-        cursor:pointer;
-        color:white;
-        border:none;
-    }
-
-    /* PRINT ONLY CARD */
-    @media print {
-        body * { visibility: hidden; }
-        #printCard, #printCard * {
-            visibility: visible;
-        }
-        #printCard {
-            position:absolute;
-            top:0; left:0;
-            width:100%;
-            padding:20px;
-            box-shadow:none;
-        }
-    }
-
+    .colorBtn { width: 35px; height:35px; border-radius:50%; border:2px solid black; }
 </style>
 </head>
 <body>
 
-<h2>📋 Election Voter List</h2>
+<h1>📋 Voter List</h1>
 
-<input type="text" id="searchBox" placeholder="🔍 खोजें: नाम / EPIC नंबर / Part No">
+<input id="searchBox" placeholder="🔍 Name search karein...">
 
-<table id="voterTable"></table>
+<table id="voterTable">
+    <thead>
+        <tr><th>Name</th><th>EPIC</th><th>Booth</th></tr>
+    </thead>
+    <tbody></tbody>
+</table>
 
-<div id="popup"></div>
+<!-- Popup -->
+<div id="overlay"></div>
+<div id="card">
+    <h2 id="cName"></h2>
+    <p><strong>EPIC:</strong> <span id="cEpic"></span></p>
+    <p><strong>Parent:</strong> <span id="cParent"></span></p>
+    <p><strong>Relation:</strong> <span id="cRelation"></span></p>
+    <p><strong>Address:</strong> <span id="cAddress"></span></p>
+    <p><strong>Voting Booth:</strong> <span id="cBooth"></span></p>
+    <p><strong>Description:</strong> <span id="cDesc"></span></p>
 
-<!-- Hidden area for clean printing -->
-<div id="printCard" style="display:none;"></div>
+    <br>
+    🎨 <b>Color Change:</b><br>
+    <button class="colorBtn" style="background:#fca5a5" onclick="changeColor('#fca5a5')"></button>
+    <button class="colorBtn" style="background:#fdff8f" onclick="changeColor('#fdff8f')"></button>
+    <button class="colorBtn" style="background:#baffc9" onclick="changeColor('#baffc9')"></button>
+    <br><br>
 
-<script>
+    <button onclick="printCard()">🖨 Print</button>
+    <button onclick="shareWhatsApp()">📩 WhatsApp</button>
+    <button onclick="closeCard()" style="background:red;color:white;">❌ Close</button>
+</div>
 
-const data = {
-  "Voters": {
-    "Bcd0598334": {
-      "Epic": "BCD0598334",
-      "Name": "Sanjay Malakar",
-      "AcNo": 131,
-      "PartNo": 92,
-      "Description": "Active Voter"
-    },
-    "Djm1162627": {
-      "Epic": "DJM1162627",
-      "Name": "Jagdish Gajanan Gurav",
-      "AcNo": 131,
-      "PartNo": 237,
-      "Description": "Regular Voter"
-    },
-    "Ltv1989003": {
-      "Epic": "LTV1989003",
-      "Name": "Jayprakash Gopal Shende",
-      "AcNo": 131,
-      "PartNo": 14,
-      "Description": "Senior Citizen"
-    }
-  }
+<script type="module">
+
+// Firebase import
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "voter-25c94.firebaseapp.com",
+  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com/",
+  projectId: "voter-25c94",
+  storageBucket: "voter-25c94.appspot.com",
+  messagingSenderId: "0000000",
+  appId: "YOUR_APP_ID"
 };
 
-let selectedRow = null;
-let currentColor = "black";
-let selectedData = null;
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
 
+const tableBody = document.querySelector("#voterTable tbody");
+const searchBox = document.getElementById("searchBox");
 
-function loadTable(){
-    const table = document.getElementById("voterTable");
-    table.innerHTML = `<tr><th>EPIC</th><th>Name</th><th>AC</th><th>Part No</th></tr>`;
+let voters = {};
+let selectedKey = "";
 
-    for(let id in data.Voters){
-        let v = data.Voters[id];
-        table.innerHTML += `
-        <tr onclick="selectVoter(this,'${id}')">
-            <td>${v.Epic}</td>
-            <td>${v.Name}</td>
-            <td>${v.AcNo}</td>
-            <td>${v.PartNo}</td>
-        </tr>`;
-    }
-}
-loadTable();
-
-document.getElementById("searchBox").addEventListener("keyup", function(){
-    let filter = this.value.toLowerCase();
-    document.querySelectorAll("#voterTable tr").forEach((row,i)=>{
-        if(i===0) return;
-        row.style.display = row.innerText.toLowerCase().includes(filter) ? "" : "none";
-    });
+onValue(ref(db, "Voters"), (snapshot) => {
+    voters = snapshot.val();
+    displayVoters(voters);
 });
 
-function selectVoter(row,id){
+searchBox.addEventListener("input", () => {
+    let value = searchBox.value.toLowerCase();
+    let filtered = Object.fromEntries(
+        Object.entries(voters).filter(([k, v]) => v.Name.toLowerCase().includes(value))
+    );
+    displayVoters(filtered);
+});
 
-    if(selectedRow) selectedRow.classList.remove("selectedRow");
-    selectedRow=row;
-    selectedRow.classList.add("selectedRow");
-    selectedData=data.Voters[id];
-
-    applyColor(currentColor);
-    showPopup();
+function displayVoters(list){
+    tableBody.innerHTML = "";
+    Object.entries(list).forEach(([key, v]) => {
+        let row = document.createElement("tr");
+        row.style.borderLeft = `5px solid ${v.Color || "#ddd"}`;
+        row.innerHTML = `<td>${v.Name}</td><td>${v.Epic}</td><td>${v.Booth || "-"}</td>`;
+        row.onclick = () => openCard(key, row);
+        tableBody.appendChild(row);
+    });
 }
 
-function applyColor(color){
-    currentColor=color;
+function openCard(key, row){
+    selectedKey = key;
+    document.documentElement.style.setProperty("--selectedColor", voters[key].Color);
 
-    if(selectedRow){
-        selectedRow.style.background=color;
-        selectedRow.style.color="white";
-    }
+    document.querySelectorAll("tr").forEach(r=> r.classList.remove("activeRow"));
+    row.classList.add("activeRow");
 
-    let popup=document.getElementById("popup");
-    popup.style.border=`4px solid ${color}`;
+    document.getElementById("cName").innerText = voters[key].Name;
+    document.getElementById("cEpic").innerText = voters[key].Epic;
+    document.getElementById("cParent").innerText = voters[key].ParentName;
+    document.getElementById("cRelation").innerText = voters[key].Relation;
+    document.getElementById("cAddress").innerText = voters[key].Address;
+    document.getElementById("cBooth").innerText = voters[key].Booth;
+    document.getElementById("cDesc").innerText = voters[key].Description;
+
+    document.getElementById("overlay").classList.add("active");
+    document.getElementById("card").classList.add("show");
 }
 
-function showPopup(){
-    let v=selectedData;
-    const popup=document.getElementById("popup");
+function closeCard(){
+    document.getElementById("overlay").classList.remove("active");
+    document.getElementById("card").classList.remove("show");
+}
 
-    popup.innerHTML = `
-        <h3 style="text-align:center">🪪 Voter Card</h3>
-        <hr>
-
-        <p><b>👤 Name:</b> ${v.Name}</p>
-        <p><b>🆔 EPIC:</b> ${v.Epic}</p>
-        <p><b>📍 AC No:</b> ${v.AcNo}</p>
-        <p><b>📄 Part No:</b> ${v.PartNo}</p>
-        <p><b>📝 Note:</b> ${v.Description}</p>
-
-        <hr>
-
-        <div class="color-btns">
-            <button style="background:#ff7675" onclick="applyColor('#ff7675')">Red</button>
-            <button style="background:#74b9ff" onclick="applyColor('#74b9ff')">Blue</button>
-            <button style="background:#55efc4" onclick="applyColor('#55efc4')">Green</button>
-        </div>
-
-        <button onclick="printCard()">🖨 Print Complete Card</button>
-        <button onclick="shareOnWhatsapp()">📲 Send full details via WhatsApp</button>
-        <button class="close-btn" onclick="closePopup()">❌ Close</button>
-    `;
-
-    popup.style.display="block";
+function changeColor(color){
+    update(ref(db, "Voters/"+selectedKey), { Color: color });
 }
 
 function printCard(){
-    let v=selectedData;
-    
-    document.getElementById("printCard").innerHTML = `
-        <h2 style="text-align:center">🗳 Official Voter Information</h2>
-        <hr>
-        <p><b>Name:</b> ${v.Name}</p>
-        <p><b>EPIC Number:</b> ${v.Epic}</p>
-        <p><b>Assembly Constituency No:</b> ${v.AcNo}</p>
-        <p><b>Part Number:</b> ${v.PartNo}</p>
-        <p><b>Description:</b> ${v.Description}</p>
-        <hr>
-        <p style="text-align:center;">Generated from Voter App</p>
-    `;
-    document.getElementById("printCard").style.border="4px solid "+currentColor;
-    window.print();
+    let div = document.getElementById("card").innerHTML;
+    let win = window.open("");
+    win.document.write(`<html><body>${div}</body></html>`);
+    win.print();
 }
 
-function shareOnWhatsapp(){
-    let v=selectedData;
-
-    let msg = 
-`🗳 *Complete Voter Information*
---------------------------------
-👤 *Name:* ${v.Name}
-🆔 *EPIC Number:* ${v.Epic}
-📍 *AC No:* ${v.AcNo}
-📄 *Part No:* ${v.PartNo}
-📝 *Description:* ${v.Description}
---------------------------------
-📌 Generated from Voter App`;
-
-    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
-}
-
-function closePopup(){ 
-    document.getElementById("popup").style.display="none"; 
+function shareWhatsApp(){
+    let v = voters[selectedKey];
+    let text = `🗳 Voter Details:\n\nName: ${v.Name}\nEPIC: ${v.Epic}\nParent: ${v.ParentName}\nRelation: ${v.Relation}\nAddress: ${v.Address}\nBooth: ${v.Booth}\n\nSent via Election System`;
+    window.open("https://wa.me/?text=" + encodeURIComponent(text));
 }
 
 </script>
