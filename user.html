@@ -21,6 +21,7 @@ img.thumb{max-height:110px;border-radius:8px;display:block;margin-top:8px;}
 </head>
 <body class="p-4">
 
+<!-- Login Screen -->
 <div id="loginScreen" class="min-h-screen flex items-center justify-center">
   <div class="text-center">
     <h1 class="text-2xl font-bold mb-4">Voter Management</h1>
@@ -29,7 +30,19 @@ img.thumb{max-height:110px;border-radius:8px;display:block;margin-top:8px;}
   </div>
 </div>
 
+<!-- App -->
 <div id="app" class="hidden">
+
+  <!-- AC Filter + Search -->
+  <div class="flex gap-3 mb-3 items-center">
+    <select id="acFilter" class="border p-2 rounded">
+      <option value="">All AC</option>
+      <option value="131">131</option>
+      <option value="132">132</option>
+      <option value="133">133</option>
+    </select>
+    <input id="searchInput" class="border p-2 w-full rounded" placeholder="Search by name or EPIC..." />
+  </div>
 
   <!-- Sender Panel -->
   <div class="bg-white p-3 rounded shadow mb-4">
@@ -52,22 +65,16 @@ img.thumb{max-height:110px;border-radius:8px;display:block;margin-top:8px;}
     </div>
   </div>
 
-  <!-- Search -->
-  <div class="flex gap-3 mb-3 items-center">
-    <div class="flex-1">
-      <input id="searchInput" class="border p-2 w-full rounded" placeholder="Search by name or EPIC..." />
-    </div>
-  </div>
-
   <!-- Table -->
   <div class="bg-white rounded shadow overflow-auto">
     <table id="voterTable" class="w-full">
       <thead class="bg-gray-100">
         <tr>
-          <th style="width:45%">Name</th>
+          <th style="width:30%">Name</th>
           <th style="width:20%">EPIC</th>
-          <th style="width:15%">Part</th>
-          <th style="width:20%">Action</th>
+          <th style="width:10%">AC</th>
+          <th style="width:10%">Part</th>
+          <th style="width:30%">Action</th>
         </tr>
       </thead>
       <tbody id="tableBody"></tbody>
@@ -86,8 +93,8 @@ img.thumb{max-height:110px;border-radius:8px;display:block;margin-top:8px;}
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
 import { getDatabase, ref, onValue, get, update, set } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
-import { getStorage, ref as sRef, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-storage.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+import { getStorage, ref as sRef, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-storage.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
@@ -112,6 +119,7 @@ const tableBody = document.getElementById('tableBody');
 const modal = document.getElementById('modal');
 const modalContent = document.getElementById('modalContent');
 const searchInput = document.getElementById('searchInput');
+const acFilter = document.getElementById('acFilter');
 const senderText = document.getElementById('senderText');
 const senderFile = document.getElementById('senderFile');
 const senderPreview = document.getElementById('senderPreview');
@@ -131,11 +139,33 @@ loginBtn.onclick=async()=>{
   }catch(e){alert("Login failed: "+e.message);}
 };
 
+// Login Persistence
+onAuthStateChanged(auth, user=>{
+  if(user){
+    currentUser=user;
+    isAdmin=ADMIN_EMAILS.includes(currentUser.email);
+    loginScreen.classList.add('hidden');
+    appDiv.classList.remove('hidden');
+    init();
+  }
+});
+
 // INIT
 function init(){
-  onValue(ref(db,'Sender'),snap=>{sender=snap.val()||{};senderText.value=sender.text||""; if(sender.img){senderPreview.src=sender.img;senderPreviewWrap.classList.remove('hidden');}else senderPreviewWrap.classList.add('hidden');});
-  onValue(ref(db,'Voters'),snap=>{voters=snap.val()||{};renderTable();});
+  onValue(ref(db,'Sender'),snap=>{
+    sender=snap.val()||{};
+    senderText.value=sender.text||"";
+    if(sender.img){senderPreview.src=sender.img;senderPreviewWrap.classList.remove('hidden');}else senderPreviewWrap.classList.add('hidden');
+  });
+
+  onValue(ref(db,'Voters'),snap=>{
+    voters=snap.val()||{};
+    renderTable();
+  });
+
   searchInput.oninput=renderTable;
+  acFilter.onchange=renderTable;
+
   senderFile.onchange=()=>{const f=senderFile.files[0]; if(!f) return; senderPreview.src=URL.createObjectURL(f); senderPreviewWrap.classList.remove('hidden');};
 }
 
@@ -143,13 +173,16 @@ function init(){
 function renderTable(){
   tableBody.innerHTML='';
   const q=(searchInput.value||'').toLowerCase();
+  const ac=acFilter.value;
+
   Object.keys(voters).sort().forEach(key=>{
     const v=voters[key]; if(!v) return;
+    if(ac && String(v.AcNo)!==ac) return;
     const text=(v.Name||'')+' '+(v.Epic||'')+' '+(v.PartNo||'');
     if(q && text.toLowerCase().indexOf(q)===-1) return;
     const tr=document.createElement('tr');
     tr.style.background=v.Color||'#fff';
-    tr.innerHTML=`<td>${escapeHtml(v.Name||'')}</td><td>${escapeHtml(v.Epic||key)}</td><td>${escapeHtml(v.PartNo||'')}</td><td><button class="button-3d small-3d" onclick="openCard('${key}')">View</button></td>`;
+    tr.innerHTML=`<td>${escapeHtml(v.Name||'')}</td><td>${escapeHtml(v.Epic||key)}</td><td>${escapeHtml(v.AcNo||'')}</td><td>${escapeHtml(v.PartNo||'')}</td><td><button class="button-3d small-3d" onclick="openCard('${key}')">View</button></td>`;
     tableBody.appendChild(tr);
   });
 }
@@ -160,7 +193,7 @@ window.openCard=async function(key){
   modalContent.innerHTML='';
   const html=document.createElement('div');
   html.innerHTML=`
-    <div style="display:flex;flex-direction:column;gap:8px">
+    <div style="display:flex;flex-direction:column;gap:8px;background:${v.Color||'#fff'};padding:10px;border-radius:10px">
       <div style="display:flex;justify-content:space-between;align-items:center">
         <div><div style="font-weight:700;font-size:18px">${escapeHtml(v.Name)}</div><div style="color:#555">EPIC: ${escapeHtml(v.Epic)}</div></div>
         <div style="text-align:right"><div style="color:#444">AC: ${escapeHtml(v.AcNo||'')}</div><div style="color:#444">Part: ${escapeHtml(v.PartNo||'')}</div></div>
@@ -172,23 +205,34 @@ window.openCard=async function(key){
         ${v.Images&&v.Images.length?`<button class="button-3d small-3d bg-red-600 mt-2" onclick="deleteVoterImage('${key}')">Delete Image</button>`:""}
       </div>
       <div>
+        <label class="font-medium">Voting Address</label>
+        <textarea id="fieldAddress" rows="2" class="border w-full p-2 rounded mt-1">${escapeHtml(v.VotingAddress||'')}</textarea>
+      </div>
+      <div>
         <label class="font-medium">Description / Notes</label>
         <textarea id="fieldDesc" rows="2" class="border w-full p-2 rounded mt-1">${escapeHtml(v.Description||'')}</textarea>
       </div>
       <div style="display:flex;gap:8px;margin-top:6px">
         <button class="button-3d small-3d" id="saveBtn">Save</button>
+        <button class="button-3d small-3d" id="printBtn">Print</button>
         <button class="button-3d small-3d" id="whatsappBtn">Send (WhatsApp)</button>
       </div>
     </div>`;
   modalContent.appendChild(html);
 
+  // Save Button
   document.getElementById('saveBtn').onclick=async()=>{
     if(!isAdmin) return alert("Only admin can save");
     const f=document.getElementById('voterFile').files[0];
-    const updates={Description:document.getElementById('fieldDesc').value};
+    const updates={Description:document.getElementById('fieldDesc').value, VotingAddress:document.getElementById('fieldAddress').value};
     if(f){
       const storageRef=sRef(storage,`Voters/${key}.jpg`);
-      await uploadBytes(storageRef,f);
+      const uploadTask=uploadBytesResumable(storageRef,f);
+      uploadTask.on('state_changed',snapshot=>{
+        const percent=Math.round((snapshot.bytesTransferred/snapshot.totalBytes)*100);
+        console.log("Upload: "+percent+"%");
+      });
+      await uploadTask;
       const url=await getDownloadURL(storageRef);
       updates.Images=[url];
     }
@@ -196,13 +240,27 @@ window.openCard=async function(key){
     alert("Saved & Live Updated");
   };
 
+  // Print
+  document.getElementById('printBtn').onclick=()=>{
+    const printWindow=window.open('','PRINT','height=600,width=800');
+    printWindow.document.write('<html><head><title>Voter Card</title></head><body>');
+    printWindow.document.write(modalContent.innerHTML);
+    printWindow.document.write('</body></html>');
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  };
+
+  // WhatsApp
   document.getElementById('whatsappBtn').onclick=async()=>{
-    const name=v.Name||''; const epic=v.Epic||''; const desc=document.getElementById('fieldDesc').value;
+    const name=v.Name||''; const epic=v.Epic||''; const desc=document.getElementById('fieldDesc').value; const addr=document.getElementById('fieldAddress').value;
     const senderSnap=(await get(ref(db,'Sender'))).val()||{};
-    let msg=`${encodeURIComponent(senderSnap.text||'')}\nVoter Details:\nName: ${encodeURIComponent(name)}\nEPIC: ${encodeURIComponent(epic)}\nDesc: ${encodeURIComponent(desc)}`;
+    let msg=`${encodeURIComponent(senderSnap.text||'')}\nVoter Details:\nName: ${encodeURIComponent(name)}\nEPIC: ${encodeURIComponent(epic)}\nAddress: ${encodeURIComponent(addr)}\nDesc: ${encodeURIComponent(desc)}`;
     if(v.Images&&v.Images.length) msg+=`\nVoterImage: ${encodeURIComponent(v.Images[0])}`;
     if(senderSnap.img) msg+=`\nSenderImage: ${encodeURIComponent(senderSnap.img)}`;
-    window.open(`https://wa.me/?text=${msg}`,'_blank');
+    if(navigator.share){
+      navigator.share({text:decodeURIComponent(msg)}).catch(()=>window.open(`https://wa.me/?text=${msg}`,'_blank'));
+    }else window.open(`https://wa.me/?text=${msg}`,'_blank');
   };
 
   modal.classList.remove('hidden');
@@ -217,11 +275,16 @@ window.deleteVoterImage=async function(key){
 
 // SAVE / DELETE SENDER
 async function saveSender(){
-  if(!currentUser) return alert("Login first");
+  if(!currentUser || !isAdmin) return alert("Only admin can save");
   const file=senderFile.files[0]; let updates={};
   if(file){
     const p=sRef(storage,'Sender/poster.jpg');
-    await uploadBytes(p,file);
+    const uploadTask=uploadBytesResumable(p,file);
+    uploadTask.on('state_changed',snap=>{
+      const percent=Math.round((snap.bytesTransferred/snap.totalBytes)*100);
+      console.log("Sender Upload: "+percent+"%");
+    });
+    await uploadTask;
     updates.img=await getDownloadURL(p);
   }
   updates.text=senderText.value;
@@ -240,6 +303,7 @@ document.getElementById('modal').addEventListener('click',e=>{if(e.target.id==='
 function closeModal(){modal.classList.add('hidden');}
 function escapeHtml(s=''){return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');}
 window.saveSender=saveSender; window.deleteSenderPoster=deleteSenderPoster;
+
 </script>
 </body>
 </html>
