@@ -7,50 +7,76 @@
 <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-auth.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-firestore.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  /* 3D button effect */
+  .btn-3d {
+    background: linear-gradient(145deg, #ff7f50, #ff6347);
+    color: white;
+    font-weight: bold;
+    padding: 12px 24px;
+    border-radius: 12px;
+    box-shadow: 0 5px #d35400;
+    transition: 0.2s;
+  }
+  .btn-3d:active {
+    box-shadow: 0 2px #d35400;
+    transform: translateY(3px);
+  }
+</style>
 </head>
-<body>
+<body class="bg-gray-100 p-4">
 
-<h2>Registration Form</h2>
-<form id="regForm">
-  <label>Name:</label><br>
-  <input type="text" id="name" required><br><br>
+<div class="max-w-md mx-auto bg-white p-6 rounded-xl shadow-lg">
+<h2 class="text-2xl font-bold mb-4 text-center">Registration Form</h2>
+
+<form id="regForm" class="space-y-4">
+  <div>
+    <label class="block font-medium">Name:</label>
+    <input type="text" id="name" required class="w-full border p-2 rounded-md">
+  </div>
   
-  <label>Address:</label><br>
-  <input type="text" id="address" required><br><br>
+  <div>
+    <label class="block font-medium">Address:</label>
+    <input type="text" id="address" required class="w-full border p-2 rounded-md">
+  </div>
   
-  <label>Mobile No:</label><br>
-  <input type="text" id="mobile" required><br><br>
+  <div>
+    <label class="block font-medium">Mobile No:</label>
+    <input type="text" id="mobile" required class="w-full border p-2 rounded-md">
+  </div>
   
-  <label>Role:</label><br>
-  <select id="role">
-    <option value="user">User</option>
-    <option value="admin">Admin</option>
-  </select><br><br>
+  <div>
+    <label class="block font-medium">Role:</label>
+    <select id="role" class="w-full border p-2 rounded-md">
+      <option value="user">User</option>
+      <option value="admin">Admin</option>
+    </select>
+  </div>
   
-  <button type="submit">Submit</button>
+  <button type="submit" class="btn-3d w-full mt-4 text-lg">Submit</button>
 </form>
 
-<hr>
-<h3>Super Admin Approval Panel</h3>
-<div id="approvalPanel"></div>
+<hr class="my-6">
+<h3 class="text-xl font-semibold mb-2 text-center">Super Admin Approval Panel</h3>
+<div id="approvalPanel" class="space-y-2"></div>
+</div>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js";
   import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-auth.js";
   import { getFirestore, collection, addDoc, getDocs, updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-firestore.js";
 
-  // 🔹 Firebase config
- const firebaseConfig = {
-  apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
-  authDomain: "voter-25c94.firebaseapp.com",
-  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
-  projectId: "voter-25c94",
-  storageBucket: "voter-25c94.appspot.com",
-  messagingSenderId: "297773534400",
-  appId: "1:297773534400:web:3722c487b8c83e9b787125"
-};
+  const firebaseConfig = {
+    apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
+    authDomain: "voter-25c94.firebaseapp.com",
+    databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
+    projectId: "voter-25c94",
+    storageBucket: "voter-25c94.appspot.com",
+    messagingSenderId: "297773534400",
+    appId: "1:297773534400:web:3722c487b8c83e9b787125"
+  };
 
-  
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
   const auth = getAuth(app);
@@ -59,7 +85,6 @@
   const form = document.getElementById("regForm");
   const approvalPanel = document.getElementById("approvalPanel");
 
-  // 🔹 Form submit
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     const name = document.getElementById("name").value;
@@ -79,7 +104,6 @@
     form.reset();
   });
 
-  // 🔹 Super Admin Login
   async function loadApprovalPanel() {
     const userCredential = await signInWithPopup(auth, provider);
     const user = userCredential.user;
@@ -96,9 +120,10 @@
       const data = docSnap.data();
       if(data.status === "pending"){
         const div = document.createElement("div");
+        div.className = "flex justify-between items-center bg-gray-100 p-2 rounded-md shadow";
         div.innerHTML = `
-          ${data.name} (${data.role}) 
-          <button onclick="approve('${docSnap.id}', '${data.role}')">Approve</button>
+          <span>${data.name} (${data.role})</span>
+          <button class="btn-3d text-sm" onclick="approve('${docSnap.id}', '${data.role}')">Approve</button>
         `;
         approvalPanel.appendChild(div);
       }
@@ -108,10 +133,9 @@
   window.approve = async (id, role) => {
     await updateDoc(doc(db, "registrations", id), { status: "approved" });
     alert(`${role} approved!`);
-    loadApprovalPanel(); // refresh
+    loadApprovalPanel();
   }
 
-  // Load approval panel for Super Admin
   loadApprovalPanel();
 </script>
 </body>
