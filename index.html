@@ -3,8 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Voter Registration & List</title>
+<title>Election Voter Site</title>
 <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-auth.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-firestore.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
@@ -25,37 +26,48 @@
 </head>
 <body class="bg-gray-100 p-4">
 
-<div class="max-w-md mx-auto bg-white p-6 rounded-xl shadow-lg mb-6">
-<h2 class="text-2xl font-bold mb-4 text-center">Voter Registration</h2>
-
-<form id="regForm" class="space-y-4">
-  <input type="text" id="name" placeholder="Name" required class="w-full border p-2 rounded-md">
-  <input type="text" id="address" placeholder="Address" required class="w-full border p-2 rounded-md">
-  <input type="text" id="mobile" placeholder="Mobile No" required class="w-full border p-2 rounded-md">
-  <input type="text" id="epic" placeholder="EPIC / Voter ID" required class="w-full border p-2 rounded-md">
-  <button type="submit" class="btn-3d w-full text-lg">Register</button>
-</form>
+<div id="loginPage" class="max-w-md mx-auto bg-white p-6 rounded-xl shadow-lg text-center">
+  <h2 class="text-2xl font-bold mb-4">Login to Election Site</h2>
+  <button id="loginBtn" class="btn-3d w-full text-lg">Login with Google</button>
 </div>
 
-<div class="max-w-3xl mx-auto bg-white p-6 rounded-xl shadow-lg">
-<h2 class="text-2xl font-bold mb-4 text-center">Voter List</h2>
-<table class="w-full table-auto border-collapse border border-gray-300">
-  <thead class="bg-gray-200">
-    <tr>
-      <th class="border px-2 py-1">Name</th>
-      <th class="border px-2 py-1">Address</th>
-      <th class="border px-2 py-1">Mobile</th>
-      <th class="border px-2 py-1">EPIC</th>
-    </tr>
-  </thead>
-  <tbody id="voterList" class="text-center"></tbody>
-</table>
+<div id="userPage" class="hidden max-w-md mx-auto bg-white p-6 rounded-xl shadow-lg mb-6">
+  <h2 class="text-2xl font-bold mb-4 text-center">Voter Registration</h2>
+  <form id="regForm" class="space-y-4">
+    <input type="text" id="name" placeholder="Name" required class="w-full border p-2 rounded-md">
+    <input type="text" id="address" placeholder="Address" required class="w-full border p-2 rounded-md">
+    <input type="text" id="mobile" placeholder="Mobile No" required class="w-full border p-2 rounded-md">
+    <input type="text" id="epic" placeholder="EPIC / Voter ID" required class="w-full border p-2 rounded-md">
+    <button type="submit" class="btn-3d w-full text-lg">Register</button>
+  </form>
+</div>
+
+<div id="adminPage" class="hidden max-w-3xl mx-auto bg-white p-6 rounded-xl shadow-lg">
+  <h2 class="text-2xl font-bold mb-4 text-center">Super Admin Dashboard</h2>
+  <div id="dashboard" class="space-y-4"></div>
+</div>
+
+<div id="voterListPage" class="hidden max-w-3xl mx-auto bg-white p-6 rounded-xl shadow-lg">
+  <h2 class="text-2xl font-bold mb-4 text-center">Approved Voters List</h2>
+  <table class="w-full table-auto border-collapse border border-gray-300">
+    <thead class="bg-gray-200">
+      <tr>
+        <th class="border px-2 py-1">Name</th>
+        <th class="border px-2 py-1">Address</th>
+        <th class="border px-2 py-1">Mobile</th>
+        <th class="border px-2 py-1">EPIC</th>
+      </tr>
+    </thead>
+    <tbody id="voterList" class="text-center"></tbody>
+  </table>
 </div>
 
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js";
-  import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, getDocs, updateDoc, doc, query, where } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-firestore.js";
 
+// 🔹 Firebase Config
 const firebaseConfig = {
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
   authDomain: "voter-25c94.firebaseapp.com",
@@ -67,44 +79,101 @@ const firebaseConfig = {
 };
 
 
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+const provider = new GoogleAuthProvider();
 
-  const regForm = document.getElementById("regForm");
-  const voterList = document.getElementById("voterList");
+// Pages
+const loginPage = document.getElementById("loginPage");
+const userPage = document.getElementById("userPage");
+const adminPage = document.getElementById("adminPage");
+const voterListPage = document.getElementById("voterListPage");
+const dashboard = document.getElementById("dashboard");
+const voterList = document.getElementById("voterList");
 
-  // 🔹 Register voter
-  regForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const name = document.getElementById("name").value;
-    const address = document.getElementById("address").value;
-    const mobile = document.getElementById("mobile").value;
-    const epic = document.getElementById("epic").value;
+// 🔹 Login
+document.getElementById("loginBtn").addEventListener("click", async () => {
+  const userCredential = await signInWithPopup(auth, provider);
+  const user = userCredential.user;
 
-    await addDoc(collection(db, "voters"), { name, address, mobile, epic });
-    alert("Voter registered!");
-    regForm.reset();
-    loadVoterList();
-  });
+  loginPage.classList.add("hidden");
 
-  // 🔹 Load voter list
-  async function loadVoterList() {
-    voterList.innerHTML = "";
-    const querySnapshot = await getDocs(collection(db, "voters"));
-    querySnapshot.forEach(docSnap => {
-      const data = docSnap.data();
-      voterList.innerHTML += `
-        <tr>
-          <td class="border px-2 py-1">${data.name}</td>
-          <td class="border px-2 py-1">${data.address}</td>
-          <td class="border px-2 py-1">${data.mobile}</td>
-          <td class="border px-2 py-1">${data.epic}</td>
-        </tr>
-      `;
-    });
+  if(user.email === "ngogrant45@gmail.com"){ 
+    adminPage.classList.remove("hidden");
+    loadAdminDashboard();
+  } else {
+    userPage.classList.remove("hidden");
+    loadApprovedVoterList();
   }
+});
 
-  loadVoterList();
+// 🔹 User Registration
+document.getElementById("regForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const name = document.getElementById("name").value;
+  const address = document.getElementById("address").value;
+  const mobile = document.getElementById("mobile").value;
+  const epic = document.getElementById("epic").value;
+
+  await addDoc(collection(db, "registrations"), { name, address, mobile, epic, status: "pending" });
+  alert("Registration submitted! Waiting for Super Admin approval.");
+  document.getElementById("regForm").reset();
+});
+
+// 🔹 Load Super Admin Dashboard
+async function loadAdminDashboard(){
+  dashboard.innerHTML = "";
+  const querySnapshot = await getDocs(collection(db, "registrations"));
+  querySnapshot.forEach(docSnap => {
+    const data = docSnap.data();
+    const div = document.createElement("div");
+    div.className = "flex justify-between items-center bg-gray-100 p-3 rounded-md shadow";
+
+    let statusHtml = "";
+    if(data.status === "pending"){
+      statusHtml = `<button class="btn-3d text-sm" onclick="approveUser('${docSnap.id}')">Approve</button>`;
+    } else {
+      statusHtml = `<span class="font-medium text-green-600">Approved</span>`;
+    }
+
+    div.innerHTML = `
+      <div>
+        <p><strong>${data.name}</strong> (${data.epic})</p>
+        <p>${data.address} | ${data.mobile}</p>
+      </div>
+      <div>${statusHtml}</div>
+    `;
+    dashboard.appendChild(div);
+  });
+}
+
+// 🔹 Approve User
+window.approveUser = async (id) => {
+  await updateDoc(doc(db, "registrations", id), { status: "approved" });
+  loadAdminDashboard();
+  loadApprovedVoterList();
+}
+
+// 🔹 Load Approved Voter List
+async function loadApprovedVoterList(){
+  voterListPage.classList.remove("hidden");
+  voterList.innerHTML = "";
+  const q = query(collection(db, "registrations"), where("status","==","approved"));
+  const querySnapshot = await getDocs(q);
+  querySnapshot.forEach(docSnap => {
+    const data = docSnap.data();
+    voterList.innerHTML += `
+      <tr>
+        <td class="border px-2 py-1">${data.name}</td>
+        <td class="border px-2 py-1">${data.address}</td>
+        <td class="border px-2 py-1">${data.mobile}</td>
+        <td class="border px-2 py-1">${data.epic}</td>
+      </tr>
+    `;
+  });
+}
 </script>
+
 </body>
 </html>
