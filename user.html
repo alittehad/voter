@@ -1,112 +1,97 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Voter System</title>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Voter Search</title>
 
 <style>
 body {
   font-family: Arial, sans-serif;
-  background: #f1f5f9;
-  margin: 0;
-  padding: 15px;
+  margin:0;
+  background:#f2f2f2;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  padding:10px;
 }
 
-button {
-  width: 100%;
-  padding: 15px;
-  margin-top: 12px;
-  font-size: 18px;
-  font-weight: bold;
-  background: linear-gradient(180deg,#4ade80,#22c55e);
-  color: white;
-  border: none;
-  border-radius: 10px;
-  box-shadow: 0 6px 0 #15803d;
-  transition: all .15s;
-}
-button:active {
-  transform: translateY(4px);
-  box-shadow: 0 2px 0 #15803d;
+/* Search Input */
+#search {
+  width:90%;
+  padding:12px;
+  margin:10px 0;
+  border-radius:10px;
+  font-size:18px;
+  border:2px solid #aaa;
+  box-shadow:0 4px #ccc;
 }
 
-input {
-  width: 100%;
-  padding: 12px;
-  font-size: 18px;
-  margin-top: 10px;
-  border-radius: 8px;
-  border: 2px solid #94a3b8;
-}
-
+/* Voter List UI */
 #list div {
-  background: white;
-  padding: 12px;
-  margin-top: 10px;
-  border-radius: 10px;
-  font-size: 18px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-  cursor: pointer;
+  width:90%;
+  background:white;
+  margin:5px 0;
+  padding:15px;
+  border-radius:10px;
+  font-size:18px;
+  cursor:pointer;
+  transition:0.2s;
+  box-shadow:0 5px #ddd;
 }
 
-.popup{
- position: fixed;
- top: 50%; left: 50%;
- transform: translate(-50%, -50%);
- background: #ffffff;
- width: 90%;
- max-width: 400px;
- padding: 20px;
- border-radius: 12px;
- display:none;
- box-shadow: 0px 10px 30px rgba(0,0,0,0.3);
-}
-
-.color-btn{
- width: 33%;
- padding: 15px;
- border-radius: 10px;
- margin-top: 8px;
- cursor:pointer;
- border:2px solid #ccc;
+#list div:hover {
+  transform:scale(1.03);
 }
 
 .selected {
-  border-left:8px solid red;
+  border:2px solid green;
 }
+
+/* Popup Box */
+#popup {
+  position:fixed;
+  bottom:0;
+  width:100%;
+  left:0;
+  background:white;
+  padding:20px;
+  border-radius:20px 20px 0 0;
+  box-shadow:0 -5px 15px rgba(0,0,0,0.3);
+  display:none;
+}
+
+#closeBtn {
+  background:#ff4444;
+  color:white;
+  padding:10px;
+  width:100px;
+  border:none;
+  border-radius:10px;
+  font-size:18px;
+  margin-top:10px;
+  box-shadow:0 4px #b30000;
+}
+
 </style>
 </head>
 <body>
 
-<h2>🗳 Voter Search System</h2>
+<h2>📍 Voter Search</h2>
+<input type="text" id="search" placeholder="Search by Name, EPIC, Part, AC...">
 
-<input id="search" placeholder="Search Name / EPIC / AC / Part">
 <div id="list"></div>
 
-<div id="popup" class="popup">
-<h3>🪪 Voter Card</h3>
-<div id="details"></div>
-
-<br>
-<b>🎨 Select Card Color</b><br>
-<div style="display:flex;gap:5px;">
- <div class="color-btn" style="background:#fde047" onclick="changeColor('#fde047')"></div>
- <div class="color-btn" style="background:#93c5fd" onclick="changeColor('#93c5fd')"></div>
- <div class="color-btn" style="background:#fecaca" onclick="changeColor('#fecaca')"></div>
+<div id="popup">
+  <div id="details"></div>
+  <button id="closeBtn">Close</button>
 </div>
-
-<textarea id="desc" placeholder="Sender Message..." style="width:100%;height:80px;margin-top:10px;"></textarea>
-
-<button onclick="sendWhatsApp()">📩 WhatsApp Send</button>
-<button onclick="printCard()">🖨 Print Card</button>
-<button onclick="closePopup()" style="background:#ef4444;box-shadow:0 6px 0 #b91c1c;">❌ Close</button>
-</div>
-
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-app.js";
-import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-database.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
+import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js";
 
+// 🔥 Your Firebase Config
 const firebaseConfig = {
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
   authDomain: "voter-25c94.firebaseapp.com",
@@ -120,59 +105,57 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-let voters={}, selectedVoter=null;
+let voters = {};
 
-onValue(ref(db, "Voters"), s => voters = s.val() || {});
+const list = document.getElementById("list");
+const search = document.getElementById("search");
+const popup = document.getElementById("popup");
+const details = document.getElementById("details");
 
-// Search
-document.getElementById("search").oninput = ()=>{
- list.innerHTML="";
- let q=search.value.toLowerCase();
+// Load Data From Firebase
+onValue(ref(db, "Voters"), snap => {
+  voters = snap.val() || {};
+  renderList("");
+});
 
- Object.values(voters).forEach(v=>{
-  if(Object.values(v).join(" ").toLowerCase().includes(q)){
-   let item=document.createElement("div");
-   item.innerText=`${v.Name} (${v.Epic})  | AC:${v.AcNo}  Part:${v.PartNo}`;
-   item.onclick=()=>openPopup(v,item);
-   list.appendChild(item);
-  }
- });
-};
+// Show List
+function renderList(query){
+  list.innerHTML="";
+  Object.entries(voters).forEach(([id, v])=>{
+    let match = `${id} ${v.Name} ${v.Epic} ${v.PartNo} ${v.AcNo}`.toLowerCase();
 
-// Open Popup
-function openPopup(v,e){
- selectedVoter=v;
- document.querySelectorAll("#list div").forEach(x=>x.classList.remove("selected"));
- e.classList.add("selected");
-
- let html="";
- Object.entries(v).forEach(([k,val])=>{
-   html+=`<b>${k}</b>: ${val}<br>`;
- });
-
- details.innerHTML=html;
- popup.style.display="block";
+    if(match.includes(query.toLowerCase())){
+      let row = document.createElement("div");
+      row.innerHTML = `<b>${v.Name}</b><br>${v.Epic} | AC:${v.AcNo} | PART:${v.PartNo}`;
+      row.onclick = ()=>openPopup(v, row);
+      list.appendChild(row);
+    }
+  });
 }
 
-window.changeColor=color=>{
- popup.style.background=color;
- document.querySelector(".selected").style.background=color;
+// Search Logic
+search.oninput = ()=>renderList(search.value);
+
+// Popup Show
+function openPopup(v, element){
+  document.querySelectorAll("#list div").forEach(x=>x.classList.remove("selected"));
+  element.classList.add("selected");
+
+  details.innerHTML = `
+    <b>Name:</b> ${v.Name}<br>
+    <b>EPIC:</b> ${v.Epic}<br>
+    <b>AC No:</b> ${v.AcNo}<br>
+    <b>Part No:</b> ${v.PartNo}<br>
+    <b>Description:</b> ${v.Description || "No Notes"}<br>
+  `;
+
+  popup.style.display="block";
+}
+
+// Close Button
+document.getElementById("closeBtn").onclick = ()=>{
+  popup.style.display="none";
 };
-
-window.printCard=()=>{
- let w=window.open("","","width=400,height=600");
- w.document.write(`<h2>Voter Card</h2>${details.innerHTML}<br><b>Message:</b>${desc.value}`);
- w.print();
- w.close();
-};
-
-window.sendWhatsApp=()=>{
- let msg = `${details.innerText}\n\nMessage:\n${desc.value}`;
- window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`);
-};
-
-window.closePopup=()=>popup.style.display="none";
-
 </script>
 </body>
 </html>
