@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voter Card</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script type="module" src="main.js"></script>
+</head>
+<body class="bg-gray-100 p-4">
+
+<div id="voterCard" class="bg-white p-4 rounded shadow max-w-md mx-auto">
+  <h2 id="voterName" class="text-xl font-bold"></h2>
+  <p id="voterEpic"></p>
+  <p id="voterBooth"></p>
+  <p id="voterPhone"></p>
+  <p id="voterAddress"></p>
+
+  <h3 class="mt-4 font-bold">Extra Photos</h3>
+  <div id="extraImages" class="flex flex-wrap"></div>
+
+  <div id="uploadDiv" class="mt-4 hidden">
+    <input type="file" id="fileUpload" accept="image/*">
+    <button onclick="startUpload()" class="bg-blue-500 text-white px-3 py-1 rounded">Upload</button>
+  </div>
+</div>
+
+</body>
+</html>
