@@ -1,109 +1,52 @@
 <!DOCTYPE html>
 <html lang="hi">
 <head>
-<meta charset="UTF-8" />
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Voter Management System</title>
-<script src="https://cdn.tailwindcss.com"></script>
+<title>Voter Cards</title>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-storage.js"></script>
 <style>
-  body { font-family: system-ui, sans-serif; background:#f0f2f5; }
-  .button-3d {
-    background: linear-gradient(145deg,#4f46e5,#3b36c4);
-    color:#fff; font-weight:700; padding:0.35rem 0.6rem; border-radius:8px;
-    box-shadow:3px 3px 6px rgba(0,0,0,0.4), -3px -3px 6px rgba(255,255,255,0.03);
-    transition: transform .14s, box-shadow .14s; font-size:0.9rem;
-  }
-  .button-3d:active { transform: translateY(1px); }
-  .small-3d { padding:0.25rem .45rem; font-size:0.82rem; border-radius:6px;
-    box-shadow:2px 2px 4px rgba(0,0,0,0.35), -2px -2px 4px rgba(255,255,255,0.02);
-  }
-  .color-btn { width:26px;height:26px;border-radius:50%;cursor:pointer;border:2px solid rgba(0,0,0,0.12) }
-  table td, table th { padding:10px; border-bottom:1px solid #eee; vertical-align:middle; text-align:left; }
-  img.thumb { max-height:120px; border-radius:8px; display:block; margin-top:8px; }
-  .modal-bg { position:fixed; inset:0; background: rgba(0,0,0,0.45); display:flex; align-items:center; justify-content:center; z-index:9999; }
-  .modal { width:95%; max-width:520px; background:#fff; border-radius:12px; padding:14px; box-shadow:0 10px 30px rgba(0,0,0,0.25); }
-  .close-x { position:absolute; right:12px; top:8px; cursor:pointer; font-weight:700; font-size:18px; }
-  .hidden { display:none !important; }
+body { font-family: Arial; margin:20px; }
+table { border-collapse: collapse; width: 100%; margin-bottom: 20px;}
+th, td { border: 1px solid #ccc; padding: 8px; text-align: left;}
+th { background-color: #f4f4f4; }
+.card { border:1px solid #ccc; padding:10px; margin:10px 0; border-radius:8px; background:#fafafa; }
+.card img { max-width:100px; display:block; margin-bottom:5px; }
+button { padding:5px 10px; margin-right:5px; cursor:pointer; }
+.progress-bar { width:0%; height:5px; background:green; margin-bottom:5px; transition:width 0.3s;}
 </style>
 </head>
-<body class="p-4">
+<body>
 
-<!-- LOGIN SCREEN -->
-<div id="loginScreen" class="min-h-screen flex items-center justify-center">
-  <div class="text-center">
-    <h1 class="text-2xl font-bold mb-4">Voter Management</h1>
-    <button id="loginBtn" class="button-3d px-6 py-3 text-lg">Login with Google</button>
-    <p class="text-sm text-gray-600 mt-3">Admin can add/edit; others can view & send.</p>
-  </div>
-</div>
+<h2>Voter List</h2>
+<label>Filter by AC: 
+<select id="acFilter">
+  <option value="all">All</option>
+</select>
+</select>
+</label>
 
-<!-- APP SCREEN -->
-<div id="app" class="hidden">
+<table id="voterTable">
+<thead>
+<tr><th>Name</th><th>EPIC</th><th>AC</th><th>Part</th><th>Voting Address</th><th>Images</th><th>Actions</th></tr>
+</thead>
+<tbody></tbody>
+</table>
 
-  <!-- Sender Panel -->
-  <div class="bg-white p-3 rounded shadow mb-4">
-    <div class="flex items-start gap-4">
-      <div class="flex-1">
-        <label class="block font-medium">Sender message</label>
-        <textarea id="senderText" class="border p-2 w-full mt-1 rounded" rows="2" placeholder="Sender ka message yahan likho..."></textarea>
-      </div>
-      <div class="w-48">
-        <label class="block font-medium">Sender poster</label>
-        <input id="senderFile" type="file" accept="image/*" class="mt-1" />
-        <div id="senderPreviewWrap" class="mt-2 hidden">
-          <img id="senderPreview" class="thumb" src="" alt="sender poster" />
-        </div>
-        <div class="flex gap-2 mt-2">
-          <button class="button-3d small-3d" onclick="saveSender()">Save</button>
-          <button class="button-3d small-3d bg-red-600" onclick="deleteSenderPoster()">Delete</button>
-        </div>
-      </div>
-    </div>
-  </div>
+<h2>Voter Cards</h2>
+<div id="cardsContainer"></div>
 
-  <!-- AC Dropdown + Search -->
-  <div class="flex gap-3 mb-3 items-center">
-    <select id="acSelect" class="border p-2 rounded">
-      <option value="">--Select AC--</option>
-      <option value="131">131</option>
-      <option value="132">132</option>
-      <option value="133">133</option>
-    </select>
-    <input id="searchInput" class="border p-2 w-full rounded" placeholder="Search by name or EPIC..." />
-  </div>
+<!-- Voting Address Add Form -->
+<h3>Add / Edit Voting Address</h3>
+<select id="voterSelect"></select>
+<input type="text" id="votingAddressInput" placeholder="Enter Voting Address">
+<button id="saveVotingAddress">Save</button>
 
-  <!-- Voter Table -->
-  <div class="bg-white rounded shadow overflow-auto mb-4">
-    <table id="voterTable" class="w-full">
-      <thead class="bg-gray-100">
-        <tr>
-          <th style="width:30%">Name</th>
-          <th style="width:15%">EPIC</th>
-          <th style="width:10%">AC</th>
-          <th style="width:10%">Part</th>
-          <th style="width:35%">Action</th>
-        </tr>
-      </thead>
-      <tbody id="tableBody"></tbody>
-    </table>
-  </div>
-</div>
-
-<!-- Modal -->
-<div id="modal" class="modal-bg hidden">
-  <div class="modal relative">
-    <div class="close-x" onclick="closeModal()">✖</div>
-    <div id="modalContent"></div>
-  </div>
-</div>
-
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-import { getDatabase, ref, onValue, set, update, get } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
-import { getStorage, ref as sRef, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-storage.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
-
-/* ===== Firebase config ===== */
+<script>
+// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
   authDomain: "voter-25c94.firebaseapp.com",
@@ -113,217 +56,159 @@ const firebaseConfig = {
   messagingSenderId: "297773534400",
   appId: "1:297773534400:web:3722c487b8c83e9b787125"
 };
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-const storage = getStorage(app);
-const auth = getAuth();
 
-/* ===== Admins ===== */
-const ADMIN_EMAILS = ["ngogrant454@gmail.com","zarafix3@gmail.com"];
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const storage = firebase.storage();
 
-let currentUser = null;
-let isAdmin = false;
-let voters = {};
-let sender = { text:"", img:"" };
+// Sample JSON data
+let data = {
+  "Voters": {
+    "BCD0598334": {"Epic":"BCD0598334","Name":"Sanjay Malakar","AcNo":131,"PartNo":92,"VotingAddress":"","Description":"","Images":[]},
+    "DJM1162627": {"Epic":"DJM1162627","Name":"Jagdish Gajanan Gurav","AcNo":131,"PartNo":237,"VotingAddress":"","Description":"","Images":[]}
+  },
+  "Sender": { "text": "Admin message here", "img": "" },
+  "Users": { "Ngogrant454_gmail_com": { "Email":"ngogrant454@gmail.com","Name":"Admin 1","Role":"Admin"} }
+};
 
-/* ===== Elements ===== */
-const loginScreen = document.getElementById('loginScreen');
-const loginBtn = document.getElementById('loginBtn');
-const appDiv = document.getElementById('app');
-const tableBody = document.getElementById('tableBody');
-const modal = document.getElementById('modal');
-const modalContent = document.getElementById('modalContent');
-const searchInput = document.getElementById('searchInput');
-const acSelect = document.getElementById('acSelect');
+let currentAC = 'all';
 
-const senderText = document.getElementById('senderText');
-const senderFile = document.getElementById('senderFile');
-const senderPreview = document.getElementById('senderPreview');
-const senderPreviewWrap = document.getElementById('senderPreviewWrap');
+// Populate AC dropdown dynamically
+function populateACDropdown() {
+  const acSet = new Set();
+  Object.values(data.Voters).forEach(v=>acSet.add(v.AcNo));
+  const acFilter = document.getElementById('acFilter');
+  acSet.forEach(ac=>{
+    const opt = document.createElement('option');
+    opt.value = ac;
+    opt.textContent = ac;
+    acFilter.appendChild(opt);
+  });
+}
 
-/* ===== Persistent Login ===== */
-onAuthStateChanged(auth, user => {
-  if(user){
-    currentUser = user;
-    isAdmin = ADMIN_EMAILS.includes(user.email);
-    loginScreen.classList.add('hidden');
-    appDiv.classList.remove('hidden');
-    init();
+// Populate Voter select dropdown
+function populateVoterSelect() {
+  const sel = document.getElementById('voterSelect');
+  sel.innerHTML = '';
+  Object.values(data.Voters).forEach(v=>{
+    const opt = document.createElement('option');
+    opt.value = v.Epic;
+    opt.textContent = `${v.Name} (${v.Epic})`;
+    sel.appendChild(opt);
+  });
+}
+
+// Render Table
+function renderTable() {
+  const tbody = document.getElementById('voterTable').querySelector('tbody');
+  tbody.innerHTML = '';
+  Object.values(data.Voters).forEach(v=>{
+    if(currentAC !== 'all' && v.AcNo!=currentAC) return;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${v.Name}</td>
+      <td>${v.Epic}</td>
+      <td>${v.AcNo}</td>
+      <td>${v.PartNo}</td>
+      <td>${v.VotingAddress || ''}</td>
+      <td>${v.Images.length>0 ? v.Images.map(i=>`<img src="${i}" width="50">`).join('') : ''}</td>
+      <td>
+        <input type="file" data-epic="${v.Epic}" class="imgUpload">
+        <div class="progress-bar" id="progress-${v.Epic}"></div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// Render Cards
+function renderCards() {
+  const container = document.getElementById('cardsContainer');
+  container.innerHTML = '';
+  Object.values(data.Voters).forEach(v=>{
+    if(currentAC !== 'all' && v.AcNo!=currentAC) return;
+    const card = document.createElement('div');
+    card.className='card';
+    card.innerHTML=`
+      <strong>${v.Name}</strong> (${v.Epic})<br>
+      AC: ${v.AcNo} - Part: ${v.PartNo}<br>
+      Voting Address: ${v.VotingAddress || 'N/A'}<br>
+      Description: ${v.Description || ''}<br>
+      <div>${v.Images.map(i=>`<img src="${i}">`).join('')}</div>
+      <button onclick="printCard('${v.Epic}')">Print</button>
+      <button onclick="shareCard('${v.Epic}')">WhatsApp</button>
+    `;
+    container.appendChild(card);
+  });
+}
+
+// Print function
+function printCard(epic){
+  const v = data.Voters[epic];
+  const win = window.open('','','width=600,height=400');
+  win.document.write(`<h2>${v.Name} (${v.Epic})</h2>`);
+  win.document.write(`AC:${v.AcNo} Part:${v.PartNo}<br>`);
+  win.document.write(`Voting Address:${v.VotingAddress || ''}<br>`);
+  win.document.write(`Description:${v.Description || ''}<br>`);
+  v.Images.forEach(img=>win.document.write(`<img src="${img}" width="100"><br>`));
+  win.print();
+}
+
+// WhatsApp share function
+function shareCard(epic){
+  const v = data.Voters[epic];
+  let text = `Name:${v.Name} (${v.Epic})\nAC:${v.AcNo} Part:${v.PartNo}\nVoting:${v.VotingAddress || ''}\nDescription:${v.Description || ''}`;
+  let url = encodeURIComponent(text);
+  if(navigator.share){
+    navigator.share({text});
   } else {
-    loginScreen.classList.remove('hidden');
-    appDiv.classList.add('hidden');
+    window.open(`https://wa.me/?text=${url}`,'_blank');
+  }
+}
+
+// Handle image upload
+document.addEventListener('change', async (e)=>{
+  if(e.target.classList.contains('imgUpload')){
+    const file = e.target.files[0];
+    const epic = e.target.dataset.epic;
+    const progressBar = document.getElementById(`progress-${epic}`);
+    if(file){
+      const storageRef = storage.ref(`voterImages/${epic}/${file.name}`);
+      const uploadTask = storageRef.put(file);
+      uploadTask.on('state_changed', snapshot=>{
+        const percent = (snapshot.bytesTransferred/snapshot.totalBytes)*100;
+        progressBar.style.width = percent+'%';
+      }, error=>{ alert('Upload error'); }, ()=>{
+        uploadTask.snapshot.ref.getDownloadURL().then(url=>{
+          data.Voters[epic].Images.push(url);
+          renderTable();
+          renderCards();
+        });
+      });
+    }
   }
 });
 
-/* ===== Login ===== */
-loginBtn.onclick = async () => {
-  try{
-    const result = await signInWithPopup(auth,new GoogleAuthProvider());
-    currentUser = result.user;
-    isAdmin = ADMIN_EMAILS.includes(currentUser.email);
-    loginScreen.classList.add('hidden');
-    appDiv.classList.remove('hidden');
-    init();
-  }catch(e){ alert("Login failed: "+e.message);}
-};
+// Save Voting Address
+document.getElementById('saveVotingAddress').addEventListener('click',()=>{
+  const epic = document.getElementById('voterSelect').value;
+  const address = document.getElementById('votingAddressInput').value;
+  data.Voters[epic].VotingAddress = address;
+  renderTable();
+  renderCards();
+});
 
-/* ===== Init ===== */
-function init(){
-  // Load sender
-  onValue(ref(db,'Sender'), snap => {
-    sender = snap.val() || {text:"", img:""};
-    senderText.value = sender.text;
-    if(sender.img){ senderPreview.src=sender.img; senderPreviewWrap.classList.remove('hidden'); }
-    else senderPreviewWrap.classList.add('hidden');
-  });
+// AC filter change
+document.getElementById('acFilter').addEventListener('change',(e)=>{
+  currentAC = e.target.value;
+  renderTable();
+  renderCards();
+});
 
-  // Load voters
-  onValue(ref(db,'Voters'), snap => {
-    voters = snap.val() || {};
-    renderTable();
-  });
-
-  searchInput.oninput = renderTable;
-  acSelect.onchange = renderTable;
-
-  senderFile.onchange = ()=>{
-    const f = senderFile.files[0];
-    if(!f) return;
-    senderPreview.src = URL.createObjectURL(f);
-    senderPreviewWrap.classList.remove('hidden');
-  };
-}
-
-/* ===== Render Table ===== */
-function renderTable(){
-  tableBody.innerHTML='';
-  const q = (searchInput.value||'').toLowerCase();
-  const ac = acSelect.value;
-  Object.keys(voters).sort().forEach(k=>{
-    const v=voters[k];
-    if(!v) return;
-    if(ac && String(v.AcNo)!==ac) return;
-    const text = (v.Name||"")+" "+(v.Epic||"");
-    if(q && text.toLowerCase().indexOf(q)===-1) return;
-    const tr=document.createElement('tr');
-    tr.style.background = v.Color||"#fff";
-    tr.innerHTML = `
-      <td>${escapeHtml(v.Name||"")}</td>
-      <td>${escapeHtml(v.Epic||"")}</td>
-      <td>${escapeHtml(v.AcNo||"")}</td>
-      <td>${escapeHtml(v.PartNo||"")}</td>
-      <td>
-        <button class="button-3d small-3d" onclick="openCard('${k}')">View</button>
-      </td>
-    `;
-    tableBody.appendChild(tr);
-  });
-}
-
-/* ===== Modal ===== */
-window.openCard = async function(key){
-  const v=voters[key];
-  if(!v) return alert("Voter data missing");
-  modalContent.innerHTML='';
-  const html=document.createElement('div');
-  html.innerHTML=`
-    <div style="display:flex;flex-direction:column;gap:8px">
-      <div style="font-weight:700;font-size:18px">${escapeHtml(v.Name)}</div>
-      <div>EPIC: ${escapeHtml(v.Epic)}</div>
-      <div>AC: ${escapeHtml(v.AcNo)}</div>
-      <div>Part: ${escapeHtml(v.PartNo)}</div>
-      <div>Voting Address: ${escapeHtml(v.VotingAddress||'')}</div>
-      <div>Address: ${escapeHtml(v.Address||'')}</div>
-      <div>
-        <label>Description:</label>
-        <textarea id="descField" class="border w-full p-2 rounded mt-1" rows="2">${escapeHtml(v.Description||'')}</textarea>
-      </div>
-      <div>
-        <label>Images:</label>
-        <input type="file" id="voterFile" accept="image/*" />
-        <div id="voterImgs" class="flex gap-2 mt-2">${(v.Images||[]).map(u=>`<img src="${u}" class="thumb" />`).join('')}</div>
-      </div>
-      <div style="display:flex;gap:8px;margin-top:6px">
-        <button class="button-3d small-3d" id="saveBtn">Save</button>
-        <button class="button-3d small-3d" id="printBtn">Print</button>
-        <button class="button-3d small-3d" id="whatsappBtn">WhatsApp</button>
-      </div>
-      <div style="display:flex;gap:8px;margin-top:6px;align-items:center">
-        <div style="font-weight:600">Card color:</div>
-        <div class="color-btn" style="background:#fde68a" onclick="changeColor('${key}','#fde68a')"></div>
-        <div class="color-btn" style="background:#a5f3fc" onclick="changeColor('${key}','#a5f3fc')"></div>
-        <div class="color-btn" style="background:#fca5a5" onclick="changeColor('${key}','#fca5a5')"></div>
-      </div>
-    </div>
-  `;
-  modalContent.appendChild(html);
-
-  document.getElementById('saveBtn').onclick=async()=>{
-    if(!isAdmin) return alert("Only admin can save");
-    const f=document.getElementById('voterFile').files[0];
-    const updates={ Description: document.getElementById('descField').value };
-    if(f){
-      const storageRef = sRef(storage, `Voters/${key}_${Date.now()}.jpg`);
-      await uploadBytes(storageRef,f);
-      const url = await getDownloadURL(storageRef);
-      updates.Images = [...(v.Images||[]),url];
-    }
-    await update(ref(db,'Voters/'+key),updates);
-    alert("Saved");
-  };
-
-  document.getElementById('printBtn').onclick=()=>{
-    const win=window.open('','printwin','width=700,height=700');
-    let htmlPrint=`<h2>${escapeHtml(v.Name)}</h2>
-      <p>EPIC: ${escapeHtml(v.Epic)}</p>
-      <p>AC: ${escapeHtml(v.AcNo)}</p>
-      <p>Part: ${escapeHtml(v.PartNo)}</p>
-      <p>Voting Address: ${escapeHtml(v.VotingAddress||'')}</p>
-      <p>Address: ${escapeHtml(v.Address||'')}</p>
-      <p>Description: ${escapeHtml(document.getElementById('descField').value)}</p>
-      <hr><p>Sender: ${escapeHtml(sender.text||'')}</p>`;
-    if(sender.img) htmlPrint+=`<img src="${sender.img}" class="thumb"/>`;
-    if(v.Images) htmlPrint+=v.Images.map(u=>`<img src="${u}" class="thumb"/>`).join('');
-    win.document.write(htmlPrint); win.document.close(); win.print();
-  };
-
-  document.getElementById('whatsappBtn').onclick=async()=>{
-    let msg=`${encodeURIComponent(sender.text||'')}%0A%0AVoter:%0AName: ${encodeURIComponent(v.Name)}%0AEPIC: ${encodeURIComponent(v.Epic)}%0AAC: ${encodeURIComponent(v.AcNo)}%0APart: ${encodeURIComponent(v.PartNo)}%0AVoting Address: ${encodeURIComponent(v.VotingAddress||'')}%0ADescription: ${encodeURIComponent(document.getElementById('descField').value)}`;
-    if(sender.img) msg+=`%0ASenderImage: ${encodeURIComponent(sender.img)}`;
-    if(v.Images) v.Images.forEach(u=>msg+=`%0AImage: ${encodeURIComponent(u)}`);
-    window.open(`https://wa.me/?text=${msg}`,'_blank');
-  };
-
-  modal.classList.remove('hidden');
-};
-
-/* ===== Utilities ===== */
-window.changeColor=async(k,color)=>{ await update(ref(db,'Voters/'+k),{Color:color}); };
-function closeModal(){ modal.classList.add('hidden'); }
-function escapeHtml(s=''){ return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
-
-/* ===== Sender ===== */
-async function saveSender(){
-  if(!currentUser) return alert("Login first");
-  const file=senderFile.files[0];
-  const updates={ text: senderText.value };
-  if(file){
-    const p=sRef(storage,'Sender/poster.jpg');
-    await uploadBytes(p,file);
-    updates.img=await getDownloadURL(p);
-  }
-  await set(ref(db,'Sender'),updates);
-  alert("Sender saved");
-}
-async function deleteSenderPoster(){
-  if(!isAdmin) return alert("Only admin can delete sender poster");
-  try{ await deleteObject(sRef(storage,'Sender/poster.jpg')); }catch(e){}
-  await update(ref(db,'Sender'),{img:""});
-  senderPreview.src=''; senderPreviewWrap.classList.add('hidden');
-}
-
-/* ===== Modal outside click ===== */
-modal.addEventListener('click', e=>{ if(e.target.id==='modal') closeModal(); });
+populateACDropdown();
+populateVoterSelect();
+renderTable();
+renderCards();
 </script>
 </body>
 </html>
