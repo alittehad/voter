@@ -5,9 +5,7 @@
 <title>Election Voter List</title>
 
 <style>
-    body {
-        font-family: Arial, sans-serif;
-    }
+    body { font-family: Arial, sans-serif; }
     h2{text-align:center;}
 
     #searchBox {
@@ -33,18 +31,16 @@
         cursor:pointer;
     }
 
-    /* Highlight selected row */
     .selectedRow{
         font-weight:bold;
         color:white;
     }
 
-    /* Popup Card */
     #popup {
         position:fixed;
         top:50%; left:50%;
         transform: translate(-50%, -50%);
-        width:360px;
+        width:380px;
         padding:20px;
         background:white;
         border-radius:15px;
@@ -52,6 +48,7 @@
         box-shadow:0px 0px 25px rgba(0,0,0,0.3);
         animation: zoom .3s ease-in-out;
     }
+
     @keyframes zoom{from{scale:0.4;}to{scale:1;}}
 
     #popup button {
@@ -83,11 +80,19 @@
         border:none;
     }
 
-    /* Print only popup */
+    /* PRINT ONLY CARD */
     @media print {
         body * { visibility: hidden; }
-        #popup, #popup * { visibility: visible; }
-        #popup { position:absolute; top:0; left:0; width:100%; box-shadow:none;}
+        #printCard, #printCard * {
+            visibility: visible;
+        }
+        #printCard {
+            position:absolute;
+            top:0; left:0;
+            width:100%;
+            padding:20px;
+            box-shadow:none;
+        }
     }
 
 </style>
@@ -101,6 +106,9 @@
 <table id="voterTable"></table>
 
 <div id="popup"></div>
+
+<!-- Hidden area for clean printing -->
+<div id="printCard" style="display:none;"></div>
 
 <script>
 
@@ -137,9 +145,7 @@ let selectedData = null;
 
 function loadTable(){
     const table = document.getElementById("voterTable");
-    table.innerHTML = `
-        <tr><th>EPIC</th><th>Name</th><th>AC</th><th>Part No</th></tr>
-    `;
+    table.innerHTML = `<tr><th>EPIC</th><th>Name</th><th>AC</th><th>Part No</th></tr>`;
 
     for(let id in data.Voters){
         let v = data.Voters[id];
@@ -154,7 +160,6 @@ function loadTable(){
 }
 loadTable();
 
-
 document.getElementById("searchBox").addEventListener("keyup", function(){
     let filter = this.value.toLowerCase();
     document.querySelectorAll("#voterTable tr").forEach((row,i)=>{
@@ -162,7 +167,6 @@ document.getElementById("searchBox").addEventListener("keyup", function(){
         row.style.display = row.innerText.toLowerCase().includes(filter) ? "" : "none";
     });
 });
-
 
 function selectVoter(row,id){
 
@@ -174,7 +178,6 @@ function selectVoter(row,id){
     applyColor(currentColor);
     showPopup();
 }
-
 
 function applyColor(color){
     currentColor=color;
@@ -188,19 +191,21 @@ function applyColor(color){
     popup.style.border=`4px solid ${color}`;
 }
 
-
 function showPopup(){
     let v=selectedData;
     const popup=document.getElementById("popup");
 
     popup.innerHTML = `
-        <h3 style="text-align:center">🪪 Voter Details</h3>
+        <h3 style="text-align:center">🪪 Voter Card</h3>
+        <hr>
 
-        <p><b>Name:</b> ${v.Name}</p>
-        <p><b>EPIC:</b> ${v.Epic}</p>
-        <p><b>AC No:</b> ${v.AcNo}</p>
-        <p><b>Part No:</b> ${v.PartNo}</p>
-        <p><b>Note:</b> ${v.Description}</p>
+        <p><b>👤 Name:</b> ${v.Name}</p>
+        <p><b>🆔 EPIC:</b> ${v.Epic}</p>
+        <p><b>📍 AC No:</b> ${v.AcNo}</p>
+        <p><b>📄 Part No:</b> ${v.PartNo}</p>
+        <p><b>📝 Note:</b> ${v.Description}</p>
+
+        <hr>
 
         <div class="color-btns">
             <button style="background:#ff7675" onclick="applyColor('#ff7675')">Red</button>
@@ -208,24 +213,45 @@ function showPopup(){
             <button style="background:#55efc4" onclick="applyColor('#55efc4')">Green</button>
         </div>
 
-        <button onclick="window.print()">🖨 Print Card</button>
-        <button onclick="shareOnWhatsapp()">📲 Send via WhatsApp</button>
+        <button onclick="printCard()">🖨 Print Complete Card</button>
+        <button onclick="shareOnWhatsapp()">📲 Send full details via WhatsApp</button>
         <button class="close-btn" onclick="closePopup()">❌ Close</button>
     `;
+
     popup.style.display="block";
+}
+
+function printCard(){
+    let v=selectedData;
+    
+    document.getElementById("printCard").innerHTML = `
+        <h2 style="text-align:center">🗳 Official Voter Information</h2>
+        <hr>
+        <p><b>Name:</b> ${v.Name}</p>
+        <p><b>EPIC Number:</b> ${v.Epic}</p>
+        <p><b>Assembly Constituency No:</b> ${v.AcNo}</p>
+        <p><b>Part Number:</b> ${v.PartNo}</p>
+        <p><b>Description:</b> ${v.Description}</p>
+        <hr>
+        <p style="text-align:center;">Generated from Voter App</p>
+    `;
+    document.getElementById("printCard").style.border="4px solid "+currentColor;
+    window.print();
 }
 
 function shareOnWhatsapp(){
     let v=selectedData;
-    let msg = `🗳 *Voter Information*  
---------------------
-👤 Name: ${v.Name}
-🆔 EPIC: ${v.Epic}
-📍 AC No: ${v.AcNo}
-📄 Part No: ${v.PartNo}
-📝 Note: ${v.Description}
---------------------
-Sent from Voter App`;
+
+    let msg = 
+`🗳 *Complete Voter Information*
+--------------------------------
+👤 *Name:* ${v.Name}
+🆔 *EPIC Number:* ${v.Epic}
+📍 *AC No:* ${v.AcNo}
+📄 *Part No:* ${v.PartNo}
+📝 *Description:* ${v.Description}
+--------------------------------
+📌 Generated from Voter App`;
 
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
 }
