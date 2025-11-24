@@ -8,30 +8,33 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
   font-family: Arial, sans-serif;
-  overflow-x: hidden;
   background: #ffeb3b; /* Yellow background */
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: flex-start;
 }
 
 /* Slider */
 .slider {
-  width: 100%;
-  max-height: 80vh;
+  width: 90%;
+  max-width: 1000px; /* PC pe limit */
+  height: auto;
+  max-height: 60vh;
   overflow: hidden;
   margin-top: 50px;
 }
 .slides {
   display: flex;
   transition: transform 0.5s ease-in-out;
-  touch-action: pan-y;
 }
 .slides img {
   width: 100%;
-  max-height: 80vh;
+  height: auto;
+  max-height: 60vh;
   object-fit: cover;
   flex-shrink: 0;
+  border-radius: 8px;
 }
 
 /* Ward and candidate text */
@@ -52,13 +55,13 @@ body {
   margin-bottom: 20px;
 }
 
-/* 3D Google login button */
+/* 3D Google login button without logo */
 .google-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 12px 25px;
-  font-size: 16px;
+  padding: 14px 30px;
+  font-size: 18px;
   font-weight: bold;
   color: white;
   border: none;
@@ -68,15 +71,17 @@ body {
   cursor: pointer;
   transition: 0.3s;
 }
-.google-btn img {
-  height: 20px;
-  margin-right: 10px;
-}
 .google-btn:hover {
   transform: scale(1.05);
   box-shadow: 6px 6px 20px #888, -6px -6px 20px #fff;
 }
 
+/* Responsive adjustments */
+@media screen and (max-width: 768px) {
+  .ward-text { font-size: 36px; }
+  .candidate-text { font-size: 22px; }
+  .google-btn { font-size: 16px; padding: 12px 25px; }
+}
 </style>
 </head>
 <body>
@@ -92,11 +97,9 @@ body {
 <div class="ward-text">Ward No. 8</div>
 <div class="candidate-text">उम्मेदवार: सचिन देसाई</div>
 
-<button class="google-btn" id="google-login">
-  <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Google_%22G%22_Logo.svg/512px-Google_%22G%22_Logo.svg.png" alt="Google Logo">
-  Login with Google
-</button>
+<button class="google-btn" id="google-login">Login with Google</button>
 
+<!-- Google Identity Services -->
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
 const slides = document.querySelector('.slides');
@@ -125,17 +128,19 @@ slides.addEventListener('touchend', e => {
 // Google login
 function handleCredentialResponse(response) {
   console.log("JWT token: " + response.credential);
-  window.location.href = 'login-page.html'; // Open new page after login
+  // Open new page after successful login
+  window.location.href = 'login-page.html';
 }
 
 // Initialize Google login
 window.onload = function() {
   google.accounts.id.initialize({
-    client_id: "YOUR_GOOGLE_CLIENT_ID", // Replace with your actual client ID
+    client_id: "YOUR_GOOGLE_CLIENT_ID", // Replace with your Client ID
     callback: handleCredentialResponse
   });
+
   document.getElementById('google-login').addEventListener('click', () => {
-    google.accounts.id.prompt();
+    google.accounts.id.prompt(); // show login popup
   });
 }
 </script>
