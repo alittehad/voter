@@ -24,23 +24,27 @@
     cursor: pointer;
     border: none;
     box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    display:block;
   }
 
   /* Slider */
   .slider-container {
     width: 100%;
-    max-width: 600px;
-    margin: 100px auto 0 auto;
+    max-width: 480px;
+    margin: 120px auto 0 auto;
     overflow: hidden;
     border-radius: 15px;
     height: 250px;
+    display:flex;
+    justify-content:center;
+    align-items:center;
     box-shadow: 0 4px 20px rgba(0,0,0,0.3);
   }
 
   .slider {
     display: flex;
     width: 300%; /* 3 images total */
-    animation: slide 18s infinite;
+    animation: slide 12s forwards infinite;
   }
 
   .slider img {
@@ -51,6 +55,9 @@
 
   @keyframes slide {
     0% { transform: translateX(0%); }
+    50% { transform: translateX(-100%); }
+    100% { transform: translateX(-200%); }
+  }
     33% { transform: translateX(-100%); }
     66% { transform: translateX(-200%); }
     100% { transform: translateX(0%); }
@@ -133,7 +140,7 @@ const provider = new firebase.GoogleAuthProvider();
 document.getElementById('loginBtn').onclick = function() {
   firebase.signInWithPopup(auth, provider)
     .then((result) => {
-      document.getElementById('loginBtn').style.display = 'none';
+      document.getElementById('loginBtn').style.display = 'block';
       document.getElementById('page1').style.display = 'none';
       document.getElementById('page2').style.display = 'block';
     })
