@@ -12,18 +12,18 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
   min-height: 100vh;
+  padding: 20px;
 }
 
 /* Slider */
 .slider { width: 90%; max-width: 1000px; margin-top: 50px; overflow: hidden; }
 .slides { display: flex; transition: transform 0.5s ease-in-out; }
-.slides img { width: 100%; height: auto; object-fit: contain; flex-shrink: 0; border-radius: 8px; }
+.slides img { width: 100%; max-width: 100%; height: auto; object-fit: contain; flex-shrink: 0; border-radius: 8px; }
 
 /* Ward and candidate text */
-.ward-text { margin-top: 15px; font-size: 48px; font-weight: bold; color: #ff5722; text-shadow: 4px 4px 8px #aaa, -4px -4px 8px #fff; text-align: center; }
-.candidate-text { font-size: 28px; font-weight: bold; color: #795548; text-shadow: 2px 2px 5px #aaa, -2px -2px 5px #fff; text-align: center; margin-bottom: 20px; }
+.ward-text { margin-top: 15px; font-size: 48px; font-weight: bold; color: #ff5722; text-align: center; text-shadow: 4px 4px 8px #aaa, -4px -4px 8px #fff; }
+.candidate-text { font-size: 28px; font-weight: bold; color: #795548; text-align: center; margin-bottom: 20px; text-shadow: 2px 2px 5px #aaa, -2px -2px 5px #fff; }
 
 /* 3D Google login button */
 .google-btn {
@@ -36,7 +36,7 @@ body {
   background: linear-gradient(145deg, #4285F4, #34A853, #FBBC05, #EA4335);
   box-shadow: 4px 4px 15px #aaa, -4px -4px 15px #fff;
   cursor: pointer;
-  transition: 0.3s;
+  transition: transform 0.3s;
 }
 .google-btn:hover {
   transform: scale(1.05);
@@ -81,23 +81,16 @@ const firebaseConfig = {
   messagingSenderId: "297773534400",
   appId: "1:297773534400:web:3722c487b8c83e9b787125"
 };
+
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const provider = new firebase.auth.GoogleAuthProvider();
 
-// Ensure persistence
-auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-
 document.getElementById('google-login').addEventListener('click', () => {
-  auth.signInWithPopup(provider)
-    .then((result) => {
-      console.log("User info:", result.user);
-      window.location.href = 'login-page.html'; // make sure login-page.html exists in same folder
-    })
-    .catch((error) => {
-      console.error("Login error:", error);
-      alert("Google login failed. Check console.");
-    });
+  auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+    .then(() => auth.signInWithPopup(provider))
+    .then(result => { window.location.href = './login-page.html'; })
+    .catch(error => { console.error(error); alert("Google login failed."); });
 });
 
 // Slider functionality
