@@ -1,227 +1,111 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Election Voter Site</title>
-<script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-auth.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-firestore.js"></script>
-<script src="https://cdn.tailwindcss.com"></script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>App Style Home</title>
 <style>
-  .btn-3d {
-    background: linear-gradient(145deg, #4ade80, #16a34a);
+  body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: linear-gradient(135deg, #ff7f7f, #7f7fff);
+  }
+
+  /* Top Right Login Button */
+  #loginBtn {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: #ffffff;
+    color: #333;
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-size: 14px;
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  }
+
+  /* Slider */
+  .slider-container {
+    width: 100%;
+    max-width: 600px;
+    margin: 100px auto 0 auto;
+    overflow: hidden;
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  }
+
+  .slider {
+    display: flex;
+    width: 300%;
+    animation: slide 12s infinite;
+  }
+
+  .slider img {
+    width: 100%;
+  }
+
+  @keyframes slide {
+    0% { transform: translateX(0%); }
+    33% { transform: translateX(-100%); }
+    66% { transform: translateX(-200%); }
+    100% { transform: translateX(0%); }
+  }
+
+  /* 3D Page Buttons */
+  #page2 {
+    text-align: center;
+    padding-top: 120px;
+    display: none;
+  }
+
+  .btn3d {
+    background: linear-gradient(135deg, #ffcc00, #ff6600);
+    padding: 15px 30px;
+    margin: 20px;
+    display: inline-block;
+    font-size: 20px;
+    border-radius: 15px;
     color: white;
     font-weight: bold;
-    padding: 10px 20px;
-    border-radius: 10px;
-    box-shadow: 0 4px #15803d;
+    cursor: pointer;
+    box-shadow: 0 8px 0 #b35400;
     transition: 0.2s;
   }
-  .btn-3d:active {
-    box-shadow: 0 2px #15803d;
-    transform: translateY(2px);
+
+  .btn3d:active {
+    box-shadow: 0 3px 0 #b35400;
+    transform: translateY(5px);
   }
 </style>
 </head>
-<body class="bg-gray-100 p-4">
+<body>
 
-<!-- Login Page -->
-<div id="loginPage" class="max-w-md mx-auto bg-white p-6 rounded-xl shadow-lg text-center">
-  <h2 class="text-2xl font-bold mb-4">Login to Election Site</h2>
-  <button id="loginBtn" class="btn-3d w-full text-lg">Login with Google</button>
-</div>
+<button id="loginBtn">Google Login</button>
 
-<!-- User Registration Page -->
-<div id="userPage" class="hidden max-w-md mx-auto bg-white p-6 rounded-xl shadow-lg mb-6">
-  <div class="flex justify-between mb-4">
-    <h2 class="text-2xl font-bold">Voter Registration</h2>
-    <button id="logoutBtn" class="btn-3d text-sm">Logout</button>
-  </div>
-  <form id="regForm" class="space-y-4">
-    <input type="text" id="name" placeholder="Name" required class="w-full border p-2 rounded-md">
-    <input type="text" id="address" placeholder="Address" required class="w-full border p-2 rounded-md">
-    <input type="text" id="mobile" placeholder="Mobile No" required class="w-full border p-2 rounded-md">
-    <input type="text" id="epic" placeholder="EPIC / Voter ID" required class="w-full border p-2 rounded-md">
-    <button type="submit" class="btn-3d w-full text-lg">Register</button>
-  </form>
-</div>
-
-<!-- Admin / Super Admin Dashboard -->
-<div id="adminPage" class="hidden max-w-3xl mx-auto bg-white p-6 rounded-xl shadow-lg mb-6">
-  <div class="flex justify-between mb-4">
-    <h2 class="text-2xl font-bold">Admin Dashboard</h2>
-    <button id="logoutBtnAdmin" class="btn-3d text-sm">Logout</button>
-  </div>
-  <div id="dashboard" class="space-y-4"></div>
-</div>
-
-<!-- Approved Voter List -->
-<div id="voterListPage" class="hidden max-w-3xl mx-auto bg-white p-6 rounded-xl shadow-lg">
-  <h2 class="text-2xl font-bold mb-4 text-center">Approved Voters List</h2>
-  <div class="overflow-x-auto">
-  <table class="w-full table-auto border-collapse border border-gray-300">
-    <thead class="bg-gray-200">
-      <tr>
-        <th class="border px-2 py-1">Name</th>
-        <th class="border px-2 py-1">Address</th>
-        <th class="border px-2 py-1">Mobile</th>
-        <th class="border px-2 py-1">EPIC</th>
-      </tr>
-    </thead>
-    <tbody id="voterList" class="text-center"></tbody>
-  </table>
+<div id="page1">
+  <div class="slider-container">
+    <div class="slider">
+      <img src="https://i.ibb.co/NgFTprmS/images-1.jpg" alt="slide1" />
+      <img src="https://i.ibb.co/zHnxn3Lf/images.jpg" alt="slide2" />
+      <img src="https://i.ibb.co/7wHNN9B/Whats-App-Image-2025-11-24-at-11-56-26-3fbcdaac.jpg" alt="slide3" />
+    </div>
   </div>
 </div>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js";
-import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, getDocs, updateDoc, doc, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-firestore.js";
+<div id="page2">
+  <div class="btn3d">Button 1</div>
+  <div class="btn3d">Button 2</div>
+  <div class="btn3d">Button 3</div>
+</div>
 
-// 🔹 Firebase Config
-const firebaseConfig = {
-  apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
-  authDomain: "voter-25c94.firebaseapp.com",
-  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
-  projectId: "voter-25c94",
-  storageBucket: "voter-25c94.appspot.com",
-  messagingSenderId: "297773534400",
-  appId: "1:297773534400:web:3722c487b8c83e9b787125"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
-const provider = new GoogleAuthProvider();
-
-// Pages
-const loginPage = document.getElementById("loginPage");
-const userPage = document.getElementById("userPage");
-const adminPage = document.getElementById("adminPage");
-const voterListPage = document.getElementById("voterListPage");
-const dashboard = document.getElementById("dashboard");
-const voterList = document.getElementById("voterList");
-
-// 🔹 Login
-document.getElementById("loginBtn").addEventListener("click", async () => {
-  await signInWithPopup(auth, provider);
-});
-
-// 🔹 Logout
-document.getElementById("logoutBtn").addEventListener("click", () => signOut(auth));
-document.getElementById("logoutBtnAdmin").addEventListener("click", () => signOut(auth));
-
-// 🔹 Auth State
-onAuthStateChanged(auth, async user => {
-  if(user){
-    loginPage.classList.add("hidden");
-
-    // Get role from Firestore
-    const usersRef = collection(db, "users");
-    const q = query(usersRef, where("email","==",user.email));
-    const snapshot = await getDocs(q);
-    let role = "user"; // default role
-    snapshot.forEach(docSnap => { role = docSnap.data().role });
-
-    if(role === "superadmin" || role === "admin"){
-      adminPage.classList.remove("hidden");
-      userPage.classList.add("hidden");
-      loadAdminDashboard();
-      loadApprovedVoterList();
-    } else {
-      userPage.classList.remove("hidden");
-      adminPage.classList.add("hidden");
-      loadApprovedVoterList();
-    }
-  } else {
-    loginPage.classList.remove("hidden");
-    userPage.classList.add("hidden");
-    adminPage.classList.add("hidden");
-    voterListPage.classList.add("hidden");
+<script>
+  document.getElementById('loginBtn').onclick = function() {
+    document.getElementById('loginBtn').style.display = 'none';
+    document.getElementById('page1').style.display = 'none';
+    document.getElementById('page2').style.display = 'block';
   }
-});
-
-// 🔹 User Registration
-document.getElementById("regForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const name = document.getElementById("name").value.trim();
-  const address = document.getElementById("address").value.trim();
-  const mobile = document.getElementById("mobile").value.trim();
-  const epic = document.getElementById("epic").value.trim();
-
-  // Mobile validation
-  if(!/^\d{10}$/.test(mobile)){
-    alert("Enter valid 10-digit mobile number");
-    return;
-  }
-
-  // EPIC uniqueness check
-  const q = query(collection(db, "registrations"), where("epic", "==", epic));
-  const existing = await getDocs(q);
-  if(!existing.empty){
-    alert("This EPIC is already registered!");
-    return;
-  }
-
-  await addDoc(collection(db, "registrations"), { name, address, mobile, epic, status: "pending" });
-  alert("Registration submitted! Waiting for approval.");
-  document.getElementById("regForm").reset();
-});
-
-// 🔹 Admin Dashboard
-function loadAdminDashboard(){
-  const registrationsRef = collection(db, "registrations");
-  onSnapshot(registrationsRef, snapshot => {
-    dashboard.innerHTML = "";
-    snapshot.forEach(docSnap => {
-      const data = docSnap.data();
-      const div = document.createElement("div");
-      div.className = "flex justify-between items-center bg-gray-100 p-3 rounded-md shadow";
-
-      let statusHtml = "";
-      if(data.status === "pending"){
-        statusHtml = `<button class="btn-3d text-sm" onclick="approveUser('${docSnap.id}')">Approve</button>`;
-      } else {
-        statusHtml = `<span class="font-medium text-green-600">Approved</span>`;
-      }
-
-      div.innerHTML = `
-        <div>
-          <p><strong>${data.name}</strong> (${data.epic})</p>
-          <p>${data.address} | ${data.mobile}</p>
-        </div>
-        <div>${statusHtml}</div>
-      `;
-      dashboard.appendChild(div);
-    });
-  });
-}
-
-// 🔹 Approve User
-window.approveUser = async (id) => {
-  await updateDoc(doc(db, "registrations", id), { status: "approved" });
-};
-
-// 🔹 Approved Voter List
-function loadApprovedVoterList(){
-  const q = query(collection(db, "registrations"), where("status","==","approved"));
-  onSnapshot(q, snapshot => {
-    voterListPage.classList.remove("hidden");
-    voterList.innerHTML = "";
-    snapshot.forEach(docSnap => {
-      const data = docSnap.data();
-      voterList.innerHTML += `
-        <tr>
-          <td class="border px-2 py-1">${data.name}</td>
-          <td class="border px-2 py-1">${data.address}</td>
-          <td class="border px-2 py-1">${data.mobile}</td>
-          <td class="border px-2 py-1">${data.epic}</td>
-        </tr>
-      `;
-    });
-  });
-}
 </script>
 
 </body>
