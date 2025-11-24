@@ -6,9 +6,16 @@
 <title>Responsive Slider with Google Login</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: Arial, sans-serif; overflow-x: hidden; }
+body {
+  font-family: Arial, sans-serif;
+  overflow-x: hidden;
+  background: #ffeb3b; /* Yellow background */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
 
-/* Header */
+/* Header with Google login button */
 header {
   position: fixed;
   top: 10px;
@@ -16,7 +23,6 @@ header {
   z-index: 100;
 }
 
-/* Google login button style */
 .login-btn {
   display: flex;
   align-items: center;
@@ -35,7 +41,7 @@ header {
 /* Slider container */
 .slider {
   width: 100%;
-  max-height: 100vh;
+  max-height: 80vh;
   overflow: hidden;
   margin-top: 50px;
   position: relative;
@@ -49,16 +55,25 @@ header {
 
 .slides img {
   width: 100%;
-  max-height: 100vh;
+  max-height: 80vh;
   object-fit: cover;
   flex-shrink: 0;
+}
+
+/* Ward text 3D style */
+.ward-text {
+  margin-top: 15px;
+  font-size: 36px;
+  font-weight: bold;
+  color: #ff5722;
+  text-shadow: 3px 3px 5px #aaa, -3px -3px 5px #fff;
+  text-align: center;
 }
 </style>
 </head>
 <body>
 
 <header>
-  <!-- Google Login -->
   <div id="g_id_onload"
        data-client_id="YOUR_GOOGLE_CLIENT_ID"
        data-callback="handleCredentialResponse"
@@ -77,6 +92,8 @@ header {
     <img src="https://i.ibb.co/7wHNN9B/Whats-App-Image-2025-11-24-at-11-56-26-3fbcdaac.jpg" alt="Image 3">
   </div>
 </div>
+
+<div class="ward-text">Ward No. 8</div>
 
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
@@ -106,13 +123,12 @@ slides.addEventListener('touchend', e => {
 // Google login callback
 function handleCredentialResponse(response) {
   console.log("Encoded JWT ID token: " + response.credential);
-  // Redirect to login-page.html after successful login
   window.location.href = 'login-page.html';
 }
 
-// Optional: trigger Google login on button click
+// Google login button trigger
 document.getElementById('google-login').addEventListener('click', () => {
-  google.accounts.id.prompt(); // show Google login popup
+  google.accounts.id.prompt();
 });
 </script>
 </body>
