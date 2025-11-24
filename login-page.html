@@ -16,16 +16,32 @@ body {
   gap: 20px;
   padding: 20px;
 }
-.btn { width: 200px; padding: 12px 20px; font-size: 16px; font-weight: bold; color: white; border: none; border-radius: 12px; cursor: pointer; box-shadow: 4px 4px 15px #aaa, -4px -4px 15px #fff; transition: transform 0.2s, box-shadow 0.2s; }
+.btn {
+  width: 200px;
+  padding: 12px 20px;
+  font-size: 16px;
+  font-weight: bold;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow: 4px 4px 15px #aaa, -4px -4px 15px #fff;
+  transition: transform 0.2s, box-shadow 0.2s;
+  margin-bottom: 10px;
+}
 .btn:hover { transform: scale(1.05); box-shadow: 6px 6px 20px #888, -6px -6px 20px #fff; }
 .btn:active { transform: scale(0.97); box-shadow: 2px 2px 10px #888, -2px -2px 10px #fff; }
 .btn1 { background: #ff4d4d; } .btn2 { background: #4d94ff; } .btn3 { background: #4dff88; }
 
-.ward-text { font-size: 48px; font-weight: bold; color: #ff5722; text-shadow: 4px 4px 8px #aaa, -4px -4px 8px #fff; text-align: center; }
-.candidate-text { font-size: 28px; font-weight: bold; color: #795548; text-shadow: 2px 2px 5px #aaa, -2px -2px 5px #fff; text-align: center; }
+.ward-text { font-size: 48px; font-weight: bold; color: #ff5722; text-align: center; text-shadow: 4px 4px 8px #aaa, -4px -4px 8px #fff; }
+.candidate-text { font-size: 28px; font-weight: bold; color: #795548; text-align: center; text-shadow: 2px 2px 5px #aaa, -2px -2px 5px #fff; }
+.logout-btn { padding: 12px 25px; font-size: 16px; font-weight: bold; border-radius: 12px; cursor: pointer; background: #888; color: white; border: none; box-shadow: 4px 4px 10px #aaa, -4px -4px 10px #fff; }
 
 @media screen and (max-width: 768px) {
-  .ward-text { font-size: 36px; } .candidate-text { font-size: 22px; } .btn { width: 150px; font-size: 14px; padding: 10px 15px; }
+  .ward-text { font-size: 36px; }
+  .candidate-text { font-size: 22px; }
+  .btn { width: 150px; font-size: 14px; padding: 10px 15px; }
+  .logout-btn { width: 150px; font-size: 14px; padding: 10px 15px; }
 }
 </style>
 </head>
@@ -37,6 +53,8 @@ body {
 <button class="btn btn1" id="btn1">Button 1</button>
 <button class="btn btn2" id="btn2">Button 2</button>
 <button class="btn btn3" id="btn3">Button 3</button>
+
+<button class="logout-btn" id="logout">Logout</button>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -54,18 +72,23 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 
-// Redirect if user not logged in
+// Redirect if not logged in
 auth.onAuthStateChanged(user => {
   if (!user) {
     alert("Please login first!");
-    window.location.href = 'index.html';
+    window.location.href = './index.html';
   }
 });
 
-// Button click placeholders
+// Buttons click
 document.getElementById('btn1').addEventListener('click', () => { alert("Button 1 clicked!"); });
 document.getElementById('btn2').addEventListener('click', () => { alert("Button 2 clicked!"); });
 document.getElementById('btn3').addEventListener('click', () => { alert("Button 3 clicked!"); });
+
+// Logout
+document.getElementById('logout').addEventListener('click', () => {
+  auth.signOut().then(() => { window.location.href = './index.html'; });
+});
 </script>
 </body>
 </html>
