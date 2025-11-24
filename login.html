@@ -3,42 +3,113 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>After Login</title>
+<title>Image Slider Page</title>
 <style>
-  body {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    background: #f0f0f0;
-    flex-direction: column;
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
   }
 
-  .btn {
-    margin: 15px;
-    padding: 15px 30px;
+  body {
+    font-family: Arial, sans-serif;
+    overflow-x: hidden;
+  }
+
+  /* Header with login button */
+  header {
+    position: fixed;
+    top: 15px;
+    right: 15px;
+    z-index: 100;
+  }
+
+  .login-btn {
+    padding: 10px 20px;
+    background: linear-gradient(145deg, #ff7e5f, #feb47b);
     border: none;
-    border-radius: 15px;
-    font-size: 18px;
-    font-weight: bold;
-    color: white;
-    cursor: pointer;
+    border-radius: 12px;
     box-shadow: 5px 5px 15px #aaa, -5px -5px 15px #fff;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
     transition: 0.3s;
   }
 
-  .btn:hover {
+  .login-btn:hover {
     transform: scale(1.1);
   }
 
-  .btn1 { background: #ff4d4d; }
-  .btn2 { background: #4d94ff; }
-  .btn3 { background: #4dff88; }
+  /* Slider container */
+  .slider {
+    display: flex;
+    overflow: hidden;
+    width: 100%;
+    max-height: 100vh; /* Screen ke andar rahe */
+  }
+
+  .slides {
+    display: flex;
+    transition: transform 0.5s ease-in-out;
+  }
+
+  .slides img {
+    width: 100%;
+    max-height: 100vh;
+    object-fit: cover; /* screen me fit aur crop */
+    flex-shrink: 0;
+  }
+
+  /* Optional: slider navigation buttons */
+  .prev, .next {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background-color: rgba(255,255,255,0.7);
+    border: none;
+    padding: 10px;
+    cursor: pointer;
+    border-radius: 50%;
+    font-size: 18px;
+  }
+
+  .prev { left: 10px; }
+  .next { right: 10px; }
 </style>
 </head>
 <body>
-  <button class="btn btn1">Button 1</button>
-  <button class="btn btn2">Button 2</button>
-  <button class="btn btn3">Button 3</button>
+
+<header>
+  <button class="login-btn" onclick="login()">Login</button>
+</header>
+
+<div class="slider">
+  <div class="slides">
+    <img src="https://i.ibb.co/NgFTprmS/images-1.jpg" alt="Image 1">
+    <img src="https://i.ibb.co/zHnxn3Lf/images.jpg" alt="Image 2">
+    <img src="https://i.ibb.co/7wHNN9B/Whats-App-Image-2025-11-24-at-11-56-26-3fbcdaac.jpg" alt="Image 3">
+  </div>
+</div>
+
+<script>
+let currentIndex = 0;
+const slides = document.querySelector('.slides');
+const total = slides.children.length;
+
+function showSlide(index) {
+  slides.style.transform = `translateX(-${index * 100}%)`;
+}
+
+// Auto slider
+setInterval(() => {
+  currentIndex = (currentIndex + 1) % total;
+  showSlide(currentIndex);
+}, 3000);
+
+// Login button action
+function login() {
+  window.location.href = 'login-page.html';
+}
+</script>
 </body>
 </html>
