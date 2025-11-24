@@ -3,20 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Image Slider Page</title>
+<title>Responsive Slider with Google Login</title>
 <style>
-  * {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; overflow-x: hidden; }
 
-  body {
-    font-family: Arial, sans-serif;
-    overflow-x: hidden;
-  }
-
-  /* Header with Google login button */
   header {
     position: fixed;
     top: 10px;
@@ -24,6 +15,7 @@
     z-index: 100;
   }
 
+  /* Google login button style */
   .login-btn {
     display: flex;
     align-items: center;
@@ -33,31 +25,25 @@
     border-radius: 5px;
     box-shadow: 2px 2px 8px #aaa, -2px -2px 8px #fff;
     cursor: pointer;
-    transition: 0.3s;
     font-size: 14px;
+    transition: 0.3s;
   }
-
-  .login-btn img {
-    height: 20px;
-    margin-right: 8px;
-  }
-
-  .login-btn:hover {
-    transform: scale(1.05);
-  }
+  .login-btn img { height: 20px; margin-right: 8px; }
+  .login-btn:hover { transform: scale(1.05); }
 
   /* Slider container */
   .slider {
-    display: flex;
-    overflow: hidden;
     width: 100%;
-    max-height: 80vh; /* smaller height */
-    margin-top: 50px; /* avoid header overlap */
+    max-height: 80vh;
+    overflow: hidden;
+    margin-top: 50px;
+    position: relative;
   }
 
   .slides {
     display: flex;
     transition: transform 0.5s ease-in-out;
+    touch-action: pan-y;
   }
 
   .slides img {
@@ -71,7 +57,8 @@
 <body>
 
 <header>
-  <button class="login-btn" onclick="login()">
+  <!-- Google Login -->
+  <button class="login-btn" id="google-login">
     <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Google_%22G%22_Logo.svg/512px-Google_%22G%22_Logo.svg.png" alt="Google Logo">
     Login with Google
   </button>
@@ -86,134 +73,35 @@
 </div>
 
 <script>
-let currentIndex = 0;
 const slides = document.querySelector('.slides');
+let currentIndex = 0;
 const total = slides.children.length;
 
+// Auto slide
 function showSlide(index) {
   slides.style.transform = `translateX(-${index * 100}%)`;
 }
-
-// Auto slider
 setInterval(() => {
   currentIndex = (currentIndex + 1) % total;
   showSlide(currentIndex);
 }, 3000);
 
-// Google login button action
-function login() {
-  // For demo, just open login page
-  window.location.href = 'login-page.html';
-}
-</script>
-</body>
-</html><!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Image Slider Page</title>
-<style>
-  * {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-  }
-
-  body {
-    font-family: Arial, sans-serif;
-    overflow-x: hidden;
-  }
-
-  /* Header with Google login button */
-  header {
-    position: fixed;
-    top: 10px;
-    right: 10px;
-    z-index: 100;
-  }
-
-  .login-btn {
-    display: flex;
-    align-items: center;
-    padding: 8px 15px;
-    background: white;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    box-shadow: 2px 2px 8px #aaa, -2px -2px 8px #fff;
-    cursor: pointer;
-    transition: 0.3s;
-    font-size: 14px;
-  }
-
-  .login-btn img {
-    height: 20px;
-    margin-right: 8px;
-  }
-
-  .login-btn:hover {
-    transform: scale(1.05);
-  }
-
-  /* Slider container */
-  .slider {
-    display: flex;
-    overflow: hidden;
-    width: 100%;
-    max-height: 80vh; /* smaller height */
-    margin-top: 50px; /* avoid header overlap */
-  }
-
-  .slides {
-    display: flex;
-    transition: transform 0.5s ease-in-out;
-  }
-
-  .slides img {
-    width: 100%;
-    max-height: 80vh;
-    object-fit: cover;
-    flex-shrink: 0;
-  }
-</style>
-</head>
-<body>
-
-<header>
-  <button class="login-btn" onclick="login()">
-    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Google_%22G%22_Logo.svg/512px-Google_%22G%22_Logo.svg.png" alt="Google Logo">
-    Login with Google
-  </button>
-</header>
-
-<div class="slider">
-  <div class="slides">
-    <img src="https://i.ibb.co/NgFTprmS/images-1.jpg" alt="Image 1">
-    <img src="https://i.ibb.co/zHnxn3Lf/images.jpg" alt="Image 2">
-    <img src="https://i.ibb.co/7wHNN9B/Whats-App-Image-2025-11-24-at-11-56-26-3fbcdaac.jpg" alt="Image 3">
-  </div>
-</div>
-
-<script>
-let currentIndex = 0;
-const slides = document.querySelector('.slides');
-const total = slides.children.length;
-
-function showSlide(index) {
-  slides.style.transform = `translateX(-${index * 100}%)`;
-}
-
-// Auto slider
-setInterval(() => {
-  currentIndex = (currentIndex + 1) % total;
+// Swipe support
+let startX = 0;
+slides.addEventListener('touchstart', e => { startX = e.touches[0].clientX; });
+slides.addEventListener('touchend', e => {
+  const endX = e.changedTouches[0].clientX;
+  if(endX < startX - 30){ currentIndex = (currentIndex + 1) % total; }
+  if(endX > startX + 30){ currentIndex = (currentIndex - 1 + total) % total; }
   showSlide(currentIndex);
-}, 3000);
+});
 
-// Google login button action
-function login() {
-  // For demo, just open login page
+// Google login
+document.getElementById('google-login').addEventListener('click', () => {
+  // For demo: redirect to login page
   window.location.href = 'login-page.html';
-}
+  // In real app: integrate Google OAuth here
+});
 </script>
 </body>
 </html>
