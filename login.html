@@ -1,110 +1,65 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="mr">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Image Slider Page</title>
+<title>After Login</title>
 <style>
-  * {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-  }
+body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: #ffeb3b;
+  flex-direction: column;
+  gap: 20px;
+  padding: 10px;
+  font-family: Arial, sans-serif;
+}
 
-  body {
-    font-family: Arial, sans-serif;
-    overflow-x: hidden;
-  }
+/* 3D Buttons */
+.btn {
+  padding: 14px 35px;
+  border: none;
+  border-radius: 15px;
+  font-size: 16px;
+  font-weight: bold;
+  color: white;
+  cursor: pointer;
+  box-shadow: 4px 4px 15px #aaa, -4px -4px 15px #fff;
+  transition: 0.3s;
+}
+.btn:hover {
+  transform: scale(1.05);
+  box-shadow: 6px 6px 20px #888, -6px -6px 20px #fff;
+}
+.btn1 { background: #ff4d4d; }
+.btn2 { background: #4d94ff; }
+.btn3 { background: #4dff88; }
 
-  /* Header with Google login button */
-  header {
-    position: fixed;
-    top: 10px;
-    right: 10px;
-    z-index: 100;
-  }
-
-  .login-btn {
-    display: flex;
-    align-items: center;
-    padding: 8px 15px;
-    background: white;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    box-shadow: 2px 2px 8px #aaa, -2px -2px 8px #fff;
-    cursor: pointer;
-    transition: 0.3s;
-    font-size: 14px;
-  }
-
-  .login-btn img {
-    height: 20px;
-    margin-right: 8px;
-  }
-
-  .login-btn:hover {
-    transform: scale(1.05);
-  }
-
-  /* Slider container */
-  .slider {
-    display: flex;
-    overflow: hidden;
-    width: 100%;
-    max-height: 80vh; /* smaller height */
-    margin-top: 50px; /* avoid header overlap */
-  }
-
-  .slides {
-    display: flex;
-    transition: transform 0.5s ease-in-out;
-  }
-
-  .slides img {
-    width: 100%;
-    max-height: 80vh;
-    object-fit: cover;
-    flex-shrink: 0;
-  }
+/* Ward text */
+.ward-text {
+  font-size: 48px;
+  font-weight: bold;
+  color: #ff5722;
+  text-shadow: 4px 4px 8px #aaa, -4px -4px 8px #fff;
+  text-align: center;
+}
+.candidate-text {
+  font-size: 24px;
+  font-weight: bold;
+  color: #795548;
+  text-shadow: 2px 2px 4px #aaa, -2px -2px 4px #fff;
+  text-align: center;
+}
 </style>
 </head>
 <body>
+  <button class="btn btn1">Button 1</button>
+  <button class="btn btn2">Button 2</button>
+  <button class="btn btn3">Button 3</button>
 
-<header>
-  <button class="login-btn" onclick="login()">
-    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Google_%22G%22_Logo.svg/512px-Google_%22G%22_Logo.svg.png" alt="Google Logo">
-    Login with Google
-  </button>
-</header>
-
-<div class="slider">
-  <div class="slides">
-    <img src="https://i.ibb.co/NgFTprmS/images-1.jpg" alt="Image 1">
-    <img src="https://i.ibb.co/zHnxn3Lf/images.jpg" alt="Image 2">
-    <img src="https://i.ibb.co/7wHNN9B/Whats-App-Image-2025-11-24-at-11-56-26-3fbcdaac.jpg" alt="Image 3">
-  </div>
-</div>
-
-<script>
-let currentIndex = 0;
-const slides = document.querySelector('.slides');
-const total = slides.children.length;
-
-function showSlide(index) {
-  slides.style.transform = `translateX(-${index * 100}%)`;
-}
-
-// Auto slider
-setInterval(() => {
-  currentIndex = (currentIndex + 1) % total;
-  showSlide(currentIndex);
-}, 3000);
-
-// Google login button action
-function login() {
-  // For demo, just open login page
-  window.location.href = 'login-page.html';
-}
-</script>
+  <div class="ward-text">Ward No. 8</div>
+  <div class="candidate-text">उम्मेदवार: सचिन देसाई</div>
 </body>
 </html>
