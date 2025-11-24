@@ -7,32 +7,41 @@
 <style>
 body {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  background: #ffeb3b;
   flex-direction: column;
-  gap: 20px;
-  padding: 10px;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: #ffeb3b; /* Yellow background */
   font-family: Arial, sans-serif;
+  gap: 20px;
+  padding: 20px;
 }
 
-/* 3D Buttons */
+/* 3D buttons */
 .btn {
-  padding: 14px 35px;
-  border: none;
-  border-radius: 15px;
+  width: 200px; /* Mobile-friendly width */
+  padding: 12px 20px;
   font-size: 16px;
   font-weight: bold;
   color: white;
+  border: none;
+  border-radius: 12px;
   cursor: pointer;
   box-shadow: 4px 4px 15px #aaa, -4px -4px 15px #fff;
-  transition: 0.3s;
+  transition: transform 0.2s, box-shadow 0.2s;
 }
+
 .btn:hover {
   transform: scale(1.05);
   box-shadow: 6px 6px 20px #888, -6px -6px 20px #fff;
 }
+
+.btn:active {
+  transform: scale(0.97);
+  box-shadow: 2px 2px 10px #888, -2px -2px 10px #fff;
+}
+
+/* Button colors */
 .btn1 { background: #ff4d4d; }
 .btn2 { background: #4d94ff; }
 .btn3 { background: #4dff88; }
@@ -45,21 +54,45 @@ body {
   text-shadow: 4px 4px 8px #aaa, -4px -4px 8px #fff;
   text-align: center;
 }
+
+/* Marathi candidate text */
 .candidate-text {
-  font-size: 24px;
+  font-size: 28px;
   font-weight: bold;
   color: #795548;
-  text-shadow: 2px 2px 4px #aaa, -2px -2px 4px #fff;
+  text-shadow: 2px 2px 5px #aaa, -2px -2px 5px #fff;
   text-align: center;
+}
+
+/* Responsive adjustments */
+@media screen and (max-width: 768px) {
+  .ward-text { font-size: 36px; }
+  .candidate-text { font-size: 22px; }
+  .btn { width: 150px; font-size: 14px; padding: 10px 15px; }
 }
 </style>
 </head>
 <body>
-  <button class="btn btn1">Button 1</button>
-  <button class="btn btn2">Button 2</button>
-  <button class="btn btn3">Button 3</button>
 
-  <div class="ward-text">Ward No. 8</div>
-  <div class="candidate-text">उम्मेदवार: सचिन देसाई</div>
+<div class="ward-text">Ward No. 8</div>
+<div class="candidate-text">उम्मेदवार: सचिन देसाई</div>
+
+<!-- 3D Buttons vertical stack -->
+<button class="btn btn1" id="btn1">Button 1</button>
+<button class="btn btn2" id="btn2">Button 2</button>
+<button class="btn btn3" id="btn3">Button 3</button>
+
+<script>
+// Simple click animation / placeholder for links
+document.getElementById('btn1').addEventListener('click', () => {
+  alert("Button 1 clicked! Link will be added later.");
+});
+document.getElementById('btn2').addEventListener('click', () => {
+  alert("Button 2 clicked! Link will be added later.");
+});
+document.getElementById('btn3').addEventListener('click', () => {
+  alert("Button 3 clicked! Link will be added later.");
+});
+</script>
 </body>
 </html>
