@@ -1,14 +1,10 @@
 {
-  "name": "Ward 20 Voter Panel",
-  "short_name": "Ward 20",
-  "start_url": "index.html",
-  "scope": "./",
+  "name": "Voter App 2025",
+  "short_name": "VoterApp",
+  "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#2563eb",
-  "orientation": "portrait",
-  "description": "Ward 20 Voter Management Login Panel (PWA Install Supported)",
-
+  "background_color": "#ffeb3b",
+  "theme_color": "#ffeb3b",
   "icons": [
     {
       "src": "icon-192.png",
@@ -16,21 +12,9 @@
       "type": "image/png"
     },
     {
-      "src": "icon-256.png",
-      "sizes": "256x256",
-      "type": "image/png"
-    },
-    {
-      "src": "icon-384.png",
-      "sizes": "384x384",
-      "type": "image/png"
-    },
-    {
       "src": "icon-512.png",
       "sizes": "512x512",
       "type": "image/png"
     }
-  ],
-
-  "prefer_related_applications": false
+  ]
 }
