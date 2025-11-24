@@ -19,7 +19,7 @@ body {
 
 /* 3D buttons */
 .btn {
-  width: 200px; /* Mobile-friendly width */
+  width: 200px;
   padding: 12px 20px;
   font-size: 16px;
   font-weight: bold;
@@ -82,8 +82,35 @@ body {
 <button class="btn btn2" id="btn2">Button 2</button>
 <button class="btn btn3" id="btn3">Button 3</button>
 
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+
 <script>
-// Simple click animation / placeholder for links
+// Firebase config
+const firebaseConfig = {
+  apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
+  authDomain: "voter-25c94.firebaseapp.com",
+  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
+  projectId: "voter-25c94",
+  storageBucket: "voter-25c94.appspot.com",
+  messagingSenderId: "297773534400",
+  appId: "1:297773534400:web:3722c487b8c83e9b787125"
+};
+
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+
+// Check if user is logged in, redirect if not
+auth.onAuthStateChanged(user => {
+  if (!user) {
+    alert("Please login first!");
+    window.location.href = 'index.html'; // redirect to login page
+  }
+});
+
+// Button click placeholders
 document.getElementById('btn1').addEventListener('click', () => {
   alert("Button 1 clicked! Link will be added later.");
 });
@@ -94,5 +121,6 @@ document.getElementById('btn3').addEventListener('click', () => {
   alert("Button 3 clicked! Link will be added later.");
 });
 </script>
+
 </body>
 </html>
