@@ -16,28 +16,34 @@
     overflow-x: hidden;
   }
 
-  /* Header with login button */
+  /* Header with Google login button */
   header {
     position: fixed;
-    top: 15px;
-    right: 15px;
+    top: 10px;
+    right: 10px;
     z-index: 100;
   }
 
   .login-btn {
-    padding: 10px 20px;
-    background: linear-gradient(145deg, #ff7e5f, #feb47b);
-    border: none;
-    border-radius: 12px;
-    box-shadow: 5px 5px 15px #aaa, -5px -5px 15px #fff;
-    color: white;
-    font-weight: bold;
+    display: flex;
+    align-items: center;
+    padding: 8px 15px;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-shadow: 2px 2px 8px #aaa, -2px -2px 8px #fff;
     cursor: pointer;
     transition: 0.3s;
+    font-size: 14px;
+  }
+
+  .login-btn img {
+    height: 20px;
+    margin-right: 8px;
   }
 
   .login-btn:hover {
-    transform: scale(1.1);
+    transform: scale(1.05);
   }
 
   /* Slider container */
@@ -45,7 +51,8 @@
     display: flex;
     overflow: hidden;
     width: 100%;
-    max-height: 100vh; /* Screen ke andar rahe */
+    max-height: 80vh; /* smaller height */
+    margin-top: 50px; /* avoid header overlap */
   }
 
   .slides {
@@ -55,32 +62,19 @@
 
   .slides img {
     width: 100%;
-    max-height: 100vh;
-    object-fit: cover; /* screen me fit aur crop */
+    max-height: 80vh;
+    object-fit: cover;
     flex-shrink: 0;
   }
-
-  /* Optional: slider navigation buttons */
-  .prev, .next {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    background-color: rgba(255,255,255,0.7);
-    border: none;
-    padding: 10px;
-    cursor: pointer;
-    border-radius: 50%;
-    font-size: 18px;
-  }
-
-  .prev { left: 10px; }
-  .next { right: 10px; }
 </style>
 </head>
 <body>
 
 <header>
-  <button class="login-btn" onclick="login()">Login</button>
+  <button class="login-btn" onclick="login()">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Google_%22G%22_Logo.svg/512px-Google_%22G%22_Logo.svg.png" alt="Google Logo">
+    Login with Google
+  </button>
 </header>
 
 <div class="slider">
@@ -106,8 +100,9 @@ setInterval(() => {
   showSlide(currentIndex);
 }, 3000);
 
-// Login button action
+// Google login button action
 function login() {
+  // For demo, just open login page
   window.location.href = 'login-page.html';
 }
 </script>
