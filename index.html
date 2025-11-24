@@ -15,36 +15,12 @@ body {
   align-items: center;
 }
 
-/* Header with Google login button */
-header {
-  position: fixed;
-  top: 10px;
-  right: 10px;
-  z-index: 100;
-}
-
-.login-btn {
-  display: flex;
-  align-items: center;
-  padding: 10px 20px;
-  background: white;
-  border: 1px solid #ddd;
-  border-radius: 5px;
-  box-shadow: 2px 2px 8px #aaa, -2px -2px 8px #fff;
-  cursor: pointer;
-  font-size: 14px;
-  transition: 0.3s;
-}
-.login-btn img { height: 20px; margin-right: 8px; }
-.login-btn:hover { transform: scale(1.05); }
-
 /* Slider */
 .slider {
   width: 100%;
   max-height: 80vh;
   overflow: hidden;
   margin-top: 50px;
-  position: relative;
 }
 .slides {
   display: flex;
@@ -58,7 +34,7 @@ header {
   flex-shrink: 0;
 }
 
-/* Ward text */
+/* Ward and candidate text */
 .ward-text {
   margin-top: 15px;
   font-size: 48px;
@@ -68,22 +44,42 @@ header {
   text-align: center;
 }
 .candidate-text {
-  font-size: 24px;
+  font-size: 28px;
   font-weight: bold;
   color: #795548;
-  text-shadow: 2px 2px 4px #aaa, -2px -2px 4px #fff;
+  text-shadow: 2px 2px 5px #aaa, -2px -2px 5px #fff;
   text-align: center;
+  margin-bottom: 20px;
 }
+
+/* 3D Google login button */
+.google-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 25px;
+  font-size: 16px;
+  font-weight: bold;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(145deg, #4285F4, #34A853, #FBBC05, #EA4335);
+  box-shadow: 4px 4px 15px #aaa, -4px -4px 15px #fff;
+  cursor: pointer;
+  transition: 0.3s;
+}
+.google-btn img {
+  height: 20px;
+  margin-right: 10px;
+}
+.google-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 6px 6px 20px #888, -6px -6px 20px #fff;
+}
+
 </style>
 </head>
 <body>
-
-<header>
-  <div class="login-btn" id="google-login">
-    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Google_%22G%22_Logo.svg/512px-Google_%22G%22_Logo.svg.png" alt="Google Logo">
-    Login with Google
-  </div>
-</header>
 
 <div class="slider">
   <div class="slides">
@@ -96,7 +92,11 @@ header {
 <div class="ward-text">Ward No. 8</div>
 <div class="candidate-text">उम्मेदवार: सचिन देसाई</div>
 
-<!-- Google Identity Services -->
+<button class="google-btn" id="google-login">
+  <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Google_%22G%22_Logo.svg/512px-Google_%22G%22_Logo.svg.png" alt="Google Logo">
+  Login with Google
+</button>
+
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
 const slides = document.querySelector('.slides');
@@ -125,19 +125,18 @@ slides.addEventListener('touchend', e => {
 // Google login
 function handleCredentialResponse(response) {
   console.log("JWT token: " + response.credential);
-  window.location.href = 'login-page.html'; // Redirect after login
+  window.location.href = 'login-page.html'; // Open new page after login
 }
 
-// Initialize Google login button
+// Initialize Google login
 window.onload = function() {
   google.accounts.id.initialize({
-    client_id: "YOUR_GOOGLE_CLIENT_ID", // Replace with your Client ID
+    client_id: "YOUR_GOOGLE_CLIENT_ID", // Replace with your actual client ID
     callback: handleCredentialResponse
   });
-  google.accounts.id.renderButton(
-    document.getElementById('google-login'),
-    { theme: "outline", size: "medium", shape: "pill", width: "200" }
-  );
+  document.getElementById('google-login').addEventListener('click', () => {
+    google.accounts.id.prompt();
+  });
 }
 </script>
 </body>
