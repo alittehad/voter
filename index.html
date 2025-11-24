@@ -1,154 +1,115 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>App Style Home</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Image Slider Page</title>
 <style>
-  body {
+  * {
+    box-sizing: border-box;
     margin: 0;
+    padding: 0;
+  }
+
+  body {
     font-family: Arial, sans-serif;
-    background: linear-gradient(135deg, #ff7f7f, #7f7fff);
+    overflow-x: hidden;
   }
 
-  /* Top Right Login Button */
-  #loginBtn {
-    position: absolute;
-    top: 15px;
-    right: 15px;
-    background: #ffffff;
-    color: #333;
-    padding: 8px 15px;
-    border-radius: 20px;
-    font-size: 14px;
-    cursor: pointer;
+  /* Header with login button */
+  header {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    z-index: 100;
+  }
+
+  .login-btn {
+    padding: 10px 20px;
+    background: linear-gradient(145deg, #ff7e5f, #feb47b);
     border: none;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-    display:block;
-  }
-
-  /* Slider */
-  .slider-container {
-    width: 100%;
-    max-width: 480px;
-    margin: 120px auto 0 auto;
-    overflow: hidden;
-    border-radius: 15px;
-    height: 250px;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-  }
-
-  .slider {
-    display: flex;
-    width: 300%; /* 3 images total */
-    animation: slide 12s forwards infinite;
-  }
-
-  .slider img {
-    width: 100%;
-    height: 250px;
-    object-fit: cover;
-  }
-
-  @keyframes slide {
-    0% { transform: translateX(0%); }
-    50% { transform: translateX(-100%); }
-    100% { transform: translateX(-200%); }
-  }
-    33% { transform: translateX(-100%); }
-    66% { transform: translateX(-200%); }
-    100% { transform: translateX(0%); }
-  }
-    33% { transform: translateX(-100%); }
-    66% { transform: translateX(-200%); }
-    100% { transform: translateX(0%); }
-  }
-
-  /* 3D Page Buttons */
-  #page2 {
-    text-align: center;
-    padding-top: 120px;
-    display: none;
-  }
-
-  .btn3d {
-    background: linear-gradient(135deg, #ffcc00, #ff6600);
-    padding: 15px 30px;
-    margin: 20px;
-    display: inline-block;
-    font-size: 20px;
-    border-radius: 15px;
+    border-radius: 12px;
+    box-shadow: 5px 5px 15px #aaa, -5px -5px 15px #fff;
     color: white;
     font-weight: bold;
     cursor: pointer;
-    box-shadow: 0 8px 0 #b35400;
-    transition: 0.2s;
+    transition: 0.3s;
   }
 
-  .btn3d:active {
-    box-shadow: 0 3px 0 #b35400;
-    transform: translateY(5px);
+  .login-btn:hover {
+    transform: scale(1.1);
   }
+
+  /* Slider container */
+  .slider {
+    display: flex;
+    overflow: hidden;
+    width: 100vw;
+    height: 100vh;
+  }
+
+  .slides {
+    display: flex;
+    transition: transform 0.5s ease-in-out;
+  }
+
+  .slides img {
+    width: 100vw;
+    height: 100vh;
+    object-fit: cover;
+    flex-shrink: 0;
+  }
+
+  /* Navigation buttons (for slider) */
+  .prev, .next {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background-color: rgba(255,255,255,0.7);
+    border: none;
+    padding: 10px;
+    cursor: pointer;
+    border-radius: 50%;
+    font-size: 18px;
+  }
+
+  .prev { left: 10px; }
+  .next { right: 10px; }
 </style>
 </head>
 <body>
 
-<button id="loginBtn">Google Login</button>
+<header>
+  <button class="login-btn" onclick="login()">Login</button>
+</header>
 
-<div id="page1">
-  <div class="slider-container">
-    <div class="slider">
-      <img src="https://i.ibb.co/NgFTprmS/images-1.jpg" alt="slide1" />
-      <img src="https://i.ibb.co/zHnxn3Lf/images.jpg" alt="slide2" />
-      <img src="https://i.ibb.co/7wHNN9B/Whats-App-Image-2025-11-24-at-11-56-26-3fbcdaac.jpg" alt="slide3" />
-    </div>
-      </div>
-    </div>
+<div class="slider">
+  <div class="slides">
+    <img src="https://i.ibb.co/NgFTprmS/images-1.jpg" alt="Image 1">
+    <img src="https://i.ibb.co/zHnxn3Lf/images.jpg" alt="Image 2">
+    <img src="https://i.ibb.co/7wHNN9B/Whats-App-Image-2025-11-24-at-11-56-26-3fbcdaac.jpg" alt="Image 3">
   </div>
 </div>
 
-<div id="page2">
-  <div class="btn3d">Button 1</div>
-  <div class="btn3d">Button 2</div>
-  <div class="btn3d">Button 3</div>
-</div>
-
-<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
 <script>
-  // Firebase Config
-const firebaseConfig = {
-  apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
-  authDomain: "voter-25c94.firebaseapp.com",
-  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
-  projectId: "voter-25c94",
-  storageBucket: "voter-25c94.appspot.com",
-  messagingSenderId: "297773534400",
-  appId: "1:297773534400:web:3722c487b8c83e9b787125"
-};
+let currentIndex = 0;
+const slides = document.querySelector('.slides');
+const total = slides.children.length;
 
-// Initialize Firebase
-const app = firebase.initializeApp(firebaseConfig);
-const auth = firebase.getAuth(app);
+function showSlide(index) {
+  slides.style.transform = `translateX(-${index * 100}vw)`;
+}
 
-// Google Login
-const provider = new firebase.GoogleAuthProvider();
+// Auto slider
+setInterval(() => {
+  currentIndex = (currentIndex + 1) % total;
+  showSlide(currentIndex);
+}, 3000);
 
-document.getElementById('loginBtn').onclick = function() {
-  firebase.signInWithPopup(auth, provider)
-    .then((result) => {
-      document.getElementById('loginBtn').style.display = 'block';
-      document.getElementById('page1').style.display = 'none';
-      document.getElementById('page2').style.display = 'block';
-    })
-    .catch((error) => {
-      alert('Login Failed: ' + error.message);
-    });
+// Login button action
+function login() {
+  window.location.href = 'login-page.html';
 }
 </script>
-
 </body>
 </html>
