@@ -3,26 +3,25 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Responsive Slider with Google Login</title>
+<title>Responsive Slider with Firebase Google Login</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
   font-family: Arial, sans-serif;
-  background: #ffeb3b; /* Yellow background */
+  background: #ffeb3b;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
+  min-height: 100vh;
 }
 
 /* Slider */
 .slider {
   width: 90%;
-  max-width: 1000px; /* PC pe limit */
-  height: auto;
-  max-height: 60vh;
-  overflow: hidden;
+  max-width: 1000px;
   margin-top: 50px;
+  overflow: hidden;
 }
 .slides {
   display: flex;
@@ -31,8 +30,7 @@ body {
 .slides img {
   width: 100%;
   height: auto;
-  max-height: 60vh;
-  object-fit: cover;
+  object-fit: contain;
   flex-shrink: 0;
   border-radius: 8px;
 }
@@ -55,11 +53,8 @@ body {
   margin-bottom: 20px;
 }
 
-/* 3D Google login button without logo */
+/* 3D Google login button */
 .google-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
   padding: 14px 30px;
   font-size: 18px;
   font-weight: bold;
@@ -99,23 +94,57 @@ body {
 
 <button class="google-btn" id="google-login">Login with Google</button>
 
-<!-- Google Identity Services -->
-<script src="https://accounts.google.com/gsi/client" async defer></script>
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+
 <script>
+// Firebase config
+const firebaseConfig = {
+  apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
+  authDomain: "voter-25c94.firebaseapp.com",
+  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
+  projectId: "voter-25c94",
+  storageBucket: "voter-25c94.appspot.com",
+  messagingSenderId: "297773534400",
+  appId: "1:297773534400:web:3722c487b8c83e9b787125"
+};
+
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+
+// Google login
+const provider = new firebase.auth.GoogleAuthProvider();
+
+document.getElementById('google-login').addEventListener('click', () => {
+  auth.signInWithPopup(provider)
+    .then((result) => {
+      console.log("User info:", result.user);
+      // Redirect to new page after successful login
+      window.location.href = 'login-page.html';
+    })
+    .catch((error) => {
+      console.error("Login error:", error);
+      alert("Google login failed. Check console for details.");
+    });
+});
+
+// Slider functionality
 const slides = document.querySelector('.slides');
 let currentIndex = 0;
 const total = slides.children.length;
 
-// Auto slide
 function showSlide(index) {
   slides.style.transform = `translateX(-${index * 100}%)`;
 }
+
 setInterval(() => {
   currentIndex = (currentIndex + 1) % total;
   showSlide(currentIndex);
 }, 3000);
 
-// Swipe support
+// Swipe support for mobile
 let startX = 0;
 slides.addEventListener('touchstart', e => { startX = e.touches[0].clientX; });
 slides.addEventListener('touchend', e => {
@@ -124,25 +153,6 @@ slides.addEventListener('touchend', e => {
   if(endX > startX + 30){ currentIndex = (currentIndex - 1 + total) % total; }
   showSlide(currentIndex);
 });
-
-// Google login
-function handleCredentialResponse(response) {
-  console.log("JWT token: " + response.credential);
-  // Open new page after successful login
-  window.location.href = 'login-page.html';
-}
-
-// Initialize Google login
-window.onload = function() {
-  google.accounts.id.initialize({
-    client_id: "YOUR_GOOGLE_CLIENT_ID", // Replace with your Client ID
-    callback: handleCredentialResponse
-  });
-
-  document.getElementById('google-login').addEventListener('click', () => {
-    google.accounts.id.prompt(); // show login popup
-  });
-}
 </script>
 </body>
 </html>
