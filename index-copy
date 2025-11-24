@@ -1,155 +1,111 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="mr">
 <head>
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#2563eb">
-
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-<meta http-equiv="Pragma" content="no-cache" />
-<meta http-equiv="Expires" content="0" />
-
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ward 20 — Login</title>
-<script src="https://cdn.tailwindcss.com"></script>
-
+<title>Responsive Slider with Firebase Google Login</title>
 <style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
 body {
-  min-height:100vh;
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-  align-items:center;
-  margin:0;
-  background: linear-gradient(to bottom right, #4f46e5, #ec4899, #facc15);
-  padding:1rem;
-  gap:1rem; /* elements ke beech thoda space */
+  font-family: Arial, sans-serif;
+  background: #ffeb3b;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: 100vh;
 }
-img.center-img {
-  max-width:90%;
-  height:auto;
-  margin-bottom:2rem;
-  border-radius:1rem;
-  box-shadow:0 8px 20px rgba(0,0,0,0.3);
-}
-.login-btn {
-  display:flex;
-  align-items:center;
-  gap:0.5rem;
-  padding:0.75rem 1.5rem;
-  background:white;
-  color:#1f2937;
-  font-weight:bold;
-  border-radius:0.75rem;
-  cursor:pointer;
-  box-shadow:0 5px 0 rgba(0,0,0,0.25);
-  transition:0.1s;
-}
-.login-btn:hover {transform:translateY(-2px);}
-.login-btn:active {transform:translateY(3px); box-shadow:0 2px 0 rgba(0,0,0,0.25);}
 
-/* Install Button 3D + Colorful */
-#installBtn {
-  display:none;
-  margin-bottom: 2rem; /* login button ke upar space */
-  padding: 0.75rem 1.8rem;
-  background: linear-gradient(45deg, #2563eb, #4ade80, #facc15);
-  color: white;
+/* Slider */
+.slider { width: 90%; max-width: 1000px; margin-top: 50px; overflow: hidden; }
+.slides { display: flex; transition: transform 0.5s ease-in-out; }
+.slides img { width: 100%; height: auto; object-fit: contain; flex-shrink: 0; border-radius: 8px; }
+
+/* Ward and candidate text */
+.ward-text { margin-top: 15px; font-size: 48px; font-weight: bold; color: #ff5722; text-shadow: 4px 4px 8px #aaa, -4px -4px 8px #fff; text-align: center; }
+.candidate-text { font-size: 28px; font-weight: bold; color: #795548; text-shadow: 2px 2px 5px #aaa, -2px -2px 5px #fff; text-align: center; margin-bottom: 20px; }
+
+/* 3D Google login button */
+.google-btn {
+  padding: 14px 30px;
+  font-size: 18px;
   font-weight: bold;
-  border-radius: 0.75rem;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(145deg, #4285F4, #34A853, #FBBC05, #EA4335);
+  box-shadow: 4px 4px 15px #aaa, -4px -4px 15px #fff;
   cursor: pointer;
-  box-shadow: 0 8px 0 #1e40af; /* 3D effect */
-  font-size: 1.1rem;
-  transition: all 0.15s ease-in-out;
+  transition: 0.3s;
 }
-#installBtn:hover {
-  transform: translateY(-3px) scale(1.05);
-  box-shadow: 0 10px 0 #1e40af;
+.google-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 6px 6px 20px #888, -6px -6px 20px #fff;
 }
-#installBtn:active {
-  transform: translateY(4px) scale(0.98);
-  box-shadow: 0 4px 0 #1e40af;
+
+/* Responsive adjustments */
+@media screen and (max-width: 768px) {
+  .ward-text { font-size: 36px; }
+  .candidate-text { font-size: 22px; }
+  .google-btn { font-size: 16px; padding: 12px 25px; }
 }
 </style>
 </head>
 <body>
 
-<!-- Install App Button -->
-<button id="installBtn">Install App</button>
+<div class="slider">
+  <div class="slides">
+    <img src="https://i.ibb.co/NgFTprmS/images-1.jpg" alt="Image 1">
+    <img src="https://i.ibb.co/zHnxn3Lf/images.jpg" alt="Image 2">
+    <img src="https://i.ibb.co/7wHNN9B/Whats-App-Image-2025-11-24-at-11-56-26-3fbcdaac.jpg" alt="Image 3">
+  </div>
+</div>
 
-<!-- Center Image -->
-<img src="https://i.postimg.cc/8kysF6DQ/Numeral-20-with-Bold-Ward.png" class="center-img">
+<div class="ward-text">Ward No. 8</div>
+<div class="candidate-text">उम्मेदवार: सचिन देसाई</div>
 
-<!-- Login Button -->
-<button id="loginBtn" class="login-btn">
-  <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" style="width:20px;height:20px;">
-  Login with Google
-</button>
+<button class="google-btn" id="google-login">Login with Google</button>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 
+<script>
+// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
   authDomain: "voter-25c94.firebaseapp.com",
   databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
   projectId: "voter-25c94",
-  storageBucket: "voter-25c94.firebasestorage.app",
+  storageBucket: "voter-25c94.appspot.com",
   messagingSenderId: "297773534400",
   appId: "1:297773534400:web:3722c487b8c83e9b787125"
 };
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const provider = new firebase.auth.GoogleAuthProvider();
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth();
-const provider = new GoogleAuthProvider();
+// Ensure persistence
+auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 
-// Redirect if already logged in
-onAuthStateChanged(auth, user => {
-  if(user){
-    window.location.replace('panel.html');
-  }
+document.getElementById('google-login').addEventListener('click', () => {
+  auth.signInWithPopup(provider)
+    .then((result) => {
+      console.log("User info:", result.user);
+      window.location.href = 'login-page.html'; // make sure login-page.html exists in same folder
+    })
+    .catch((error) => {
+      console.error("Login error:", error);
+      alert("Google login failed. Check console.");
+    });
 });
 
-// Google Login
-document.getElementById('loginBtn').addEventListener('click', async ()=>{
-  try{
-    await signInWithPopup(auth, provider);
-    window.location.replace('panel.html');
-  }catch(e){
-    alert("Login failed");
-    console.error(e);
-  }
-});
-
-// PWA Install Button
-let deferredPrompt;
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  deferredPrompt = e;
-  document.getElementById('installBtn').style.display = 'block';
-});
-
-document.getElementById('installBtn').addEventListener('click', async () => {
-  if(!deferredPrompt) return;
-  deferredPrompt.prompt();
-  const { outcome } = await deferredPrompt.userChoice;
-  console.log('User response:', outcome);
-  deferredPrompt = null;
-  document.getElementById('installBtn').style.display = 'none';
-});
+// Slider functionality
+const slides = document.querySelector('.slides');
+let currentIndex = 0;
+const total = slides.children.length;
+function showSlide(index) { slides.style.transform = `translateX(-${index * 100}%)`; }
+setInterval(() => { currentIndex = (currentIndex + 1) % total; showSlide(currentIndex); }, 3000);
 </script>
-
-<!-- Service Worker -->
-<script>
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js')
-      .then(reg => console.log('Service Worker registered', reg))
-      .catch(err => console.log('SW registration failed', err));
-  });
-}
-</script>
-
 </body>
 </html>
