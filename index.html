@@ -100,12 +100,38 @@
   <div class="btn3d">Button 3</div>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
 <script>
-  document.getElementById('loginBtn').onclick = function() {
-    document.getElementById('loginBtn').style.display = 'none';
-    document.getElementById('page1').style.display = 'none';
-    document.getElementById('page2').style.display = 'block';
-  }
+  // Firebase Config
+const firebaseConfig = {
+  apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
+  authDomain: "voter-25c94.firebaseapp.com",
+  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
+  projectId: "voter-25c94",
+  storageBucket: "voter-25c94.appspot.com",
+  messagingSenderId: "297773534400",
+  appId: "1:297773534400:web:3722c487b8c83e9b787125"
+};
+
+// Initialize Firebase
+const app = firebase.initializeApp(firebaseConfig);
+const auth = firebase.getAuth(app);
+
+// Google Login
+const provider = new firebase.GoogleAuthProvider();
+
+document.getElementById('loginBtn').onclick = function() {
+  firebase.signInWithPopup(auth, provider)
+    .then((result) => {
+      document.getElementById('loginBtn').style.display = 'none';
+      document.getElementById('page1').style.display = 'none';
+      document.getElementById('page2').style.display = 'block';
+    })
+    .catch((error) => {
+      alert('Login Failed: ' + error.message);
+    });
+}
 </script>
 
 </body>
