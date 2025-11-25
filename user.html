@@ -3,430 +3,503 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Voter List — Full Working</title>
+<title>Voter Card — Edit (B style) + Photo + Print + Firebase</title>
 <style>
-  body{font-family:Arial; background:#f3f3f3; margin:0; padding:12px;}
-  h2{text-align:center;margin-bottom:12px;}
-  input,textarea{width:100%;padding:10px;margin-bottom:8px;border-radius:8px;border:2px solid #777;font-size:15px;box-sizing:border-box;}
-  .list-item{padding:12px;background:#fff;border:2px solid #ccc;border-radius:10px;margin-bottom:8px;cursor:pointer;}
-  .list-item:hover{box-shadow:0 6px 18px rgba(0,0,0,0.08);transform:translateY(-2px);}
-
-  #popup{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:none;justify-content:center;align-items:flex-start;padding:20px;overflow:auto;z-index:999;}
-  .card{background:#fff;width:100%;max-width:480px;border-radius:12px;padding:18px;border:3px solid #111;box-sizing:border-box;}
-  .card img{width:140px;height:170px;object-fit:cover;border-radius:6px;display:block;margin:8px auto;border:2px solid #ddd;}
-  .row{display:flex;gap:8px;align-items:center}
-  .small{font-size:13px}
-  .btn{display:inline-block;padding:10px;border-radius:8px;border:none;background:#1976d2;color:#fff;cursor:pointer;font-weight:600;margin-top:8px;width:100%}
-  .btn.small{padding:8px;font-size:14px;width:auto}
+  body{font-family:Arial;background:#f5f7fb;margin:0;padding:14px}
+  h2{text-align:center;margin-bottom:10px}
+  .topbar{display:flex;gap:8px;align-items:center;margin-bottom:12px}
+  input[type="text"], textarea{width:100%;padding:8px;border-radius:8px;border:1px solid #bbb;box-sizing:border-box}
+  .list-item{background:#fff;border:1px solid #ddd;padding:10px;border-radius:8px;margin-bottom:8px;cursor:pointer}
+  .muted{color:#666;font-size:13px}
+  .btn{display:inline-block;padding:8px 10px;border-radius:8px;border:none;background:#1976d2;color:#fff;cursor:pointer}
+  .btn.small{padding:6px 8px;font-size:13px}
   .danger{background:#d32f2f}
   .success{background:#388e3c}
-  .muted{color:#666;font-size:13px}
-  @media(max-width:520px){ .card img{width:120px;height:150px} }
+  #list{max-width:900px;margin:0 auto}
+  /* popup card */
+  #popup{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:none;justify-content:center;align-items:flex-start;padding:18px;overflow:auto;z-index:9999}
+  .card{background:#fff;width:100%;max-width:520px;border-radius:12px;padding:18px;border:3px solid #111;box-sizing:border-box}
+  .cardHeader{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+  .card img{display:block;margin:8px auto;width:140px;height:170px;object-fit:cover;border-radius:6px;border:2px solid #ddd}
+  .fieldRow{margin-bottom:8px}
+  .fieldLabel{font-weight:700}
+  .inlineText{display:inline-block;margin-right:8px}
+  .editControls{display:inline-block}
+  .colorBox{width:28px;height:28px;border-radius:6px;display:inline-block;margin-right:6px;border:1px solid #bbb;cursor:pointer}
+  .note{font-size:13px;color:#444}
+  @media print{
+    body *{visibility:hidden}
+    #popup, #popup *{visibility:visible}
+    #popup{position:static;background:transparent}
+    .btn, input[type="file"], textarea, input{display:none !important}
+  }
 </style>
 </head>
 <body>
 
-<h2>🗳 Voter List — Complete (Photo Upload, Edit, Save → Firebase)</h2>
+<h2>🗳 Voter List — Card (Edit B-style) + Photo + Print</h2>
 
-<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
-  <input id="search" placeholder="Search Name / EPIC / AC / Part ..." style="flex:1;min-width:200px">
+<div class="topbar">
+  <input id="search" type="text" placeholder="Search Name / EPIC / AC / Part / Address ..." />
   <button id="refreshBtn" class="btn small">Refresh</button>
 </div>
 
 <div id="list"></div>
 
-<!-- Popup Card -->
+<!-- POPUP CARD -->
 <div id="popup">
   <div class="card" role="dialog" aria-modal="true">
-    <div style="display:flex;justify-content:space-between;align-items:center;">
-      <h3 id="cName" style="margin:0"></h3>
-      <button onclick="closePopup()" class="btn small danger">Close</button>
+    <div class="cardHeader">
+      <div>
+        <h3 id="cardName" style="margin:0"></h3>
+        <div class="muted small" id="cardMeta"></div>
+      </div>
+      <div style="text-align:right">
+        <button class="btn small danger" onclick="closePopup()">Close</button>
+      </div>
     </div>
 
-    <p class="muted"><b>EPIC:</b> <span id="cEpic"></span> &nbsp;&nbsp; <b>AC:</b> <span id="cAc"></span> &nbsp;&nbsp; <b>Part:</b> <span id="cPart"></span></p>
-
-    <div style="text-align:center;margin-bottom:8px">
-      <img id="cPhoto" src="https://via.placeholder.com/140x170?text=No+Photo" alt="photo" />
-      <div class="muted small">Photo shows after upload</div>
+    <div style="text-align:center">
+      <img id="cardPhoto" src="https://via.placeholder.com/140x170?text=No+Photo" alt="photo" />
+      <div class="muted" style="font-size:13px">Photo saved to Firebase Storage & URL saved to DB</div>
     </div>
 
-    <label class="small"><b>Upload Photo (will save to Storage & DB)</b></label>
-    <input type="file" id="imageInput" accept="image/*">
-    <div style="display:flex;gap:8px">
-      <button class="btn small" onclick="uploadVoterImage()">Upload Photo</button>
-      <button class="btn small danger" onclick="deleteVoterImage()" title="Delete photo from Storage & DB">Delete Photo</button>
+    <div style="margin-top:10px">
+      <label class="fieldLabel">Photo upload</label>
+      <input type="file" id="imageInput" accept="image/*" />
+      <div style="display:flex;gap:8px;margin-top:6px">
+        <button class="btn small" onclick="uploadVoterImage()">Upload Photo</button>
+        <button class="btn small danger" onclick="deleteVoterImage()">Delete Photo</button>
+      </div>
     </div>
 
-    <hr style="margin:12px 0">
+    <hr />
 
-    <label><b>🏠 Address</b></label>
-    <textarea id="editAddress" rows="2" placeholder="Enter address..."></textarea>
+    <!-- Name & EPIC (readonly) -->
+    <div class="fieldRow"><span class="fieldLabel">Name:</span> <span id="displayName" class="inlineText"></span></div>
+    <div class="fieldRow"><span class="fieldLabel">EPIC:</span> <span id="displayEpic" class="inlineText"></span></div>
 
-    <label><b>🗳 Booth</b></label>
-    <input id="editBooth" placeholder="Enter Booth number or text">
+    <!-- AC & Part -->
+    <div class="fieldRow"><span class="fieldLabel">AC No:</span> <span id="displayAc" class="inlineText"></span> &nbsp; <span class="fieldLabel">Part No:</span> <span id="displayPart" class="inlineText"></span></div>
 
-    <label><b>📍 Voting Address</b></label>
-    <textarea id="editVoting" rows="2" placeholder="Enter Voting Address..."></textarea>
-
-    <label><b>📝 Sender Message (saved globally + per voter)</b></label>
-    <textarea id="senderNote" rows="2" placeholder="Enter message..."></textarea>
-
-    <div style="display:flex;gap:8px;margin-top:8px">
-      <button class="btn success" onclick="saveEdits()">Save Changes</button>
-      <button class="btn" onclick="printCard()">Print</button>
+    <!-- Address (B style: show text + Edit) -->
+    <div class="fieldRow">
+      <div class="fieldLabel">🏠 Address</div>
+      <div id="addressContainer">
+        <span id="addressText" class="inlineText note"></span>
+        <div class="editControls" id="addressControls">
+          <button class="btn small" onclick="startEdit('Address')">Edit</button>
+        </div>
+      </div>
     </div>
 
-    <button class="btn" style="background:#25D366;margin-top:8px" onclick="shareWhatsApp()">Share (WhatsApp Text Only)</button>
+    <!-- Booth / VotingAddress (B style) -->
+    <div class="fieldRow">
+      <div class="fieldLabel">🗳 Booth / Voting Address</div>
+      <div id="votingContainer">
+        <span id="votingText" class="inlineText note"></span>
+        <div class="editControls" id="votingControls">
+          <button class="btn small" onclick="startEdit('VotingAddress')">Edit</button>
+        </div>
+      </div>
+    </div>
 
-    <div id="status" class="muted small" style="margin-top:8px"></div>
+    <!-- Sender Note (B style) -->
+    <div class="fieldRow">
+      <div class="fieldLabel">📝 Sender Note</div>
+      <div id="noteContainer">
+        <span id="noteText" class="inlineText note"></span>
+        <div class="editControls" id="noteControls">
+          <button class="btn small" onclick="startEdit('SenderNote')">Edit</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Color boxes -->
+    <div style="margin-top:8px">
+      <div class="fieldLabel">Card Background Color</div>
+      <div style="margin-top:6px">
+        <div class="colorBox" style="background:#ffffff" onclick="setColor('#ffffff')"></div>
+        <div class="colorBox" style="background:#ffedd5" onclick="setColor('#ffedd5')"></div>
+        <div class="colorBox" style="background:#fce7f3" onclick="setColor('#fce7f3')"></div>
+        <div class="colorBox" style="background:#e0f2fe" onclick="setColor('#e0f2fe')"></div>
+        <div class="colorBox" style="background:#d1fae5" onclick="setColor('#d1fae5')"></div>
+      </div>
+    </div>
+
+    <!-- Edit input area (appears when editing) -->
+    <div id="editArea" style="margin-top:10px;display:none">
+      <label id="editLabel" class="fieldLabel"></label>
+      <div id="editFieldWrap" style="margin-top:6px"></div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn success" onclick="saveEdit()">Save</button>
+        <button class="btn danger" onclick="cancelEdit()">Cancel</button>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn" onclick="printCard()">🖨 Print (buttons hidden)</button>
+      <button class="btn" onclick="shareWhatsApp()">📩 WhatsApp (text only)</button>
+    </div>
+
+    <div id="popupStatus" class="muted" style="margin-top:8px"></div>
   </div>
 </div>
 
-<!-- Firebase -->
+<!-- Firebase libs -->
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
 
 <script>
-  // ========== CONFIG ==========
-  const firebaseConfig = {
-    apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
-    authDomain: "voter-25c94.firebaseapp.com",
-    databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
-    projectId: "voter-25c94",
-    storageBucket: "voter-25c94.appspot.com",
-    messagingSenderId: "297773534400",
-    appId: "1:297773534400:web:3722c487b8c83e9b787125"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const rdb = firebase.database();
-  const storage = firebase.storage();
+/* ========== CONFIG ========== */
+const firebaseConfig = {
+  apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
+  authDomain: "voter-25c94.firebaseapp.com",
+  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
+  projectId: "voter-25c94",
+  storageBucket: "voter-25c94.appspot.com",
+  messagingSenderId: "297773534400",
+  appId: "1:297773534400:web:3722c487b8c83e9b787125"
+};
+firebase.initializeApp(firebaseConfig);
+const rdb = firebase.database();
+const storage = firebase.storage();
 
-  // ========== STATE ==========
-  let voters = {};      // object keyed by EPIC (as in your RTDB)
-  let listOrder = [];   // EPICs in insertion order for display
-  let selectedEpic = null;
+/* ========== STATE ========== */
+let voters = {};            // keyed by sanitized key used in RTDB
+let epicIndex = [];         // keys order
+let currentKey = null;      // sanitized key currently selected
+let currentEditField = null; // which field is under edit: 'Address','VotingAddress','SenderNote'
 
-  // ========== UTIL ==========
-  function sanitizeKey(k){ return (k||'').toString().replace(/[.#$\[\]/]/g,'_'); }
-  function $(id){ return document.getElementById(id); }
-  function setStatus(s){ $('status').innerText = s || ''; }
+/* sanitize key */
+function sanitizeKey(k){ return (k||'').toString().replace(/[.#$\[\]/]/g,'_'); }
+function setPopupStatus(s){ document.getElementById('popupStatus').innerText = s || ''; }
 
-  // ========== LOAD from RTDB (Voters node) ==========
-  function loadVoters(){
-    setStatus('Loading voters from Firebase...');
-    rdb.ref('Voters').once('value').then(snap=>{
-      const obj = snap.val() || {};
-      voters = obj;
-      listOrder = Object.keys(obj);
-      renderList();
-      setStatus('Loaded ' + listOrder.length + ' voters.');
-    }).catch(err=>{
-      console.error(err);
-      setStatus('Error loading voters: ' + err.message);
-    });
+/* ========== LOAD VOTERS FROM RTDB ========== */
+function loadVoters(){
+  setPopupStatus('Loading voters...');
+  rdb.ref('Voters').once('value').then(snap=>{
+    const data = snap.val() || {};
+    voters = data;
+    epicIndex = Object.keys(data || {});
+    renderList();
+    setPopupStatus('Loaded ' + epicIndex.length + ' voters.');
+  }).catch(err=>{
+    console.error(err);
+    setPopupStatus('Load failed: ' + err.message);
+  });
+}
+loadVoters();
+document.getElementById('refreshBtn').addEventListener('click', loadVoters);
+
+/* ========== RENDER LIST ========== */
+function renderList(){
+  const list = document.getElementById('list');
+  list.innerHTML = '';
+  const q = (document.getElementById('search').value || '').toLowerCase();
+
+  epicIndex.forEach(k=>{
+    const v = voters[k];
+    if(!v) return;
+    const name = v.Name || '';
+    const epic = v.EPIC || k;
+    const ac = v.AcNo || '';
+    const part = v.PartNo || '';
+    const booth = v.VotingAddress || v.Booth || '';
+    const hay = (name + ' ' + epic + ' ' + ac + ' ' + part + ' ' + (v.Address||'') + ' ' + (booth||'')).toLowerCase();
+    if(q && hay.indexOf(q) === -1) return;
+
+    const div = document.createElement('div');
+    div.className = 'list-item';
+    div.innerHTML = `<strong>${name}</strong><div class="muted">EPIC: ${epic} | AC:${ac} | Part:${part} | Booth:${booth}</div>`;
+    div.onclick = ()=> openCard(k);
+    list.appendChild(div);
+  });
+}
+document.getElementById('search').addEventListener('input', renderList);
+
+/* ========== OPEN CARD ========== */
+function openCard(key){
+  currentKey = key;
+  const v = voters[key] || {};
+  document.getElementById('cardName').innerText = v.Name || '';
+  document.getElementById('displayName').innerText = v.Name || '';
+  document.getElementById('displayEpic').innerText = v.EPIC || '';
+  document.getElementById('displayAc').innerText = v.AcNo || '';
+  document.getElementById('displayPart').innerText = v.PartNo || '';
+
+  // show texts
+  document.getElementById('addressText').innerText = v.Address || 'Not available';
+  document.getElementById('votingText').innerText = v.VotingAddress || v.Booth || 'Not available';
+  document.getElementById('noteText').innerText = v.SenderNote || '';
+
+  // photo
+  document.getElementById('cardPhoto').src = v.ImageURL || 'https://via.placeholder.com/140x170?text=No+Photo';
+
+  // card meta
+  document.getElementById('cardMeta').innerText = 'EPIC: ' + (v.EPIC||'') + ' • AC:' + (v.AcNo||'') + ' • Part:' + (v.PartNo||'');
+
+  // reset edit area
+  cancelEdit();
+
+  // show popup
+  document.getElementById('popup').style.display = 'flex';
+  setPopupStatus('');
+}
+
+/* ========== EDIT FLOW (B style) ========== */
+function startEdit(field){
+  // field: 'Address' | 'VotingAddress' | 'SenderNote'
+  if(!currentKey) return alert('Select a voter first');
+  currentEditField = field;
+  const v = voters[currentKey] || {};
+  const label = field === 'Address' ? 'Address' : (field === 'VotingAddress' ? 'Booth / Voting Address' : 'Sender Note');
+  document.getElementById('editLabel').innerText = 'Edit: ' + label;
+
+  const wrap = document.getElementById('editFieldWrap');
+  wrap.innerHTML = '';
+  if(field === 'SenderNote'){
+    const ta = document.createElement('textarea');
+    ta.id = 'editInput';
+    ta.rows = 3;
+    ta.value = v[field] || '';
+    wrap.appendChild(ta);
+  } else {
+    const inp = document.createElement('input');
+    inp.type = 'text';
+    inp.id = 'editInput';
+    inp.value = v[field] || (field === 'VotingAddress' ? (v.Booth || '') : '');
+    wrap.appendChild(inp);
   }
 
-  // initial load
-  loadVoters();
+  document.getElementById('editArea').style.display = 'block';
+  // hide the edit buttons while editing
+  document.getElementById('addressControls').style.display = 'none';
+  document.getElementById('votingControls').style.display = 'none';
+  document.getElementById('noteControls').style.display = 'none';
+}
 
-  // manual refresh button
-  $('refreshBtn').addEventListener('click', ()=> loadVoters());
+function cancelEdit(){
+  currentEditField = null;
+  document.getElementById('editArea').style.display = 'none';
+  document.getElementById('editFieldWrap').innerHTML = '';
+  // show edit buttons again
+  document.getElementById('addressControls').style.display = 'inline-block';
+  document.getElementById('votingControls').style.display = 'inline-block';
+  document.getElementById('noteControls').style.display = 'inline-block';
+  setPopupStatus('');
+}
 
-  // ========== RENDER LIST ==========
-  function renderList(filterText=''){
-    const box = $('list');
-    box.innerHTML = '';
-    filterText = (filterText||'').toLowerCase();
+/* saveEdit: write to RTDB under Voters/<sanitizedKey> */
+function saveEdit(){
+  if(!currentKey || !currentEditField) return alert('Nothing to save');
+  const val = document.getElementById('editInput').value || '';
+  const dbKey = sanitizeKey(currentKey);
+  const updateObj = {};
+  // if editing VotingAddress, we will save it to VotingAddress field
+  updateObj[currentEditField] = val;
 
-    listOrder.forEach(epic=>{
-      const v = voters[epic];
-      if(!v) return;
-      const name = v.Name || '';
-      const ac   = v.AcNo || '';
-      const part = v.PartNo || '';
-      const booth= v.VotingAddress || v.Booth || 'NA';
+  setPopupStatus('Saving...');
+  rdb.ref('Voters/' + dbKey).update(updateObj).then(()=>{
+    // update local object
+    if(!voters[currentKey]) voters[currentKey] = {};
+    voters[currentKey][currentEditField] = val;
+    // reflect on UI
+    if(currentEditField === 'Address') document.getElementById('addressText').innerText = val || 'Not available';
+    if(currentEditField === 'VotingAddress') document.getElementById('votingText').innerText = val || 'Not available';
+    if(currentEditField === 'SenderNote') document.getElementById('noteText').innerText = val || '';
+    renderList();
+    setPopupStatus('Saved.');
+    cancelEdit();
+  }).catch(err=>{
+    console.error(err);
+    setPopupStatus('Save failed: '+err.message);
+    alert('Save failed: ' + err.message);
+  });
+}
 
-      // simple filter
-      const hay = (name + ' ' + epic + ' ' + ac + ' ' + part + ' ' + (v.Address||'') + ' ' + (booth||'')).toLowerCase();
-      if(filterText && hay.indexOf(filterText) === -1) return;
+/* wire saveEdit to Save button */
+window.saveEdit = saveEdit;
+window.cancelEdit = cancelEdit;
 
-      const div = document.createElement('div');
-      div.className = 'list-item';
-      div.innerHTML = `<b>${name}</b><br><span class="muted">EPIC: ${epic} | AC:${ac} | Part:${part} | Booth:${booth}</span>`;
-      div.onclick = ()=> openPopupFor(epic);
-      box.appendChild(div);
-    });
-  }
+/* ========== Color set ========== */
+function setColor(col){
+  if(!currentKey) return alert('Select a voter first');
+  const dbKey = sanitizeKey(currentKey);
+  rdb.ref('Voters/'+dbKey).update({ Color: col }).then(()=>{
+    if(!voters[currentKey]) voters[currentKey] = {};
+    voters[currentKey].Color = col;
+    // reflect (we can set card background)
+    document.querySelector('.card').style.background = col || '#fff';
+    setPopupStatus('Color saved.');
+  }).catch(err=>{
+    alert('Color save failed: ' + err.message);
+  });
+}
 
-  // search handler
-  $('search').addEventListener('input', (e)=> renderList(e.target.value));
+/* ========== PHOTO UPLOAD ========== */
+function uploadVoterImage(){
+  if(!currentKey) return alert('Select a voter first');
+  const file = document.getElementById('imageInput').files[0];
+  if(!file) return alert('Select an image file');
 
-  // ========== OPEN POPUP ==========
-  function openPopupFor(epic){
-    const key = epic;
-    const v = voters[key];
-    if(!v) { alert('Voter not found'); return; }
-    selectedEpic = key;
+  const key = sanitizeKey(currentKey);
+  const filename = key + '_' + Date.now() + '_' + file.name.replace(/\s+/g,'_');
+  const ref = storage.ref('voterImages/' + filename);
 
-    $('cName').innerText = v.Name || '';
-    $('cEpic').innerText = v.EPIC || key;
-    $('cAc').innerText   = v.AcNo || '';
-    $('cPart').innerText = v.PartNo || '';
+  setPopupStatus('Uploading image...');
+  const task = ref.put(file);
 
-    $('editAddress').value = v.Address || '';
-    $('editBooth').value   = v.Booth || (v.BoothNo || '') || '';
-    $('editVoting').value  = v.VotingAddress || '';
-    $('senderNote').value  = v.SenderNote || '';
-
-    // photo
-    const imgEl = $('cPhoto');
-    if(v.ImageURL){
-      imgEl.src = v.ImageURL;
-    } else {
-      imgEl.src = 'https://via.placeholder.com/140x170?text=No+Photo';
-    }
-
-    setStatus('');
-    $('popup').style.display = 'flex';
-    window.scrollTo({top:0,behavior:'smooth'});
-  }
-
-  function closePopup(){
-    selectedEpic = null;
-    $('popup').style.display = 'none';
-  }
-
-  // ========== Save edits to RTDB ==========
-  function saveEdits(){
-    if(!selectedEpic) return alert('No voter selected');
-    setStatus('Saving details...');
-    const addr = $('editAddress').value || '';
-    const booth= $('editBooth').value || '';
-    const voting = $('editVoting').value || '';
-    const note = $('senderNote').value || '';
-
-    const updates = {
-      Address: addr,
-      Booth: booth,
-      VotingAddress: voting,
-      SenderNote: note
-    };
-
-    rdb.ref('Voters/' + sanitizeKey(selectedEpic)).update(updates)
-      .then(()=>{
-        // update local state
-        if(!voters[selectedEpic]) voters[selectedEpic] = {};
-        Object.assign(voters[selectedEpic], updates);
-        renderList($('search').value);
-        setStatus('Saved successfully.');
-        alert('Saved successfully');
-      })
-      .catch(err=>{
-        console.error(err);
-        setStatus('Save error: ' + err.message);
-        alert('Save failed: ' + err.message);
+  task.on('state_changed', snap=>{
+    const pct = Math.round((snap.bytesTransferred/snap.totalBytes)*100);
+    setPopupStatus('Upload ' + pct + '%');
+  }, err=>{
+    console.error(err);
+    setPopupStatus('Upload failed: ' + err.message);
+    alert('Upload failed: ' + err.message);
+  }, ()=>{
+    task.snapshot.ref.getDownloadURL().then(url=>{
+      rdb.ref('Voters/' + key).update({ ImageURL: url }).then(()=>{
+        // update local
+        if(!voters[currentKey]) voters[currentKey] = {};
+        voters[currentKey].ImageURL = url;
+        document.getElementById('cardPhoto').src = url;
+        renderList();
+        setPopupStatus('Image uploaded and saved.');
+        alert('Image uploaded & saved.');
+      }).catch(e=>{
+        console.error(e);
+        setPopupStatus('DB save failed: ' + e.message);
+        alert('Image uploaded but DB save failed: ' + e.message);
       });
+    });
+  });
+}
+
+/* ========== Delete photo ========== */
+function deleteVoterImage(){
+  if(!currentKey) return alert('Select a voter first');
+  const v = voters[currentKey] || {};
+  const url = v.ImageURL;
+  if(!url){
+    // just clear DB field
+    const key = sanitizeKey(currentKey);
+    rdb.ref('Voters/' + key).update({ ImageURL: null }).then(()=>{
+      delete voters[currentKey].ImageURL;
+      document.getElementById('cardPhoto').src = 'https://via.placeholder.com/140x170?text=No+Photo';
+      renderList();
+      alert('Image field cleared.');
+    }).catch(e=> alert('Clear failed: ' + e.message));
+    return;
   }
 
-  // ========== Upload Photo ==========
-  function uploadVoterImage(){
-    if(!selectedEpic) return alert('Select a voter first');
-    const file = $('imageInput').files[0];
-    if(!file) return alert('Choose an image file first');
+  if(!confirm('Delete photo from storage & DB?')) return;
 
-    setStatus('Uploading image...');
-    // make filename unique
-    const key = sanitizeKey(selectedEpic);
-    const filename = key + '_' + Date.now() + '_' + file.name.replace(/\s+/g,'_');
-    const ref = storage.ref('voterImages/' + filename);
-
-    const task = ref.put(file);
-
-    task.on('state_changed',
-      snap => {
-        const pct = ((snap.bytesTransferred / snap.totalBytes) * 100).toFixed(0);
-        setStatus('Upload: ' + pct + '%');
-      },
-      err => {
-        console.error(err);
-        setStatus('Upload error: ' + err.message);
-        alert('Upload failed: ' + err.message);
-      },
-      () => {
-        task.snapshot.ref.getDownloadURL().then(url=>{
-          // save URL to RTDB under sanitized key
-          rdb.ref('Voters/' + key).update({ ImageURL: url })
-            .then(()=>{
-              // update local
-              if(!voters[selectedEpic]) voters[selectedEpic] = {};
-              voters[selectedEpic].ImageURL = url;
-              $('cPhoto').src = url;
-              renderList($('search').value);
-              setStatus('Image uploaded and saved.');
-              alert('Image uploaded & saved.');
-            })
-            .catch(e=>{
-              console.error(e);
-              setStatus('DB save error: ' + e.message);
-              alert('Image uploaded but DB update failed: ' + e.message);
-            });
-        });
-      }
-    );
-  }
-
-  // ========== Delete Photo (Storage + DB) ==========
-  function deleteVoterImage(){
-    if(!selectedEpic) return alert('Select a voter first');
-    const key = sanitizeKey(selectedEpic);
-    // confirm
-    if(!confirm('Delete photo for ' + selectedEpic + ' ?')) return;
-
-    // if no URL stored, just remove local
-    const url = (voters[selectedEpic] && voters[selectedEpic].ImageURL) || null;
-    if(!url){
-      // just clear DB key (if any)
-      rdb.ref('Voters/' + key).update({ ImageURL: null }).then(()=>{
-        if(voters[selectedEpic]) delete voters[selectedEpic].ImageURL;
-        $('cPhoto').src = 'https://via.placeholder.com/140x170?text=No+Photo';
-        renderList($('search').value);
-        alert('Image removed.');
-      }).catch(e=> alert('Error: '+e.message));
-      return;
-    }
-
-    // delete by creating a ref from URL
+  try{
     const storageRef = storage.refFromURL(url);
     storageRef.delete().then(()=>{
+      const key = sanitizeKey(currentKey);
       rdb.ref('Voters/' + key).update({ ImageURL: null }).then(()=>{
-        if(voters[selectedEpic]) delete voters[selectedEpic].ImageURL;
-        $('cPhoto').src = 'https://via.placeholder.com/140x170?text=No+Photo';
-        renderList($('search').value);
+        delete voters[currentKey].ImageURL;
+        document.getElementById('cardPhoto').src = 'https://via.placeholder.com/140x170?text=No+Photo';
+        renderList();
         alert('Image deleted from storage & DB.');
-      }).catch(e=>{
-        alert('Deleted from storage but DB update failed: ' + e.message);
-      });
-    }).catch(e=>{
-      alert('Error deleting storage file: ' + e.message + '\nAttempting to clear DB record...');
-      // try clearing DB anyway
+      }).catch(e=> alert('DB clear failed: ' + e.message));
+    }).catch(err=>{
+      alert('Storage delete failed: ' + err.message + '. Clearing DB record instead.');
+      const key = sanitizeKey(currentKey);
       rdb.ref('Voters/' + key).update({ ImageURL: null }).then(()=>{
-        if(voters[selectedEpic]) delete voters[selectedEpic].ImageURL;
-        $('cPhoto').src = 'https://via.placeholder.com/140x170?text=No+Photo';
-        renderList($('search').value);
-        alert('DB updated (storage delete may have failed).');
-      }).catch(err=> alert('Failed to clear DB: ' + err.message));
+        delete voters[currentKey].ImageURL;
+        document.getElementById('cardPhoto').src = 'https://via.placeholder.com/140x170?text=No+Photo';
+        renderList();
+      });
     });
+  }catch(e){
+    alert('Delete error: ' + e.message);
   }
+}
 
-  // ========== Print Card ==========
-  function printCard(){
-    if(!selectedEpic) return alert('Select a voter first');
-    const v = voters[selectedEpic] || {};
-    const html = `
-      <html><head><title>Print Voter Card</title>
-      <style>body{font-family:Arial;padding:20px} .card{width:320px;border:1px solid #333;padding:12px;border-radius:8px} img{display:block;margin:10px auto; width:140px;height:170px;object-fit:cover}</style>
-      </head><body>
-        <div class="card">
-          <img src="${v.ImageURL || 'https://via.placeholder.com/140x170?text=No+Photo'}" alt="photo"/>
-          <h3 style="text-align:center">${v.Name || ''}</h3>
-          <p><b>EPIC:</b> ${v.EPIC || ''}</p>
-          <p><b>AC:</b> ${v.AcNo || ''} <b>Part:</b> ${v.PartNo || ''}</p>
-          <p><b>Address:</b><br/>${(v.Address||'')}</p>
-          <p><b>Voting Address / Booth:</b><br/>${(v.VotingAddress||v.Booth||'')}</p>
-        </div>
-      </body></html>
-    `;
-    const w = window.open('', '_blank', 'width=700,height=800');
-    w.document.write(html);
-    w.document.close();
-    w.focus();
-    w.print();
-  }
+/* ========== PRINT CARD ========== */
+function printCard(){
+  if(!currentKey) return alert('Select a voter first');
+  const v = voters[currentKey] || {};
+  const html = `
+    <html><head><title>Voter Card</title>
+    <style>body{font-family:Arial;padding:20px}.card{width:340px;border:1px solid #333;padding:10px;border-radius:6px} img{display:block;margin:10px auto;width:140px;height:170px;object-fit:cover}</style>
+    </head><body>
+      <div class="card">
+        <img src="${v.ImageURL || 'https://via.placeholder.com/140x170?text=No+Photo'}" alt="photo"/>
+        <h3 style="text-align:center">${(v.Name||'')}</h3>
+        <p><b>EPIC:</b> ${(v.EPIC||'')}</p>
+        <p><b>AC:</b> ${(v.AcNo||'')} &nbsp; <b>Part:</b> ${(v.PartNo||'')}</p>
+        <p><b>Address:</b><br/>${(v.Address||'')}</p>
+        <p><b>Voting Address / Booth:</b><br/>${(v.VotingAddress||v.Booth||'')}</p>
+        <p><b>Sender Note:</b><br/>${(v.SenderNote||'')}</p>
+      </div>
+    </body></html>
+  `;
+  const w = window.open('','_blank','width=700,height=800');
+  w.document.write(html);
+  w.document.close();
+  w.focus();
+  w.print();
+}
 
-  // ========== WhatsApp Share (TEXT ONLY) ==========
-  function shareWhatsApp(){
-    if(!selectedEpic) return alert('Select a voter first');
-    const v = voters[selectedEpic] || {};
-    const text = `VOTER DETAILS
+/* ========== WhatsApp text-only share ========== */
+function shareWhatsApp(){
+  if(!currentKey) return alert('Select a voter first');
+  const v = voters[currentKey] || {};
+  const text = `VOTER DETAILS
 Name: ${v.Name || ''}
 EPIC: ${v.EPIC || ''}
-AC: ${v.AcNo || ''}  Part: ${v.PartNo || ''}
+AC: ${v.AcNo || ''}   Part: ${v.PartNo || ''}
 Address: ${v.Address || 'NA'}
-Voting Address / Booth: ${v.VotingAddress || v.Booth || 'NA'}`;
+Voting Address / Booth: ${v.VotingAddress || v.Booth || 'NA'}
+Note: ${v.SenderNote || ''}`;
+  window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+}
 
-    const url = 'https://wa.me/?text=' + encodeURIComponent(text);
-    window.open(url, '_blank');
-  }
-
-  // ========== Helpers: reflect updates coming from outside (if RTDB changes) ==========
-  // Listen for any RTDB changes under Voters and update local & UI
-  rdb.ref('Voters').on('child_changed', snap=>{
-    const key = snap.key;
-    const data = snap.val();
-    // update local by EPIC mapping: key may be sanitized EPIC; find matching entry in voters
-    // We try to match by EPIC field if present, else by sanitized key
-    // First try to find by exact key
-    if(voters[key]) {
-      voters[key] = Object.assign({}, voters[key], data);
-    } else {
-      // fallback: iterate to match EPIC field
-      for(const k of Object.keys(voters)){
-        if((voters[k].EPIC || '').toString().toLowerCase() === (data.EPIC || key || '').toString().toLowerCase()){
-          voters[k] = Object.assign({}, voters[k], data);
-        }
+/* ========== Real-time update listener: update local & UI when DB changes ========== */
+rdb.ref('Voters').on('child_changed', snap=>{
+  const key = snap.key;
+  const data = snap.val();
+  // find matching local key (key may be sanitized)
+  if(voters[key]) {
+    voters[key] = Object.assign({}, voters[key], data);
+  } else {
+    // try match by EPIC value
+    for(const k of Object.keys(voters)){
+      if((voters[k].EPIC||'').toLowerCase() === (data.EPIC||'').toString().toLowerCase()){
+        voters[k] = Object.assign({}, voters[k], data);
+        break;
       }
     }
-    renderList($('search').value);
-    if(selectedEpic){
-      // refresh popup fields if currently selected matches
-      if(selectedEpic === (data.EPIC || key) || selectedEpic === key){
-        openPopupFor(selectedEpic);
-      }
-    }
-  });
-
-  // helper: openPopup reuse when RTDB changes
-  function openPopupFor(epic){
-    // epic may be sanitized key; try direct, else search by EPIC field
-    let foundEpic = null;
-    if(voters[epic]) foundEpic = epic;
-    else {
-      for(const k of Object.keys(voters)){
-        if((voters[k].EPIC || '').toString().toLowerCase() === epic.toString().toLowerCase()){
-          foundEpic = k; break;
-        }
-      }
-    }
-    if(!foundEpic) {
-      alert('Voter not found: ' + epic);
-      return;
-    }
-    openPopupFound(foundEpic);
   }
-
-  function openPopupFound(key){
-    const v = voters[key];
-    selectedEpic = key;
-    $('cName').innerText = v.Name || '';
-    $('cEpic').innerText = v.EPIC || key;
-    $('cAc').innerText = v.AcNo || '';
-    $('cPart').innerText = v.PartNo || '';
-    $('editAddress').value = v.Address || '';
-    $('editBooth').value = v.Booth || '';
-    $('editVoting').value = v.VotingAddress || '';
-    $('senderNote').value = v.SenderNote || '';
-    $('cPhoto').src = v.ImageURL || 'https://via.placeholder.com/140x170?text=No+Photo';
-    setStatus('');
-    $('popup').style.display = 'flex';
-    window.scrollTo({top:0,behavior:'smooth'});
+  renderList();
+  if(currentKey){
+    // if current shown record updated, refresh card
+    if(currentKey === key || (voters[currentKey] && voters[currentKey].EPIC && voters[currentKey].EPIC.toLowerCase() === (data.EPIC||'').toLowerCase())){
+      openCard(currentKey);
+    }
   }
+});
 
-  // alias for openPopupFound to keep earlier function name
-  function openPopupFor(epicKey){ openPopupFound(epicKey); }
+/* also watch child_added to keep list fresh */
+rdb.ref('Voters').on('child_added', snap=>{
+  const key = snap.key; const data = snap.val();
+  if(!voters[key]) voters[key] = data;
+  if(!epicIndex.includes(key)) epicIndex.push(key);
+  renderList();
+});
 
-  // also expose openPopupFor for list click closure (we used earlier)
-  // but our renderList used openPopupFor already.
+/* watch child_removed */
+rdb.ref('Voters').on('child_removed', snap=>{
+  const key = snap.key;
+  delete voters[key];
+  epicIndex = epicIndex.filter(k=>k!==key);
+  renderList();
+});
 
 </script>
 </body>
