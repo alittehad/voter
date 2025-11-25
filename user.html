@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Voter List with Upload/Delete/Edit</title>
+<title>Voter List with Image Upload & Edit</title>
 <style>
 body { font-family: Arial; margin:0; padding:10px; background:#f3f3f3; }
 h2 { text-align:center; margin-bottom:15px; }
@@ -21,13 +21,6 @@ input, textarea { width:100%; padding:10px; margin-bottom:12px; border-radius:8p
 .delete-btn { background:#ff5722; box-shadow:0 4px 0 #aa2300; }
 .color-box { width:40px; height:40px; border-radius:10px; margin:6px; cursor:pointer; border:2px solid black; display:inline-block; }
 
-@media print { 
-    body * { visibility:hidden } 
-    #popup, #popup * { visibility:visible } 
-    #popup { position:absolute; top:0; left:0; width:100%; } 
-    .btn,.close-btn,.delete-btn,.color-box,input[type="file"],input,h2,textarea { display:none !important; } 
-}
-
 @media(max-width:500px){ 
     input,textarea{font-size:14px;padding:10px} 
     .list-item{font-size:14px;padding:12px} 
@@ -44,18 +37,15 @@ input, textarea { width:100%; padding:10px; margin-bottom:12px; border-radius:8p
 <input id="search" placeholder="Search Name, EPIC, AC No, Part No...">
 <div id="list"></div>
 
+<!-- POPUP -->
 <div id="popup">
     <div class="card" id="cardBox">
-        <h3 id="pName"></h3>
+        <p><b>👤 Name:</b> <input id="pNameInput" type="text"></p>
         <p><b>🆔 EPIC:</b> <span id="pEpic"></span></p>
-        <p><b>🏛 AC No:</b> <span id="pAc"></span></p>
-        <p><b>📍 Part No:</b> <span id="pPart"></span></p>
-
-        <label><b>🏠 Address:</b></label>
-        <textarea id="pAddress" rows="2"></textarea>
-
-        <label><b>🗳 Booth / Voting Address:</b></label>
-        <textarea id="pVoteAddress" rows="2"></textarea>
+        <p><b>🏛 AC No:</b> <input id="pAc" type="number"></p>
+        <p><b>📍 Part No:</b> <input id="pPart" type="number"></p>
+        <p><b>🏠 Address:</b> <input id="pAddress" type="text"></p>
+        <p><b>🗳 Booth:</b> <input id="pVoteAddress" type="text"></p>
 
         <img id="voterImage" src="" alt="" style="display:none;"/>
         <div id="loadingImg" style="display:none;">Uploading...</div>
@@ -74,14 +64,16 @@ input, textarea { width:100%; padding:10px; margin-bottom:12px; border-radius:8p
             <div class="color-box" onclick="setColor('#9fd1ff')" style="background:#9fd1ff"></div>
         </div>
 
-        <button class="btn" onclick="saveEdits()">💾 Save Edits</button>
+        <button class="btn" onclick="saveVoter()">💾 Save</button>
         <button class="btn" onclick="printCard()">🖨 Print</button>
         <button class="btn" onclick="sendWA()">📩 WhatsApp Send</button>
         <button class="btn close-btn" onclick="closePopup()">❌ Close</button>
     </div>
 </div>
 
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase.js"></script>
+<!-- Firebase CDN -->
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
 <script>
 const firebaseConfig = {
@@ -95,8 +87,7 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 
-let voters={}, selected=null, globalSenderNote="";
-let selectedFile = null;
+let voters={}, selected=null, selectedFile=null, globalSenderNote="";
 
 // Load data
 firebase.database().ref("/").once("value").then(snap=>{
@@ -106,6 +97,7 @@ firebase.database().ref("/").once("value").then(snap=>{
     showList(voters);
 });
 
+// Show list
 function showList(data){
     const box = document.getElementById("list");
     box.innerHTML = "";
@@ -121,12 +113,13 @@ function showList(data){
     });
 }
 
+// Open popup
 function openPopup(v){
     selected = v;
-    document.getElementById("pName").innerText = v.Name;
+    document.getElementById("pNameInput").value = v.Name;
     document.getElementById("pEpic").innerText = v.EPIC;
-    document.getElementById("pAc").innerText = v.AcNo;
-    document.getElementById("pPart").innerText = v.PartNo;
+    document.getElementById("pAc").value = v.AcNo;
+    document.getElementById("pPart").value = v.PartNo;
     document.getElementById("pAddress").value = v.Address || "";
     document.getElementById("pVoteAddress").value = v.VotingAddress || "";
     document.getElementById("senderNote").value = v.SenderNote || globalSenderNote || "";
@@ -139,101 +132,101 @@ function openPopup(v){
     document.getElementById("popup").style.display = "flex";
 }
 
+// Close popup
 function closePopup(){ document.getElementById("popup").style.display="none"; }
 
+// File select + preview
+document.getElementById("imageInput").addEventListener("change", e => {
+    selectedFile = e.target.files[0];
+    if(selectedFile){
+        const reader = new FileReader();
+        reader.onload = function(evt){
+            const img = document.getElementById("voterImage");
+            img.src = evt.target.result;
+            img.style.display="block";
+        }
+        reader.readAsDataURL(selectedFile);
+    }
+});
+
+// Upload image
+document.getElementById("uploadBtn").addEventListener("click", () => {
+    if(!selectedFile || !selected) return alert("Select a file first!");
+    document.getElementById("loadingImg").style.display="block";
+    const ref = firebase.storage().ref(`voterImages/${selected.EPIC.replace(/\./g,'_')}`);
+    ref.put(selectedFile).then(()=> ref.getDownloadURL()).then(url=>{
+        document.getElementById("voterImage").src = url;
+        document.getElementById("voterImage").style.display="block";
+        firebase.database().ref(`Voters/${selected.EPIC.replace(/\./g,'_')}`).update({ImageURL:url});
+        selected.ImageURL = url; 
+        selectedFile=null;
+        document.getElementById("loadingImg").style.display="none";
+        alert("Image uploaded successfully!");
+    }).catch(err=>{ 
+        alert("Upload failed: "+err.message); 
+        document.getElementById("loadingImg").style.display="none"; 
+    });
+});
+
+// Delete image
+document.getElementById("deleteBtn").addEventListener("click", ()=>{
+    if(!selected || (!selected.ImageURL && !selectedFile)) return alert("No image to delete!");
+    const ref = firebase.storage().ref(`voterImages/${selected.EPIC.replace(/\./g,'_')}`);
+    ref.delete().then(()=>{
+        document.getElementById("voterImage").style.display="none";
+        firebase.database().ref(`Voters/${selected.EPIC.replace(/\./g,'_')}`).update({ImageURL:""});
+        selected.ImageURL = null;
+        selectedFile = null;
+        alert("Image deleted successfully!");
+    }).catch(err=>alert("Delete failed: "+err.message));
+});
+
+// Save voter info
+function saveVoter(){
+    if(!selected) return;
+    let updates = {
+        Name: document.getElementById("pNameInput").value || selected.Name,
+        AcNo: document.getElementById("pAc").value,
+        PartNo: document.getElementById("pPart").value,
+        Address: document.getElementById("pAddress").value,
+        VotingAddress: document.getElementById("pVoteAddress").value,
+        SenderNote: document.getElementById("senderNote").value
+    };
+    firebase.database().ref(`Voters/${selected.EPIC.replace(/\./g,'_')}`).update(updates);
+    Object.assign(selected, updates);
+    showList(voters);
+    alert("Voter info saved!");
+}
+
+// Set color
 function setColor(c){
     document.getElementById("cardBox").style.background = c;
     if(selected){
-        firebase.database().ref("Voters/"+selected.EPIC.replace(/\./g,'_')).update({Color:c});
+        firebase.database().ref(`Voters/${selected.EPIC.replace(/\./g,'_')}`).update({Color:c});
+        selected.Color = c;
         document.querySelectorAll(".list-item").forEach(item=>{
             if(item.dataset.epic===selected.EPIC){ item.style.background=c; item.style.borderColor=c; }
         });
     }
 }
 
+// Print
 function printCard(){ window.print(); }
 
+// WhatsApp
 function sendWA(){
     if(!selected) return;
     let note = document.getElementById("senderNote").value || "—";
     firebase.database().ref("GlobalSenderNote").set(note);
-    firebase.database().ref("Voters/"+selected.EPIC.replace(/\./g,'_')).update({SenderNote:note});
-    let text = `*Voter Info*%0A%0A👤 ${selected.Name}%0A🆔 EPIC: ${selected.EPIC}%0A🏛 AC: ${selected.AcNo}%0A📍 Part: ${selected.PartNo}%0A🏠 Address: ${document.getElementById("pAddress").value}%0A🗳 Booth: ${document.getElementById("pVoteAddress").value}%0A%0A📝 Message: ${note}`;
+    firebase.database().ref(`Voters/${selected.EPIC.replace(/\./g,'_')}`).update({SenderNote:note});
+    let text = `*Voter Info*%0A%0A👤 ${selected.Name}%0A🆔 EPIC: ${selected.EPIC}%0A🏛 AC: ${selected.AcNo}%0A📍 Part: ${selected.PartNo}%0A🏠 Address: ${selected.Address || "NA"}%0A🗳 Booth: ${selected.VotingAddress || "NA"}%0A%0A📝 Message: ${note}`;
     window.open(`https://wa.me/?text=${text}`);
 }
 
-// Save edits (address / booth / message)
-function saveEdits(){
-    if(!selected) return;
-    const addr = document.getElementById("pAddress").value;
-    const booth = document.getElementById("pVoteAddress").value;
-    const note = document.getElementById("senderNote").value || "";
-    firebase.database().ref("Voters/"+selected.EPIC.replace(/\./g,'_')).update({
-        Address: addr,
-        VotingAddress: booth,
-        SenderNote: note
-    });
-    selected.Address = addr;
-    selected.VotingAddress = booth;
-    selected.SenderNote = note;
-    showList(voters);
-    alert("Edits saved!");
-}
-
-// File select
-document.getElementById("imageInput").addEventListener("change", e => { selectedFile = e.target.files[0]; });
-
-// Upload
-document.getElementById("uploadBtn").addEventListener("click", () => {
-    if(!selectedFile || !selected) return alert("Select a file first!");
-    const loading = document.getElementById("loadingImg");
-    loading.style.display="block";
-    loading.innerText = "Uploading... 0%";
-
-    const refPath = `voterImages/${selected.EPIC.replace(/\./g,'_')}`;
-    const storageRef = firebase.storage().ref(refPath);
-    const uploadTask = storageRef.put(selectedFile);
-
-    uploadTask.on('state_changed',
-        snapshot => {
-            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-            loading.innerText = `Uploading... ${Math.round(progress)}%`;
-        },
-        error => {
-            loading.style.display = "none";
-            alert("Upload failed: " + error.message);
-        },
-        () => {
-            uploadTask.snapshot.ref.getDownloadURL().then(url => {
-                document.getElementById("voterImage").src = url;
-                document.getElementById("voterImage").style.display="block";
-                firebase.database().ref("Voters/"+selected.EPIC.replace(/\./g,'_')).update({ImageURL:url});
-                selected.ImageURL = url;
-                selectedFile = null;
-                loading.style.display = "none";
-                alert("Image uploaded successfully!");
-            });
-        }
-    );
-});
-
-// Delete
-document.getElementById("deleteBtn").addEventListener("click", () => {
-    if(!selected || !selected.ImageURL) return alert("No image to delete!");
-    const storageRef = firebase.storage().ref(`voterImages/${selected.EPIC.replace(/\./g,'_')}`);
-    storageRef.delete().then(()=>{
-        document.getElementById("voterImage").src = "";
-        document.getElementById("voterImage").style.display="none";
-        firebase.database().ref("Voters/"+selected.EPIC.replace(/\./g,'_')).update({ImageURL:""});
-        selected.ImageURL = null;
-        alert("Image deleted successfully!");
-    }).catch(err=>alert("Delete failed: "+err.message));
-});
-
 // Search
 document.getElementById("search").addEventListener("input", e=>{
-    let t=e.target.value.toLowerCase();
-    let f=Object.values(voters).filter(v=>v.Name.toLowerCase().includes(t) || v.EPIC.toLowerCase().includes(t) || String(v.AcNo).includes(t) || String(v.PartNo).includes(t) || (v.Address||"").toLowerCase().includes(t) || (v.VotingAddress||"").toLowerCase().includes(t));
+    let t = e.target.value.toLowerCase();
+    let f = Object.values(voters).filter(v=>v.Name.toLowerCase().includes(t) || v.EPIC.toLowerCase().includes(t) || String(v.AcNo).includes(t) || String(v.PartNo).includes(t) || (v.Address||"").toLowerCase().includes(t) || (v.VotingAddress||"").toLowerCase().includes(t));
     showList(f);
 });
 </script>
