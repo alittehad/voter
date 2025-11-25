@@ -5,23 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Responsive Slider with Firebase Google Login</title>
 
-<!-- PWA Required -->
 <link rel="manifest" href="manifest.json" />
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <meta name="theme-color" content="#ffeb3b">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-
-<!-- Service Worker -->
-<script>
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", function() {
-    navigator.serviceWorker.register("./sw.js")
-      .then(() => console.log("Service Worker Registered"))
-      .catch(err => console.log("SW Failed:", err));
-  });
-}
-</script>
 
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -37,8 +23,8 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;   /* CHANGE */
-  padding: 10px;
+  justify-content: flex-start; /* Center adjust manually */
+  padding-top: 20px;   /* NEW: Content नीचे balance */
 }
 
 /* SLIDER */
@@ -47,7 +33,8 @@ body {
   max-width: 1000px;
   height: 45vh;
   overflow: hidden;
-  margin-top: 5px;  /* SMALLER */
+
+  margin-top: 30px !important; /* NEW: Image नीचे आया */
 }
 
 .slides {
@@ -65,60 +52,69 @@ body {
   border-radius: 8px;
 }
 
-/* TEXT (gap reduced) */
+/* TEXT FIXED */
 .ward-text {
-  font-size: 34px;
+  font-size: 36px;
   font-weight: bold;
   color: #ff5722;
-  text-shadow: 4px 4px 8px #aaa, -4px -4px 8px #fff;
+  margin-top: 20px !important;   /* NEW: Image & Text Gap */
   text-align: center;
-  margin-top: 8px;     /* SMALLER GAP */
 }
 
 .candidate-text {
-  font-size: 22px;
+  font-size: 24px;
   font-weight: bold;
-  color: #795548;
-  text-shadow: 2px 2px 5px #aaa, -2px -2px 5px #fff;
+  margin-top: 8px !important;   /* NEW: WARD and Name gap correct */
   text-align: center;
-  margin-top: 3px;     /* VERY SMALL GAP */
+  color: #795548;
 }
 
 /* BUTTONS */
 .google-btn, .install-btn {
-  padding: 12px 28px;
-  font-size: 17px;
+  padding: 14px 30px;
+  font-size: 18px;
   font-weight: bold;
   color: white;
   border: none;
   border-radius: 12px;
   cursor: pointer;
+  margin-top: 15px;
   box-shadow: 4px 4px 15px #aaa, -4px -4px 15px #fff;
 }
 
 .google-btn {
   background: linear-gradient(145deg, #4285F4, #34A853, #FBBC05, #EA4335);
-  margin-top: 12px;     /* LOGIN BUTTON UP */
 }
 
 .install-btn {
   background: linear-gradient(145deg, #FF6B6B, #FFD93D, #6BCB77, #4D96FF);
-  margin-top: 6px;       /* GAP FIX */
-  margin-bottom: 0;      /* EXTRA GAP REMOVED */
 }
 
-/* PC FIX */
+/* PC FIXES */
 @media (min-width: 768px) {
-  .slider { height: 60vh; }
 
-  .slides img { object-fit: contain !important; }
+  .slider {
+    height: 60vh;
+    margin-top: 50px !important; /* PC पर image perfect center height */
+  }
 
-  body { padding: 18px; }
+  .slides img {
+    object-fit: contain !important;
+  }
 
-  .ward-text { font-size: 40px; margin-top: 10px; }
-  .candidate-text { font-size: 26px; margin-top: 4px; }
+  .ward-text {
+    font-size: 42px;
+    margin-top: 30px !important;
+  }
 
-  .google-btn { margin-top: 14px; }
+  .candidate-text {
+    font-size: 28px;
+    margin-top: 10px !important;
+  }
+
+  body {
+    padding-top: 40px; /* PC में सुंदर center spacing */
+  }
 }
 </style>
 </head>
@@ -143,7 +139,6 @@ body {
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 
 <script>
-// Firebase
 firebase.initializeApp({
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
   authDomain: "voter-25c94.firebaseapp.com",
@@ -161,14 +156,12 @@ document.getElementById('google-login').onclick = () => {
   .then(() => window.location.href = "login-page.html");
 };
 
-// Slider Auto Move
 let index = 0;
 setInterval(() => {
   index = (index + 1) % 3;
   document.querySelector('.slides').style.transform = `translateX(-${index * 100}%)`;
 }, 3000);
 
-// Install App Button
 let installPrompt;
 const install_btn = document.getElementById("install-btn");
 
