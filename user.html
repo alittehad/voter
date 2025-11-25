@@ -60,7 +60,7 @@ input, textarea {
 @media print{
     body *{ visibility:hidden; }
     #popup, #popup *{ visibility:visible; }
-    .btn, input, textarea, .color-box{ display:none !important; }
+    #voterImage, .btn, input, textarea { display:none !important; }
 }
 </style>
 </head>
@@ -81,8 +81,12 @@ input, textarea {
         <p><b>🆔 EPIC:</b> <span id="pEpic"></span></p>
         <p><b>🏛 AC No:</b> <span id="pAc"></span></p>
         <p><b>📍 Part No:</b> <span id="pPart"></span></p>
-        <p><b>🏠 Address:</b> <span id="pAddress"></span></p>
-        <p><b>🗳 Booth:</b> <span id="pVoteAddress"></span></p>
+
+        <label><b>🏠 Voter Address:</b></label>
+        <input id="editAddress">
+
+        <label><b>🗳 Voting / Booth Address:</b></label>
+        <input id="editBooth">
 
         <img id="voterImage" style="display:none;"/>
 
@@ -92,6 +96,7 @@ input, textarea {
         <label><b>Sender Message:</b></label>
         <textarea id="senderNote" placeholder="Your message..." rows="4"></textarea>
 
+        <button class="btn" onclick="saveData()">💾 Save</button>
         <button class="btn" onclick="printCard()">🖨 Print</button>
         <button class="btn" onclick="sendWA()">📩 WhatsApp</button>
         <button class="btn close-btn" onclick="closePopup()">❌ Close</button>
@@ -101,7 +106,6 @@ input, textarea {
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase.js"></script>
 <script>
 
-// Firebase config
 firebase.initializeApp({
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
   authDomain: "voter-25c94.firebaseapp.com",
@@ -110,45 +114,40 @@ firebase.initializeApp({
   storageBucket: "voter-25c94.appspot.com"
 });
 
-let voters={},selected=null,globalSenderNote="";
+let voters={},selected=null;
 
-firebase.database().ref("/").once("value").then(snap=>{
-    globalSenderNote=snap.val().GlobalSenderNote || "";
-    voters=snap.val().Voters || {};
+firebase.database().ref("/Voters").once("value").then(snap=>{
+    voters=snap.val() || {};
     showList(voters);
 });
 
-// Show list
 function showList(data){
     let box=document.getElementById("list");
     box.innerHTML="";
     Object.values(data).forEach(v=>{
         let div=document.createElement("div");
         div.className="list-item";
-        div.dataset.epic=v.EPIC;
         div.innerHTML=`<b>${v.Name}</b><br>🆔 ${v.EPIC} | 🏛 AC:${v.AcNo} | 📍 Part:${v.PartNo}`;
         div.onclick=()=>openPopup(v);
         box.appendChild(div);
     });
 }
 
-// Open popup
 function openPopup(v){
     selected=v;
-    document.getElementById("voterImage").style.display = "none";
 
     document.getElementById("pName").innerText=v.Name;
     document.getElementById("pEpic").innerText=v.EPIC;
     document.getElementById("pAc").innerText=v.AcNo;
     document.getElementById("pPart").innerText=v.PartNo;
-    document.getElementById("pAddress").innerText=v.Address;
-    document.getElementById("pVoteAddress").innerText=v.VotingAddress;
-    document.getElementById("senderNote").value=v.SenderNote || globalSenderNote;
+
+    document.getElementById("editAddress").value=v.Address || "";
+    document.getElementById("editBooth").value=v.VotingAddress || "";
+    document.getElementById("senderNote").value=v.SenderNote || "";
 
     if(v.ImageURL){
-        let img=document.getElementById("voterImage");
-        img.src=v.ImageURL;
-        img.style.display="block";
+        document.getElementById("voterImage").src=v.ImageURL;
+        document.getElementById("voterImage").style.display="block";
     }
 
     document.getElementById("popup").style.display="flex";
@@ -158,52 +157,44 @@ function closePopup(){
     document.getElementById("popup").style.display="none";
 }
 
-// Upload Image
-document.getElementById("imageInput").addEventListener("change",e=>{
-    const file=e.target.files[0];
-    if(!file||!selected)return;
+// Save Edited Details
+function saveData(){
+    let updated={
+        Address:document.getElementById("editAddress").value,
+        VotingAddress:document.getElementById("editBooth").value,
+        SenderNote:document.getElementById("senderNote").value
+    };
 
-    const ref=firebase.storage().ref("Images/"+selected.EPIC);
-    ref.put(file).then(()=>{
-        ref.getDownloadURL().then(url=>{
-            firebase.database().ref("Voters/"+selected.EPIC).update({ImageURL:url});
-            document.getElementById("voterImage").src=url;
-            document.getElementById("voterImage").style.display="block";
-        });
-    });
-});
-
-// 🔹 PRINT with loading
-function printCard(){
-    let box=document.getElementById("printLoading");
-    box.style.display="block";
-
-    setTimeout(()=>{
-        box.style.display="none";
-        window.print();
-    },2000);
+    firebase.database().ref("Voters/"+selected.EPIC).update(updated);
+    alert("✔ Updated Successfully!");
 }
 
-// 🔹 WhatsApp (WITHOUT IMAGE)
+// PRINT without image
+function printCard(){
+    document.getElementById("printLoading").style.display="block";
+    setTimeout(()=>{
+        document.getElementById("printLoading").style.display="none";
+        window.print();
+    },1000);
+}
+
+// WHATSAPP TEXT ONLY
 function sendWA(){
     let note=document.getElementById("senderNote").value;
-    firebase.database().ref("Voters/"+selected.EPIC).update({SenderNote:note});
+    let addr=document.getElementById("editAddress").value;
+    let booth=document.getElementById("editBooth").value;
 
-    let msg=`*Voter Information*%0A%0A👤 ${selected.Name}%0A🆔 EPIC: ${selected.EPIC}%0A🏛 AC: ${selected.AcNo}%0A📍 Part: ${selected.PartNo}%0A🏠 Address: ${selected.Address}%0A🗳 Booth: ${selected.VotingAddress}%0A%0A📝 Message: ${note}`;
+    let msg=`*Voter Information*%0A%0A👤 ${selected.Name}%0A🆔 ${selected.EPIC}%0A🏛 AC: ${selected.AcNo}%0A📍 Part: ${selected.PartNo}%0A🏠 Address: ${addr}%0A🗳 Booth: ${booth}%0A%0A📝 ${note}`;
 
     window.open(`https://wa.me/?text=${msg}`);
 }
 
-// Search box
+// Search
 document.getElementById("search").addEventListener("input",e=>{
     let t=e.target.value.toLowerCase();
-    let f=Object.values(voters).filter(v=>
-        v.Name.toLowerCase().includes(t) ||
-        v.EPIC.toLowerCase().includes(t)
-    );
+    let f=Object.values(voters).filter(v=>v.Name.toLowerCase().includes(t) || v.EPIC.toLowerCase().includes(t));
     showList(f);
 });
-
 </script>
 </body>
 </html>
