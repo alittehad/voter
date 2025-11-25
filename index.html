@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PWA Slider Login App</title>
+<title>Ward Election App</title>
 
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#ffeb3b">
@@ -17,95 +17,125 @@ body{
   display:flex;
   flex-direction:column;
   align-items:center;
-  justify-content:flex-start;
   height:100vh;
   overflow:hidden;
-  padding-top:10px;
 }
 
-/* ----------- Slider ------------ */
+/* ---------- Flip Slider ---------- */
+
 .slider{
   width:100%;
   max-width:650px;
-  overflow:hidden;
-  border-radius:18px;
-  margin-top:12px;
+  height:260px;
+  position:relative;
+  margin-top:15px;
+  perspective:1000px;
 }
 
-.slides{
+.slide-item{
+  width:100%;
+  height:100%;
+  position:absolute;
+  backface-visibility:hidden;
+  border-radius:20px;
   display:flex;
-  transition:0.6s;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+  background:white;
+  box-shadow:0 10px 25px rgba(0,0,0,0.2);
+  transition:transform 0.8s ease-in-out;
 }
 
-.slides img{
-  width:100vw;
-  max-width:650px;
-  height:240px;
-  object-fit:cover;
-  border-radius:18px;
+.slide-item img{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  border-radius:20px;
 }
 
-/* -------- Text ---------- */
+/* Flip states */
+.flip-out{
+  transform:rotateY(180deg);
+}
+
+.flip-in{
+  transform:rotateY(0deg);
+}
+
+/* ---------- Text ---------- */
+
 .ward-text{
-  margin-top:10px;
   font-size:6vw;
   font-weight:bold;
-  color:#d9534f;
-  text-shadow:3px 3px 10px #fff;
+  margin-top:10px;
   text-align:center;
+  color:#c62828;
+  text-shadow:3px 3px 10px #fff;
 }
 
 .candidate-text{
-  font-size:4.5vw;
+  font-size:4.8vw;
   font-weight:bold;
-  color:#795548;
-  text-shadow:2px 2px 6px white;
+  color:#5d4037;
   text-align:center;
-  margin-bottom:20px;
+  text-shadow:2px 2px 6px white;
+  margin-bottom:15px;
 }
 
-/* -------- Buttons 3D Shadow ---------- */
+/* ---------- 3D Buttons ---------- */
+
 .btn{
   width:85%;
   max-width:330px;
-  padding:14px;
-  margin:10px auto;
+  padding:16px;
+  margin:12px auto;
   font-size:20px;
   font-weight:bold;
-  border-radius:15px;
+  border-radius:18px;
   cursor:pointer;
   border:none;
-  background:#f1f1f1;
-  box-shadow:8px 8px 20px #b8b8b8, -8px -8px 20px #ffffff;
   transition:0.2s;
+  background:#ffeb3b;
+  box-shadow:
+     8px 8px 20px #c0b428,
+    -8px -8px 20px #fff685;
 }
 
 .btn:active{
-  box-shadow:inset 6px 6px 15px #b8b8b8, inset -6px -6px 15px #ffffff;
+  box-shadow:
+     inset 6px 6px 15px #c0b428,
+     inset -6px -6px 15px #fff685;
 }
 
-/* Multicolor Google Style */
 .google-btn{
-  background: linear-gradient(145deg, #4285F4, #34A853, #FBBC05, #EA4335);
+  background:linear-gradient(145deg,#4285F4,#34A853,#FBBC05,#EA4335);
   color:white;
+  box-shadow:
+     8px 8px 20px rgba(0,0,0,0.3),
+    -8px -8px 20px rgba(255,255,255,0.7);
 }
 
-/* Install Button */
+.google-btn:active{
+  box-shadow:
+     inset 6px 6px 15px rgba(0,0,0,0.35),
+     inset -6px -6px 15px rgba(255,255,255,0.7);
+}
+
 .install-btn{
-  background: linear-gradient(145deg, #FF6B6B, #FFD93D, #6BCB77, #4D96FF);
-  color:white;
+ background:linear-gradient(145deg,#FF6B6B,#FFD93D,#6BCB77,#4D96FF);
+ color:white;
 }
 </style>
 </head>
 
 <body>
 
+<!-- Flip Slider -->
 <div class="slider">
-  <div class="slides">
-    <img src="https://i.ibb.co/NgFTprmS/images-1.jpg">
-    <img src="https://i.ibb.co/zHnxn3Lf/images.jpg">
-    <img src="https://i.ibb.co/7wHNN9B/Whats-App-Image-2025-11-24-at-11-56-26-3fbcdaac.jpg">
-  </div>
+  <div class="slide-item flip-in"><img src="https://i.ibb.co/NgFTprmS/images-1.jpg"></div>
+  <div class="slide-item flip-out"><img src="https://i.ibb.co/zHnxn3Lf/images.jpg"></div>
+  <div class="slide-item flip-out"><img src="https://i.ibb.co/7wHNN9B/Whats-App-Image-2025-11-24-at-11-56-26-3fbcdaac.jpg"></div>
 </div>
 
 <div class="ward-text">Ward No. 8</div>
@@ -120,6 +150,7 @@ body{
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 
 <script>
+// Firebase Setup
 firebase.initializeApp({
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
   authDomain: "voter-25c94.firebaseapp.com",
@@ -129,24 +160,27 @@ firebase.initializeApp({
   appId: "1:297773534400:web:3722c487b8c83e9b787125"
 });
 
-const auth=firebase.auth();
+const auth = firebase.auth();
 auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 
-document.getElementById('google-login').onclick=()=>{
+document.getElementById('google-login').onclick = () => {
   auth.signInWithPopup(new firebase.auth.GoogleAuthProvider())
   .then(()=>location.href="login-page.html");
 };
 
-/* Slider Auto Move */
-let index=0;
-setInterval(()=>{
-  index=(index+1)%3;
-  document.querySelector(".slides").style.transform=`translateX(-${index*100}vw)`;
-},3000);
+// Flip Slider Logic
+let current = 0;
+const slides = document.querySelectorAll(".slide-item");
 
-/* Install Button */
+setInterval(() => {
+  slides[current].classList.replace("flip-in","flip-out");
+  current = (current + 1) % slides.length;
+  slides[current].classList.replace("flip-out","flip-in");
+}, 3000);
+
+// Install App
 let installPrompt;
-const installBtn=document.getElementById("install-btn");
+const installBtn = document.getElementById("install-btn");
 
 window.addEventListener("beforeinstallprompt",(e)=>{
   e.preventDefault();
