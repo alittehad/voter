@@ -24,24 +24,64 @@ if ("serviceWorker" in navigator) {
 </script>
 
 <style>
-/* आपका पूरा CSS वही रखा है */
 * { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  overflow: hidden; /* Scroll हट गया */
+}
+
 body {
   font-family: Arial, sans-serif;
   background: #ffeb3b;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
-  min-height: 100vh;
-  padding: 20px;
+  justify-content: space-between; /* Perfect spacing */
+  padding: 10px;
 }
-.slider { width: 90%; max-width: 1000px; margin-top: 50px; overflow: hidden; }
-.slides { display: flex; transition: transform 0.5s ease-in-out; }
-.slides img { width: 100%; height: auto; object-fit: contain; flex-shrink: 0; border-radius: 8px; }
-.ward-text { margin-top: 15px; font-size: 48px; font-weight: bold; color: #ff5722; text-shadow: 4px 4px 8px #aaa, -4px -4px 8px #fff; text-align: center; }
-.candidate-text { font-size: 28px; font-weight: bold; color: #795548; text-shadow: 2px 2px 5px #aaa, -2px -2px 5px #fff; text-align: center; margin-bottom: 20px; }
 
+/* Slider */
+.slider {
+  width: 100%;
+  max-width: 1000px;
+  height: 45vh;      /* screen का 45% हिस्सा */
+  overflow: hidden;
+  margin-top: 10px;
+}
+
+.slides {
+  display: flex;
+  height: 100%;
+  transition: transform 0.5s ease-in-out;
+}
+
+.slides img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* image auto crop होकर fit होगी */
+  flex-shrink: 0;
+  border-radius: 8px;
+}
+
+/* Text Section */
+.ward-text {
+  font-size: 36px;
+  font-weight: bold;
+  color: #ff5722;
+  text-shadow: 4px 4px 8px #aaa, -4px -4px 8px #fff;
+  text-align: center;
+}
+
+.candidate-text {
+  font-size: 24px;
+  font-weight: bold;
+  color: #795548;
+  text-shadow: 2px 2px 5px #aaa, -2px -2px 5px #fff;
+  text-align: center;
+}
+
+/* Buttons */
 .google-btn, .install-btn {
   padding: 14px 30px;
   font-size: 18px;
@@ -51,15 +91,22 @@ body {
   border-radius: 12px;
   cursor: pointer;
   box-shadow: 4px 4px 15px #aaa, -4px -4px 15px #fff;
-  margin-top: 15px;
+  margin-bottom: 10px;
 }
-.google-btn { background: linear-gradient(145deg, #4285F4, #34A853, #FBBC05, #EA4335); }
-.install-btn { background: linear-gradient(145deg, #FF6B6B, #FFD93D, #6BCB77, #4D96FF); }
+
+.google-btn {
+  background: linear-gradient(145deg, #4285F4, #34A853, #FBBC05, #EA4335);
+}
+
+.install-btn {
+  background: linear-gradient(145deg, #FF6B6B, #FFD93D, #6BCB77, #4D96FF);
+}
 </style>
 </head>
 
 <body>
 
+<!-- SLIDER -->
 <div class="slider">
   <div class="slides">
     <img src="https://i.ibb.co/NgFTprmS/images-1.jpg" alt="Image 1">
@@ -96,7 +143,7 @@ document.getElementById('google-login').onclick = () => {
   .then(() => window.location.href = "login-page.html");
 };
 
-// Slider
+// Slider Auto Move
 let index = 0;
 setInterval(() => {
   index = (index + 1) % 3;
