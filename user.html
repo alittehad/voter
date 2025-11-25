@@ -19,14 +19,14 @@ input, textarea { width:100%; padding:10px; margin-bottom:12px; border-radius:8p
 .btn { padding:12px; width:100%; margin-top:10px; background:#008cff; color:white; border:none; cursor:pointer; font-size:16px; border-radius:10px; box-shadow:0 4px 0 #003f7f; }
 .btn:active { transform:translateY(4px); box-shadow:0 1px 0 #003f7f; }
 .close-btn { background:red; box-shadow:0 4px 0 #7a0000; }
-.color-box { width:40px; height:40px; border-radius:10px; margin:6px; cursor:pointer; border:2px solid black; display:inline-block; }
+.delete-btn { background:#ba000d; box-shadow:0 4px 0 #5a0000; }
 
 /* PRINT MODE FIX */
 @media print { 
     body * { visibility:hidden } 
     #popup, #popup * { visibility:visible } 
     #popup { position:absolute; top:0; left:0; width:100%; } 
-    .btn,.close-btn,.color-box,input[type="file"],input,h2,textarea { display:none !important; } 
+    .btn,.close-btn,.delete-btn,.color-box,input[type="file"],input,h2,textarea { display:none !important; } 
 }
 
 /* Mobile tweaks */
@@ -60,6 +60,9 @@ input, textarea { width:100%; padding:10px; margin-bottom:12px; border-radius:8p
 
         <label><b>Upload Image:</b></label>
         <input type="file" id="imageInput" accept="image/*">
+
+        <!-- 🟥 DELETE BUTTON ADDED HERE -->
+        <button class="btn delete-btn" onclick="deleteImage()">🗑 Delete Image</button>
 
         <label><b>Sender Message:</b></label>
         <textarea id="senderNote" placeholder="Your note..." rows="4"></textarea>
@@ -178,6 +181,32 @@ document.getElementById("imageInput").addEventListener("change", e=>{
         });
     });
 });
+
+// 🟥 DELETE IMAGE FUNCTION
+function deleteImage(){
+    if(!selected || !selected.EPIC) return;
+
+    if(!confirm("क्या आप सच में यह फोटो हटाना चाहते हैं?")) return;
+
+    const storageRef = firebase.storage().ref(`voterImages/${selected.EPIC}`);
+
+    storageRef.delete()
+    .then(()=>{
+        firebase.database().ref("Voters/"+selected.EPIC).update({ImageURL: null});
+
+        document.getElementById("voterImage").src="";
+        document.getElementById("voterImage").style.display="none";
+
+        alert("फोटो सफलतापूर्वक हटा दी गई!");
+    })
+    .catch(error=>{
+        if(error.code==="storage/object-not-found"){
+            alert("फोटो पहले से मौजूद नहीं है।");
+        } else {
+            alert("Error deleting image: "+error.message);
+        }
+    });
+}
 
 // Search
 document.getElementById("search").addEventListener("input", e=>{
