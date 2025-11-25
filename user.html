@@ -3,17 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <title>Voter Card Panel</title>
-<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-database.js"></script>
+
+<!-- Firebase v8 (FULL SUPPORT – Database + Storage) -->
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
 
 <style>
 body { font-family: Arial; padding: 20px; background: #eef2ff; }
 .card { width: 350px; background: white; padding: 20px; border-radius: 10px;
         margin: auto; box-shadow: 0 0 10px #999; }
 #photoPreview { width: 100%; height: 250px; object-fit: cover; border-radius: 10px; background:#ddd; }
-.label { font-size: 14px; color: #444; margin-top: 10px; }
+.label { font-size: 14px; color: #444; margin-top: 10px; display:block; }
 input, textarea, button { width: 100%; padding: 8px; margin-top: 5px; border-radius: 6px; border:1px solid #aaa; }
-button { background:#2563eb; color:white; border:none; margin-top:10px; }
+button { background:#2563eb; color:white; border:none; margin-top:10px; cursor:pointer; }
 </style>
 </head>
 <body>
@@ -22,14 +25,14 @@ button { background:#2563eb; color:white; border:none; margin-top:10px; }
 
 <div class="card">
 
-    <!-- Photo Preview -->
+    <!-- Photo -->
     <img id="photoPreview" src="" alt="Voter Photo">
 
     <label class="label">Upload Photo</label>
     <input type="file" id="photoInput">
 
     <label class="label">EPIC Number</label>
-    <input id="epicInput" placeholder="EPIC डालें (जैसे ABC1234567)">
+    <input id="epicInput" placeholder="ABC1234567">
 
     <label class="label">Name</label>
     <input id="nameInput">
@@ -51,6 +54,7 @@ button { background:#2563eb; color:white; border:none; margin-top:10px; }
 
 <script>
 // ========== Firebase Setup ==========
+
 const firebaseConfig = {
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
   authDomain: "voter-25c94.firebaseapp.com",
@@ -63,22 +67,42 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
+const storage = firebase.storage();
+
+let uploadedImageURL = "";  // Store uploaded photo URL
 
 
-/* -------------------- PHOTO PREVIEW (WORKING) -------------------- */
+/* -------------------- PHOTO PREVIEW + FIREBASE STORAGE UPLOAD -------------------- */
 document.getElementById("photoInput").addEventListener("change", function (e) {
     let file = e.target.files[0];
-    if (file) {
-        let reader = new FileReader();
-        reader.onload = function (event) {
-            document.getElementById("photoPreview").src = event.target.result;  // Show photo
-        };
-        reader.readAsDataURL(file);
+    if (!file) return;
+
+    // Preview
+    let reader = new FileReader();
+    reader.onload = function (event) {
+        document.getElementById("photoPreview").src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+
+    // Upload to Firebase Storage
+    let epic = document.getElementById("epicInput").value.trim();
+
+    if (epic === "") {
+        alert("EPIC number डालो पहले!");
+        return;
     }
+
+    let storageRef = storage.ref("voterPhotos/" + epic + ".jpg");
+    storageRef.put(file).then(() => {
+        storageRef.getDownloadURL().then(url => {
+            uploadedImageURL = url;  // store
+            db.ref("Voters/" + epic).update({ ImageURL: url });
+        });
+    });
 });
 
 
-/* -------------------- SAVE DATA TO FIREBASE -------------------- */
+/* -------------------- SAVE DATA -------------------- */
 function saveData() {
     let epic = document.getElementById("epicInput").value.trim();
 
@@ -92,20 +116,21 @@ function saveData() {
         Name: document.getElementById("nameInput").value,
         Address: document.getElementById("addressInput").value,
         Booth: document.getElementById("boothInput").value,
-        VotingAddress: document.getElementById("votingAddressInput").value
+        VotingAddress: document.getElementById("votingAddressInput").value,
+        ImageURL: uploadedImageURL || ""
     };
 
     db.ref("Voters/" + epic).update(data);
 
-    alert("Updated Successfully!");
+    alert("Saved Successfully!");
 }
 
 
 /* -------------------- PRINT CARD -------------------- */
 function printCard() {
-    let printContent = document.querySelector(".card").innerHTML;
+    let content = document.querySelector(".card").innerHTML;
     let win = window.open("", "", "width=400,height=600");
-    win.document.write("<html><body>" + printContent + "</body></html>");
+    win.document.write("<html><body>" + content + "</body></html>");
     win.document.close();
     win.print();
 }
@@ -120,6 +145,7 @@ function sendWhatsapp() {
         "\nBooth: " + document.getElementById("boothInput").value +
         "\nVoting Address: " + document.getElementById("votingAddressInput").value;
 
+    // ❗ PHOTO भेजने की जरूरत नहीं (आपने कहा था send ना हो)
     let url = "https://wa.me/?text=" + encodeURIComponent(msg);
     window.open(url, "_blank");
 }
