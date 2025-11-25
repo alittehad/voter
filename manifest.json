@@ -1,7 +1,22 @@
-self.addEventListener("install", () => {
-  console.log("Service Worker Installed");
-});
-
-self.addEventListener("activate", () => {
-  console.log("Service Worker Active");
-});
+{
+  "name": "Voter App 2025",
+  "short_name": "VoterApp",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "theme_color": "#ffeb3b",
+  "background_color": "#ffeb3b",
+  "description": "Ward No. 8 - Candidate Sachin Desai App",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
