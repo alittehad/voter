@@ -1,58 +1,154 @@
-
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Voter Manager</title>
-<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+<title>Voter Search</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js"></script>
+
+<style>
+body{font-family:Arial;margin:20px}
+.container{max-width:420px;border:1px solid #ccc;padding:20px;border-radius:12px}
+label{font-weight:bold;margin-top:10px;display:block}
+input,textarea{width:100%;padding:10px;margin-top:5px;border-radius:8px;border:1px solid #777}
+
+button{padding:12px;margin-top:10px;width:100%;border:none;border-radius:8px;font-size:17px;cursor:pointer}
+.save{background:#28a745;color:white}
+.print{background:#007bff;color:white}
+.whatsapp{background:#25d366;color:white}
+
+/* Image preview */
+#previewBox{
+    width:100%;display:flex;justify-content:center;margin-top:10px;
+}
+#previewImg{
+    width:150px;height:180px;object-fit:cover;border-radius:10px;border:2px solid #444;
+}
+
+/* HIDE IMAGE IN PRINT */
+@media print {
+    #previewBox, #previewImg { display:none !important; }
+}
+</style>
 </head>
+<body>
 
-<body class="bg-gray-100 p-6">
+<div class="container">
+<h2>🗳 Voter Information</h2>
 
-<div class="max-w-xl mx-auto bg-white shadow-md p-6 rounded-lg">
-<h2 class="text-xl font-bold mb-4 text-center">🗳 Voter Manager</h2>
+<label>EPIC Number:</label>
+<input type="text" id="epic">
 
-<!-- Search Bar -->
-<div class="bg-gray-50 p-4 rounded-lg shadow mb-4">
-<label class="font-semibold">🔍 EPIC Number</label>
-<input id="epicSearch" class="w-full p-2 border rounded mt-2" placeholder="Enter EPIC Number...">
-<button id="loadBtn" class="bg-blue-600 text-white w-full py-2 rounded mt-3">Load Details</button>
-</div>
+<button onclick="loadDetails()">📌 Load Details</button>
 
-<!-- Form -->
-<div id="formArea" class="mt-4">
+<div id="info" style="display:none;">
 
-<label>Name</label>
-<input id="name" class="w-full p-2 border rounded mb-2">
+<div id="previewBox"><img id="previewImg" style="display:none;"></div>
 
-<label>AC No</label>
-<input id="acNo" class="w-full p-2 border rounded mb-2">
+<label>👤 Name:</label>
+<input id="name">
 
-<label>Part No</label>
-<input id="partNo" class="w-full p-2 border rounded mb-2">
+<label>🏠 Voter Address:</label>
+<input id="address">
 
-<label>Address</label>
-<input id="address" class="w-full p-2 border rounded mb-2">
+<label>📍 Voting Booth Address:</label>
+<input id="booth">
 
-<label>Booth</label>
-<input id="booth" class="w-full p-2 border rounded mb-2">
+<label>🖼 Select Photo (Only Preview):</label>
+<input type="file" id="fileInput" accept="image/*">
 
-<label>Sender Note</label>
-<textarea id="note" class="w-full p-2 border rounded mb-2" placeholder="Message..."></textarea>
-
-<!-- IMAGE -->
-<label class="font-semibold">📷 Voter Image</label>
-<input type="file" id="uploadImage" class="block mb-2">
-
-<img id="preview" class="hidden w-32 border rounded mb-2">
-<button id="deleteImg" class="hidden bg-red-500 text-white w-full py-2 rounded mb-2">🗑 Delete Image</button>
-
-<button id="saveBtn" class="bg-green-600 text-white w-full py-2 rounded mb-2">💾 Save</button>
-<button id="printBtn" class="bg-gray-600 text-white w-full py-2 rounded mb-2">🖨 Print</button>
-<button id="whatsappSend" class="bg-green-500 text-white w-full py-2 rounded">📩 Send to WhatsApp</button>
-
+<button class="save" onclick="save()">💾 Save</button>
+<button class="print" onclick="printDetails()">🖨 Print</button>
+<button class="whatsapp" onclick="sendWhatsApp()">📩 WhatsApp Send</button>
 </div>
 </div>
+
+
+<script>
+// ---------- Firebase ----------
+const firebaseConfig = {
+  apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
+  authDomain: "voter-25c94.firebaseapp.com",
+  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com/"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+
+let loadedImage = ""; // preview only - no upload
+
+
+// ---------- LOAD DETAILS ----------
+function loadDetails(){
+  let epic = document.getElementById("epic").value.trim();
+  if(!epic) return alert("Enter EPIC number!");
+
+  db.ref("voters/"+epic).once("value").then(snap=>{
+    if(!snap.exists()) return alert("Voter not found!");
+
+    let data = snap.val();
+
+    document.getElementById("name").value = data.name || "";
+    document.getElementById("address").value = data.address || "";
+    document.getElementById("booth").value = data.booth || "";
+
+    document.getElementById("previewImg").style.display="none";
+    loadedImage = "";
+
+    document.getElementById("info").style.display="block";
+  });
+}
+
+
+// ---------- ONLY PREVIEW IMAGE ----------
+document.getElementById("fileInput").addEventListener("change", function(){
+  const file = this.files[0];
+  if(!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e){
+     loadedImage = e.target.result;
+     document.getElementById("previewImg").src = loadedImage;
+     document.getElementById("previewImg").style.display="block";
+  }
+  reader.readAsDataURL(file);
+});
+
+
+// ---------- SAVE ----------
+function save(){
+  let epic = document.getElementById("epic").value.trim();
+
+  db.ref("voters/"+epic).update({
+    name: document.getElementById("name").value,
+    address: document.getElementById("address").value,
+    booth: document.getElementById("booth").value
+  });
+
+  alert("Updated Successfully!");
+}
+
+
+
+// ---------- PRINT (IMAGE HIDDEN) ----------
+function printDetails(){
+  window.print();
+}
+
+
+
+// ---------- WHATSAPP (NO IMAGE) ----------
+function sendWhatsApp(){
+  let msg = `👤 Name: ${document.getElementById("name").value}
+🆔 EPIC: ${document.getElementById("epic").value}
+🏠 Address: ${document.getElementById("address").value}
+📍 Voting Booth: ${document.getElementById("booth").value}`;
+
+  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`);
+}
+
+</script>
+
+</body>
+</html>
