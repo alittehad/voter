@@ -1,172 +1,117 @@
 <!DOCTYPE html>
-<html lang="mr">
+<html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Ward App</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Flip Card</title>
 
-<style>
-* { margin:0; padding:0; box-sizing:border-box; }
+  <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: linear-gradient(135deg, #1a1a1a, #3c3c3c);
+    }
 
-body {
-  background:#ffeb3b;
-  font-family:Arial, sans-serif;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  padding-top:10px;
-}
+    .card-container {
+      width: 320px;
+      height: 460px;
+      perspective: 1200px;
+    }
 
-/* ---- Slider ---- */
+    .card {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.9s cubic-bezier(.28,.84,.42,1);
+    }
 
-.slider {
-  width:90vw;
-  max-width:650px;
-  height:260px;
-  position:relative;
-  perspective:1200px;
-  border-radius:20px;
-}
+    .card-container:hover .card {
+      transform: rotateY(180deg);
+    }
 
-.slide {
-  width:100%;
-  height:100%;
-  position:absolute;
-  top:0;
-  left:0;
-  border-radius:20px;
-  background:white;
-  backface-visibility:hidden;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  overflow:hidden;
-  transition:transform .9s ease;
-  box-shadow:0 8px 25px rgba(0,0,0,0.15);
-}
+    .front, .back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      border-radius: 15px;
+      overflow: hidden;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.4), inset 0 0 25px rgba(255,255,255,0.05);
+    }
 
-.slide img {
-  width:100%;
-  height:100%;
-  object-fit:cover;
-}
+    .front img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
 
-.hidden {
-  transform:rotateY(180deg);
-}
+    .back {
+      background: #fff;
+      transform: rotateY(180deg);
+      padding: 20px;
+      text-align: center;
+    }
 
-.visible {
-  transform:rotateY(0deg);
-}
+    .back h2 {
+      font-size: 26px;
+      margin-top: 50px;
+      color: #111;
+      font-weight: bold;
+    }
 
-/* ---- Text ---- */
+    .back p {
+      margin-top: 10px;
+      font-size: 16px;
+      color: #444;
+    }
 
-.ward-text {
-  font-size:6vw;
-  font-weight:bold;
-  color:#c62828;
-  margin-top:12px;
-  text-shadow:2px 2px 6px #ffffff;
-}
+    .btn {
+      margin-top: 30px;
+      padding: 15px 30px;
+      font-size: 18px;
+      background: #0066ff;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all .2s ease;
+      font-weight: bold;
+      box-shadow: 0 5px 15px rgba(0,0,255,0.4);
+    }
 
-.candidate-text {
-  font-size:4.8vw;
-  font-weight:bold;
-  color:#4e342e;
-  margin:5px 0 20px;
-}
+    .btn:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 10px 25px rgba(0,0,255,0.6);
+    }
 
-/* ---- 3D Buttons ---- */
+    .btn:active {
+      transform: scale(.95);
+      box-shadow: inset 0 3px 10px rgba(0,0,0,0.5);
+    }
 
-.btn {
-  width:85%;
-  max-width:330px;
-  padding:15px;
-  margin:12px 0;
-  font-size:20px;
-  font-weight:bold;
-  border-radius:14px;
-  cursor:pointer;
-  border:none;
-  color:white;
-  transition:0.2s;
-  background:#ffea00;
-  box-shadow:6px 6px 15px #c9bd26, -6px -6px 15px #fffaaa;
-}
+  </style>
 
-.btn:active {
-  box-shadow:inset 5px 5px 12px #c9bd26, inset -5px -5px 12px #fffaaa;
-}
-
-/* Google button better color balance */
-.google-btn {
-  background:#4285F4;
-}
-
-/* Install button */
-.install-btn {
-  background:#34A853;
-}
-</style>
 </head>
-
 <body>
 
-<div class="slider">
-  <div class="slide visible"><img src="https://i.ibb.co/NgFTprmS/images-1.jpg"></div>
-  <div class="slide hidden"><img src="https://i.ibb.co/zHnxn3Lf/images.jpg"></div>
-  <div class="slide hidden"><img src="https://i.ibb.co/7wHNN9B/Whats-App-Image-2025-11-24-at-11-56-26-3fbcdaac.jpg"></div>
-</div>
+  <div class="card-container">
+    <div class="card">
+      <div class="front">
+        <img src="https://i.imgur.com/5735107.png" alt="Image" />
+      </div>
 
-<div class="ward-text">Ward No. 8</div>
-<div class="candidate-text">उम्मेदवार: सचिन देसाई</div>
-
-<button class="btn google-btn" id="google-login">Google Login</button>
-<button class="btn install-btn" id="install-btn" style="display:none;">Install App</button>
-
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-
-<script>
-// Firebase
-firebase.initializeApp({
-  apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
-  authDomain: "voter-25c94.firebaseapp.com",
-  projectId: "voter-25c94",
-  storageBucket: "voter-25c94.appspot.com",
-  messagingSenderId: "297773534400",
-  appId: "1:297773534400:web:3722c487b8c83e9b787125"
-});
-
-const auth = firebase.auth();
-
-document.querySelector("#google-login").onclick = () => {
-  auth.signInWithPopup(new firebase.auth.GoogleAuthProvider())
-  .then(() => location.href = "login-page.html");
-};
-
-// Flip Slider Logic
-let index = 0;
-const slides = document.querySelectorAll(".slide");
-
-setInterval(() => {
-  slides[index].classList.replace("visible","hidden");
-  index = (index+1) % slides.length;
-  slides[index].classList.replace("hidden","visible");
-}, 3000);
-
-// Install app
-let promptEvent;
-window.addEventListener("beforeinstallprompt",(e)=>{
-  e.preventDefault();
-  promptEvent=e;
-  document.querySelector("#install-btn").style.display="block";
-});
-
-document.querySelector("#install-btn").onclick=()=>{
-  promptEvent.prompt();
-};
-</script>
+      <div class="back">
+        <h2>Ward 20</h2>
+        <p>Swipe or Hover to View Details</p>
+        <button class="btn">Open</button>
+      </div>
+    </div>
+  </div>
 
 </body>
 </html>
