@@ -1,12 +1,12 @@
 {
   "name": "Voter App 2025",
   "short_name": "VoterApp",
+  "description": "Ward No. 8 - Candidate Sachin Desai",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "theme_color": "#ffeb3b",
   "background_color": "#ffeb3b",
-  "description": "Ward No. 8 - Candidate Sachin Desai App",
+  "theme_color": "#ffeb3b",
   "icons": [
     {
       "src": "/icons/icon-192.png",
