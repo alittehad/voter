@@ -23,8 +23,8 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start; /* Center adjust manually */
-  padding-top: 20px;   /* NEW: Content नीचे balance */
+  justify-content: flex-start;
+  padding-top: 20px;
 }
 
 /* SLIDER */
@@ -34,7 +34,7 @@ body {
   height: 45vh;
   overflow: hidden;
 
-  margin-top: 30px !important; /* NEW: Image नीचे आया */
+  margin-top: 30px !important; 
 }
 
 .slides {
@@ -47,24 +47,25 @@ body {
 .slides img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;    /* ✔ Image अब कटेगी नहीं */
   flex-shrink: 0;
   border-radius: 8px;
 }
 
-/* TEXT FIXED */
+/* TEXT FIX */
 .ward-text {
   font-size: 36px;
   font-weight: bold;
   color: #ff5722;
-  margin-top: 20px !important;   /* NEW: Image & Text Gap */
+
+  margin-top: 35px !important;  /* ✔ Image और text की perfect दूरी */
   text-align: center;
 }
 
 .candidate-text {
   font-size: 24px;
   font-weight: bold;
-  margin-top: 8px !important;   /* NEW: WARD and Name gap correct */
+  margin-top: 10px !important; /* ✔ Name नीचे सही दूरी */
   text-align: center;
   color: #795548;
 }
@@ -95,25 +96,25 @@ body {
 
   .slider {
     height: 60vh;
-    margin-top: 50px !important; /* PC पर image perfect center height */
+    margin-top: 50px !important;
   }
 
   .slides img {
-    object-fit: contain !important;
+    object-fit: contain !important; /* ✔ PC पर image बिल्कुल clean */
   }
 
   .ward-text {
     font-size: 42px;
-    margin-top: 30px !important;
+    margin-top: 45px !important;   /* ✔ PC पर good spacing */
   }
 
   .candidate-text {
     font-size: 28px;
-    margin-top: 10px !important;
+    margin-top: 12px !important;
   }
 
   body {
-    padding-top: 40px; /* PC में सुंदर center spacing */
+    padding-top: 40px;
   }
 }
 </style>
