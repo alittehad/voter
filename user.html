@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Voter List with Upload/Delete</title>
+<title>Voter List with Upload/Delete/Edit</title>
 <style>
 body { font-family: Arial; margin:0; padding:10px; background:#f3f3f3; }
 h2 { text-align:center; margin-bottom:15px; }
@@ -15,14 +15,12 @@ input, textarea { width:100%; padding:10px; margin-bottom:12px; border-radius:8p
 .card { width:95%; max-width:400px; background:white; border:3px solid black; border-radius:15px; padding:20px; text-align:left; box-sizing:border-box; }
 .card img { width:100%; max-height:200px; object-fit:contain; margin-bottom:10px; }
 
-/* Buttons */
 .btn { padding:12px; width:100%; margin-top:10px; background:#008cff; color:white; border:none; cursor:pointer; font-size:16px; border-radius:10px; box-shadow:0 4px 0 #003f7f; }
 .btn:active { transform:translateY(4px); box-shadow:0 1px 0 #003f7f; }
 .close-btn { background:red; box-shadow:0 4px 0 #7a0000; }
 .delete-btn { background:#ff5722; box-shadow:0 4px 0 #aa2300; }
 .color-box { width:40px; height:40px; border-radius:10px; margin:6px; cursor:pointer; border:2px solid black; display:inline-block; }
 
-/* PRINT MODE FIX */
 @media print { 
     body * { visibility:hidden } 
     #popup, #popup * { visibility:visible } 
@@ -30,7 +28,6 @@ input, textarea { width:100%; padding:10px; margin-bottom:12px; border-radius:8p
     .btn,.close-btn,.delete-btn,.color-box,input[type="file"],input,h2,textarea { display:none !important; } 
 }
 
-/* Mobile tweaks */
 @media(max-width:500px){ 
     input,textarea{font-size:14px;padding:10px} 
     .list-item{font-size:14px;padding:12px} 
@@ -47,15 +44,18 @@ input, textarea { width:100%; padding:10px; margin-bottom:12px; border-radius:8p
 <input id="search" placeholder="Search Name, EPIC, AC No, Part No...">
 <div id="list"></div>
 
-<!-- POPUP -->
 <div id="popup">
     <div class="card" id="cardBox">
         <h3 id="pName"></h3>
         <p><b>🆔 EPIC:</b> <span id="pEpic"></span></p>
         <p><b>🏛 AC No:</b> <span id="pAc"></span></p>
         <p><b>📍 Part No:</b> <span id="pPart"></span></p>
-        <p><b>🏠 Address:</b> <span id="pAddress"></span></p>
-        <p><b>🗳 Booth:</b> <span id="pVoteAddress"></span></p>
+
+        <label><b>🏠 Address:</b></label>
+        <textarea id="pAddress" rows="2"></textarea>
+
+        <label><b>🗳 Booth / Voting Address:</b></label>
+        <textarea id="pVoteAddress" rows="2"></textarea>
 
         <img id="voterImage" src="" alt="" style="display:none;"/>
         <div id="loadingImg" style="display:none;">Uploading...</div>
@@ -74,6 +74,7 @@ input, textarea { width:100%; padding:10px; margin-bottom:12px; border-radius:8p
             <div class="color-box" onclick="setColor('#9fd1ff')" style="background:#9fd1ff"></div>
         </div>
 
+        <button class="btn" onclick="saveEdits()">💾 Save Edits</button>
         <button class="btn" onclick="printCard()">🖨 Print</button>
         <button class="btn" onclick="sendWA()">📩 WhatsApp Send</button>
         <button class="btn close-btn" onclick="closePopup()">❌ Close</button>
@@ -83,7 +84,6 @@ input, textarea { width:100%; padding:10px; margin-bottom:12px; border-radius:8p
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
 <script>
-// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
   authDomain: "voter-25c94.firebaseapp.com",
@@ -106,7 +106,6 @@ firebase.database().ref("/").once("value").then(snap=>{
     showList(voters);
 });
 
-// Show list
 function showList(data){
     const box = document.getElementById("list");
     box.innerHTML = "";
@@ -122,15 +121,14 @@ function showList(data){
     });
 }
 
-// Popup
 function openPopup(v){
     selected = v;
     document.getElementById("pName").innerText = v.Name;
     document.getElementById("pEpic").innerText = v.EPIC;
     document.getElementById("pAc").innerText = v.AcNo;
     document.getElementById("pPart").innerText = v.PartNo;
-    document.getElementById("pAddress").innerText = v.Address || "Not Available";
-    document.getElementById("pVoteAddress").innerText = v.VotingAddress || "Not Available";
+    document.getElementById("pAddress").value = v.Address || "";
+    document.getElementById("pVoteAddress").value = v.VotingAddress || "";
     document.getElementById("senderNote").value = v.SenderNote || globalSenderNote || "";
     document.getElementById("cardBox").style.background = v.Color || "white";
 
@@ -141,10 +139,8 @@ function openPopup(v){
     document.getElementById("popup").style.display = "flex";
 }
 
-// Close popup
 function closePopup(){ document.getElementById("popup").style.display="none"; }
 
-// Set Color
 function setColor(c){
     document.getElementById("cardBox").style.background = c;
     if(selected){
@@ -155,43 +151,73 @@ function setColor(c){
     }
 }
 
-// Print
 function printCard(){ window.print(); }
 
-// WhatsApp
 function sendWA(){
     if(!selected) return;
     let note = document.getElementById("senderNote").value || "—";
     firebase.database().ref("GlobalSenderNote").set(note);
     firebase.database().ref("Voters/"+selected.EPIC.replace(/\./g,'_')).update({SenderNote:note});
-    let text = `*Voter Info*%0A%0A👤 ${selected.Name}%0A🆔 EPIC: ${selected.EPIC}%0A🏛 AC: ${selected.AcNo}%0A📍 Part: ${selected.PartNo}%0A🏠 Address: ${selected.Address || "NA"}%0A🗳 Booth: ${selected.VotingAddress || "NA"}%0A%0A📝 Message: ${note}`;
+    let text = `*Voter Info*%0A%0A👤 ${selected.Name}%0A🆔 EPIC: ${selected.EPIC}%0A🏛 AC: ${selected.AcNo}%0A📍 Part: ${selected.PartNo}%0A🏠 Address: ${document.getElementById("pAddress").value}%0A🗳 Booth: ${document.getElementById("pVoteAddress").value}%0A%0A📝 Message: ${note}`;
     window.open(`https://wa.me/?text=${text}`);
 }
 
-// File select
-document.getElementById("imageInput").addEventListener("change", e => {
-    selectedFile = e.target.files[0];
-});
+// Save edits (address / booth / message)
+function saveEdits(){
+    if(!selected) return;
+    const addr = document.getElementById("pAddress").value;
+    const booth = document.getElementById("pVoteAddress").value;
+    const note = document.getElementById("senderNote").value || "";
+    firebase.database().ref("Voters/"+selected.EPIC.replace(/\./g,'_')).update({
+        Address: addr,
+        VotingAddress: booth,
+        SenderNote: note
+    });
+    selected.Address = addr;
+    selected.VotingAddress = booth;
+    selected.SenderNote = note;
+    showList(voters);
+    alert("Edits saved!");
+}
 
-// Upload button
+// File select
+document.getElementById("imageInput").addEventListener("change", e => { selectedFile = e.target.files[0]; });
+
+// Upload
 document.getElementById("uploadBtn").addEventListener("click", () => {
     if(!selectedFile || !selected) return alert("Select a file first!");
-    document.getElementById("loadingImg").style.display="block";
-    const storageRef = firebase.storage().ref(`voterImages/${selected.EPIC.replace(/\./g,'_')}`);
-    storageRef.put(selectedFile).then(() => {
-        storageRef.getDownloadURL().then(url => {
-            document.getElementById("voterImage").src = url;
-            document.getElementById("voterImage").style.display="block";
-            firebase.database().ref("Voters/"+selected.EPIC.replace(/\./g,'_')).update({ImageURL:url});
-            selected.ImageURL = url;
-            selectedFile = null;
-            document.getElementById("loadingImg").style.display="none";
-            alert("Image uploaded successfully!");
-        });
-    });
+    const loading = document.getElementById("loadingImg");
+    loading.style.display="block";
+    loading.innerText = "Uploading... 0%";
+
+    const refPath = `voterImages/${selected.EPIC.replace(/\./g,'_')}`;
+    const storageRef = firebase.storage().ref(refPath);
+    const uploadTask = storageRef.put(selectedFile);
+
+    uploadTask.on('state_changed',
+        snapshot => {
+            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+            loading.innerText = `Uploading... ${Math.round(progress)}%`;
+        },
+        error => {
+            loading.style.display = "none";
+            alert("Upload failed: " + error.message);
+        },
+        () => {
+            uploadTask.snapshot.ref.getDownloadURL().then(url => {
+                document.getElementById("voterImage").src = url;
+                document.getElementById("voterImage").style.display="block";
+                firebase.database().ref("Voters/"+selected.EPIC.replace(/\./g,'_')).update({ImageURL:url});
+                selected.ImageURL = url;
+                selectedFile = null;
+                loading.style.display = "none";
+                alert("Image uploaded successfully!");
+            });
+        }
+    );
 });
 
-// Delete button
+// Delete
 document.getElementById("deleteBtn").addEventListener("click", () => {
     if(!selected || !selected.ImageURL) return alert("No image to delete!");
     const storageRef = firebase.storage().ref(`voterImages/${selected.EPIC.replace(/\./g,'_')}`);
