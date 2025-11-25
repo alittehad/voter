@@ -5,30 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Responsive Slider with Firebase Google Login</title>
 
-<!-- PWA Required -->
 <link rel="manifest" href="manifest.json" />
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <meta name="theme-color" content="#ffeb3b">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-
-<!-- Service Worker -->
-<script>
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", function() {
-    navigator.serviceWorker.register("./sw.js")
-      .then(() => console.log("Service Worker Registered"))
-      .catch(err => console.log("SW Failed:", err));
-  });
-}
-</script>
 
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 html, body {
   height: 100%;
-  overflow: hidden; /* Scroll हट गया */
+  overflow: hidden;
 }
 
 body {
@@ -37,49 +23,51 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  padding: 10px;
+  justify-content: flex-start;
+  padding-top: 20px;
 }
 
-/* SLIDER AREA (Mobile Default) */
+/* SLIDER */
 .slider {
   width: 100%;
   max-width: 1000px;
-  height: 45vh; 
+  height: 45vh;
   overflow: hidden;
-  margin-top: 10px;
+
+  margin-top: 30px !important; 
 }
 
 .slides {
   display: flex;
   height: 100%;
-  align-items: center;    /* NEW — image center PC/Mobile both */
+  align-items: center;
   transition: transform 0.5s ease-in-out;
 }
 
 .slides img {
   width: 100%;
   height: 100%;
-  object-fit: cover;   /* MOBILE full screen */
+  object-fit: contain;    /* ✔ Image अब कटेगी नहीं */
   flex-shrink: 0;
   border-radius: 8px;
 }
 
-/* TEXT */
+/* TEXT FIX */
 .ward-text {
   font-size: 36px;
   font-weight: bold;
   color: #ff5722;
-  text-shadow: 4px 4px 8px #aaa, -4px -4px 8px #fff;
+
+  margin-top: 35px !important;  /* ✔ Image और text की perfect दूरी */
   text-align: center;
 }
 
 .candidate-text {
   font-size: 24px;
   font-weight: bold;
-  color: #795548;
-  text-shadow: 2px 2px 5px #aaa, -2px -2px 5px #fff;
+  margin-top: 10px !important; /* ✔ Name नीचे सही दूरी */
   text-align: center;
+  color: #795548;
 }
 
 /* BUTTONS */
@@ -91,8 +79,8 @@ body {
   border: none;
   border-radius: 12px;
   cursor: pointer;
+  margin-top: 15px;
   box-shadow: 4px 4px 15px #aaa, -4px -4px 15px #fff;
-  margin-bottom: 10px;
 }
 
 .google-btn {
@@ -103,32 +91,37 @@ body {
   background: linear-gradient(145deg, #FF6B6B, #FFD93D, #6BCB77, #4D96FF);
 }
 
-/* ------------------------------------
-   PC / LAPTOP FINAL PERFECT FIX
-   ------------------------------------ */
+/* PC FIXES */
 @media (min-width: 768px) {
 
   .slider {
-    height: 60vh;   /* PC पर बड़ा और perfect */
+    height: 60vh;
+    margin-top: 50px !important;
   }
 
   .slides img {
-    object-fit: contain !important; /* PC पर image नहीं कटेगी */
+    object-fit: contain !important; /* ✔ PC पर image बिल्कुल clean */
+  }
+
+  .ward-text {
+    font-size: 42px;
+    margin-top: 45px !important;   /* ✔ PC पर good spacing */
+  }
+
+  .candidate-text {
+    font-size: 28px;
+    margin-top: 12px !important;
   }
 
   body {
-    padding: 20px;   /* PC spacing perfect */
+    padding-top: 40px;
   }
-
-  .ward-text { font-size: 42px; }
-  .candidate-text { font-size: 28px; }
 }
 </style>
 </head>
 
 <body>
 
-<!-- SLIDER -->
 <div class="slider">
   <div class="slides">
     <img src="https://i.ibb.co/NgFTprmS/images-1.jpg" alt="Image 1">
@@ -147,7 +140,6 @@ body {
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 
 <script>
-// Firebase
 firebase.initializeApp({
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
   authDomain: "voter-25c94.firebaseapp.com",
@@ -165,14 +157,12 @@ document.getElementById('google-login').onclick = () => {
   .then(() => window.location.href = "login-page.html");
 };
 
-// Slider Auto Move
 let index = 0;
 setInterval(() => {
   index = (index + 1) % 3;
   document.querySelector('.slides').style.transform = `translateX(-${index * 100}%)`;
 }, 3000);
 
-// Install App Button
 let installPrompt;
 const install_btn = document.getElementById("install-btn");
 
