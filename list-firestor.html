@@ -2,12 +2,15 @@
 <html lang="hi">
 <head>
 <meta charset="UTF-8">
-<title>CSV Upload to Firestore</title>
+<title>Voter Upload + List</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
 <script type="module">
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
-import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+import { 
+  getFirestore, doc, setDoc, collection, onSnapshot 
+} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "YOUR_KEY",
@@ -18,36 +21,67 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+// CSV Upload
 document.addEventListener("DOMContentLoaded", () => {
   const fileInput = document.getElementById("csvFile");
 
   fileInput.addEventListener("change", function (e) {
     const file = e.target.files[0];
+
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
       complete: async function (results) {
         const rows = results.data;
+
         alert("Uploading " + rows.length + " voters...");
 
         for (let row of rows) {
           const epic = row.EPIC || row.epic || row.Epic;
-
           if (!epic) continue;
 
           await setDoc(doc(db, "voters", epic), row, { merge: true });
         }
 
-        alert("All voters uploaded successfully!");
+        alert("Uploaded!");
       }
     });
   });
+
+  // FIRESTORE LIST SHOW
+  const listBox = document.getElementById("list");
+
+  onSnapshot(collection(db, "voters"), (snapshot) => {
+    listBox.innerHTML = ""; // Clear old list
+
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      listBox.innerHTML += `
+        <div style="padding:8px;border-bottom:1px solid #ccc">
+          <b>${data.Name || "No Name"}</b>  
+          <br>
+          EPIC: ${doc.id}
+          <br>
+          Address: ${data.Address || "N/A"}
+        </div>
+      `;
+    });
+  });
+
 });
+
 </script>
 
 </head>
 <body>
-<h2>Upload CSV File</h2>
-<input type="file" id="csvFile" accept=".csv" />
+
+<h2>Voter CSV Upload</h2>
+<input type="file" id="csvFile" accept=".csv">
+
+<h2>Voter List</h2>
+<div id="list" style="border:1px solid #000; padding:10px; max-width:400px;">
+  Loading...
+</div>
+
 </body>
 </html>
