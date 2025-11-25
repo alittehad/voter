@@ -1,0 +1,58 @@
+
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voter Manager</title>
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js"></script>
+</head>
+
+<body class="bg-gray-100 p-6">
+
+<div class="max-w-xl mx-auto bg-white shadow-md p-6 rounded-lg">
+<h2 class="text-xl font-bold mb-4 text-center">🗳 Voter Manager</h2>
+
+<!-- Search Bar -->
+<div class="bg-gray-50 p-4 rounded-lg shadow mb-4">
+<label class="font-semibold">🔍 EPIC Number</label>
+<input id="epicSearch" class="w-full p-2 border rounded mt-2" placeholder="Enter EPIC Number...">
+<button id="loadBtn" class="bg-blue-600 text-white w-full py-2 rounded mt-3">Load Details</button>
+</div>
+
+<!-- Form -->
+<div id="formArea" class="mt-4">
+
+<label>Name</label>
+<input id="name" class="w-full p-2 border rounded mb-2">
+
+<label>AC No</label>
+<input id="acNo" class="w-full p-2 border rounded mb-2">
+
+<label>Part No</label>
+<input id="partNo" class="w-full p-2 border rounded mb-2">
+
+<label>Address</label>
+<input id="address" class="w-full p-2 border rounded mb-2">
+
+<label>Booth</label>
+<input id="booth" class="w-full p-2 border rounded mb-2">
+
+<label>Sender Note</label>
+<textarea id="note" class="w-full p-2 border rounded mb-2" placeholder="Message..."></textarea>
+
+<!-- IMAGE -->
+<label class="font-semibold">📷 Voter Image</label>
+<input type="file" id="uploadImage" class="block mb-2">
+
+<img id="preview" class="hidden w-32 border rounded mb-2">
+<button id="deleteImg" class="hidden bg-red-500 text-white w-full py-2 rounded mb-2">🗑 Delete Image</button>
+
+<button id="saveBtn" class="bg-green-600 text-white w-full py-2 rounded mb-2">💾 Save</button>
+<button id="printBtn" class="bg-gray-600 text-white w-full py-2 rounded mb-2">🖨 Print</button>
+<button id="whatsappSend" class="bg-green-500 text-white w-full py-2 rounded">📩 Send to WhatsApp</button>
+
+</div>
+</div>
