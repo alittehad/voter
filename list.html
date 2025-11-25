@@ -7,10 +7,6 @@
 <style>
 body { font-family: Arial; margin:0; padding:10px; background:#f3f3f3; }
 h2 { text-align:center; margin-bottom:15px; }
-input, textarea {
-    width:100%; padding:10px; margin-bottom:12px;
-    border-radius:8px; border:2px solid #777; font-size:16px;
-}
 .list-item{
     padding:14px;background:white;border:2px solid #aaa;
     margin-bottom:10px;border-radius:12px;cursor:pointer;
@@ -45,7 +41,7 @@ input, textarea {
 @media print{
     body *{ visibility:hidden; }
     #popup, #popup *{ visibility:visible; }
-    .btn, input, textarea{ display:none !important; }
+    .btn{ display:none !important; }
 }
 </style>
 </head>
@@ -61,17 +57,10 @@ input, textarea {
         <p><b>🆔 EPIC:</b> <span id="pEpic"></span></p>
         <p><b>🏛 AC No:</b> <span id="pAc"></span></p>
         <p><b>📍 Part No:</b> <span id="pPart"></span></p>
-
-        <label><b>🏠 Address:</b></label>
-        <input id="pAddress" readonly>
-
-        <label><b>🗳 Booth:</b></label>
-        <input id="pVoteAddress" readonly>
-
+        <p><b>🏠 Address:</b> <span id="pAddressDisplay"></span></p>
+        <p><b>🗳 Booth:</b> <span id="pVoteAddressDisplay"></span></p>
         <img id="voterImage" style="display:none; margin-top:10px;">
-
-        <label><b>📝 Sender Message:</b></label>
-        <textarea id="senderNote" rows="4" readonly></textarea>
+        <p><b>📝 Sender Message:</b> <span id="senderNoteDisplay"></span></p>
 
         <button class="btn" onclick="printDetails()">🖨 Print</button>
         <button class="btn" onclick="sendWhatsApp()">📩 WhatsApp</button>
@@ -112,7 +101,7 @@ function showList(data){
     });
 }
 
-// Open popup
+// Open popup (View-Only)
 function openPopup(v){
     selected = v;
     document.getElementById("pName").innerText = v.Name;
@@ -120,9 +109,9 @@ function openPopup(v){
     document.getElementById("pAc").innerText = v.AcNo;
     document.getElementById("pPart").innerText = v.PartNo;
 
-    document.getElementById("pAddress").value = v.Address || "";
-    document.getElementById("pVoteAddress").value = v.VotingAddress || "";
-    document.getElementById("senderNote").value = v.SenderNote || globalSenderNote;
+    document.getElementById("pAddressDisplay").innerText = v.Address || "";
+    document.getElementById("pVoteAddressDisplay").innerText = v.VotingAddress || "";
+    document.getElementById("senderNoteDisplay").innerText = v.SenderNote || globalSenderNote;
 
     const img = document.getElementById("voterImage");
     if(v.ImageURL){
@@ -149,9 +138,9 @@ function printDetails(){
 function sendWhatsApp(){
     const msg = `👤 Name: ${selected.Name}
 🆔 EPIC: ${selected.EPIC}
-🏠 Address: ${document.getElementById("pAddress").value}
-📍 Booth: ${document.getElementById("pVoteAddress").value}
-📝 Message: ${document.getElementById("senderNote").value}`;
+🏠 Address: ${document.getElementById("pAddressDisplay").innerText}
+📍 Booth: ${document.getElementById("pVoteAddressDisplay").innerText}
+📝 Message: ${document.getElementById("senderNoteDisplay").innerText}`;
 
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`);
 }
