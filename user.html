@@ -1,57 +1,209 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Voter Manager</title>
-<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js"></script>
+<title>Voter List App</title>
+
+<style>
+body { font-family: Arial; margin:0; padding:10px; background:#f3f3f3; }
+h2 { text-align:center; margin-bottom:15px; }
+
+input, textarea {
+    width:100%; padding:10px; margin-bottom:12px;
+    border-radius:8px; border:2px solid #777; font-size:16px;
+}
+
+.list-item{
+    padding:14px;background:white;border:2px solid #aaa;
+    margin-bottom:10px;border-radius:12px;cursor:pointer;
+    transition:.3s;font-size:16px;
+}
+
+.list-item:hover{
+    transform:scale(1.03);box-shadow:0 0 10px gray;
+}
+
+#popup{
+    position:fixed;top:0;left:0;width:100%;height:100%;
+    background:rgba(0,0,0,0.7);display:none;
+    justify-content:center;align-items:flex-start;
+    padding:20px;overflow-y:auto;
+}
+
+.card{
+    width:95%;max-width:420px;background:white;
+    border:3px solid black;border-radius:15px;padding:20px;
+}
+
+.card img{
+    width:100%;max-height:200px;object-fit:contain;
+    border-radius:12px;margin-bottom:10px;
+}
+
+/* Buttons */
+.btn{
+    padding:12px;width:100%;margin-top:10px;background:#008cff;
+    color:white;border:none;font-size:16px;cursor:pointer;
+    border-radius:10px;box-shadow:0 4px 0 #003f7f;
+}
+.btn:active{ transform:translateY(4px); }
+
+.close-btn{ background:red;box-shadow:0 4px 0 #7a0000; }
+
+.loadingBox{
+    display:none;background:#fff;border:3px solid black;
+    padding:10px;text-align:center;font-size:18px;font-weight:bold;
+}
+
+/* PRINT MODE */
+@media print{
+    body *{ visibility:hidden; }
+    #popup, #popup *{ visibility:visible; }
+    .btn, input, textarea, .color-box{ display:none !important; }
+}
+</style>
 </head>
 
-<body class="bg-gray-100 p-6">
+<body>
 
-<div class="max-w-xl mx-auto bg-white shadow-md p-6 rounded-lg">
-<h2 class="text-xl font-bold mb-4 text-center">🗳 Voter Manager</h2>
+<h2>🗳 Voter List</h2>
+<input id="search" placeholder="Search Name, EPIC, AC No, Part No...">
+<div id="list"></div>
 
-<!-- Search Bar -->
-<div class="bg-gray-50 p-4 rounded-lg shadow mb-4">
-<label class="font-semibold">🔍 EPIC Number</label>
-<input id="epicSearch" class="w-full p-2 border rounded mt-2" placeholder="Enter EPIC Number...">
-<button id="loadBtn" class="bg-blue-600 text-white w-full py-2 rounded mt-3">Load Details</button>
+<!-- POPUP -->
+<div id="popup">
+    <div class="card" id="cardBox">
+
+        <div class="loadingBox" id="printLoading">⏱ Preparing Print…</div>
+
+        <h3 id="pName"></h3>
+        <p><b>🆔 EPIC:</b> <span id="pEpic"></span></p>
+        <p><b>🏛 AC No:</b> <span id="pAc"></span></p>
+        <p><b>📍 Part No:</b> <span id="pPart"></span></p>
+        <p><b>🏠 Address:</b> <span id="pAddress"></span></p>
+        <p><b>🗳 Booth:</b> <span id="pVoteAddress"></span></p>
+
+        <img id="voterImage" style="display:none;"/>
+
+        <label><b>Upload Image:</b></label>
+        <input type="file" id="imageInput" accept="image/*">
+
+        <label><b>Sender Message:</b></label>
+        <textarea id="senderNote" placeholder="Your message..." rows="4"></textarea>
+
+        <button class="btn" onclick="printCard()">🖨 Print</button>
+        <button class="btn" onclick="sendWA()">📩 WhatsApp</button>
+        <button class="btn close-btn" onclick="closePopup()">❌ Close</button>
+    </div>
 </div>
 
-<!-- Form -->
-<div id="formArea" class="mt-4">
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase.js"></script>
+<script>
 
-<label>Name</label>
-<input id="name" class="w-full p-2 border rounded mb-2">
+// Firebase config
+firebase.initializeApp({
+  apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
+  authDomain: "voter-25c94.firebaseapp.com",
+  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
+  projectId: "voter-25c94",
+  storageBucket: "voter-25c94.appspot.com"
+});
 
-<label>AC No</label>
-<input id="acNo" class="w-full p-2 border rounded mb-2">
+let voters={},selected=null,globalSenderNote="";
 
-<label>Part No</label>
-<input id="partNo" class="w-full p-2 border rounded mb-2">
+firebase.database().ref("/").once("value").then(snap=>{
+    globalSenderNote=snap.val().GlobalSenderNote || "";
+    voters=snap.val().Voters || {};
+    showList(voters);
+});
 
-<label>Address</label>
-<input id="address" class="w-full p-2 border rounded mb-2">
+// Show list
+function showList(data){
+    let box=document.getElementById("list");
+    box.innerHTML="";
+    Object.values(data).forEach(v=>{
+        let div=document.createElement("div");
+        div.className="list-item";
+        div.dataset.epic=v.EPIC;
+        div.innerHTML=`<b>${v.Name}</b><br>🆔 ${v.EPIC} | 🏛 AC:${v.AcNo} | 📍 Part:${v.PartNo}`;
+        div.onclick=()=>openPopup(v);
+        box.appendChild(div);
+    });
+}
 
-<label>Booth</label>
-<input id="booth" class="w-full p-2 border rounded mb-2">
+// Open popup
+function openPopup(v){
+    selected=v;
+    document.getElementById("voterImage").style.display = "none";
 
-<label>Sender Note</label>
-<textarea id="note" class="w-full p-2 border rounded mb-2" placeholder="Message..."></textarea>
+    document.getElementById("pName").innerText=v.Name;
+    document.getElementById("pEpic").innerText=v.EPIC;
+    document.getElementById("pAc").innerText=v.AcNo;
+    document.getElementById("pPart").innerText=v.PartNo;
+    document.getElementById("pAddress").innerText=v.Address;
+    document.getElementById("pVoteAddress").innerText=v.VotingAddress;
+    document.getElementById("senderNote").value=v.SenderNote || globalSenderNote;
 
-<!-- IMAGE -->
-<label class="font-semibold">📷 Voter Image</label>
-<input type="file" id="uploadImage" class="block mb-2">
+    if(v.ImageURL){
+        let img=document.getElementById("voterImage");
+        img.src=v.ImageURL;
+        img.style.display="block";
+    }
 
-<img id="preview" class="hidden w-32 border rounded mb-2">
-<button id="deleteImg" class="hidden bg-red-500 text-white w-full py-2 rounded mb-2">🗑 Delete Image</button>
+    document.getElementById("popup").style.display="flex";
+}
 
-<button id="saveBtn" class="bg-green-600 text-white w-full py-2 rounded mb-2">💾 Save</button>
-<button id="printBtn" class="bg-gray-600 text-white w-full py-2 rounded mb-2">🖨 Print</button>
-<button id="whatsappSend" class="bg-green-500 text-white w-full py-2 rounded">📩 Send to WhatsApp</button>
+function closePopup(){
+    document.getElementById("popup").style.display="none";
+}
 
-</div>
-</div>
+// Upload Image
+document.getElementById("imageInput").addEventListener("change",e=>{
+    const file=e.target.files[0];
+    if(!file||!selected)return;
+
+    const ref=firebase.storage().ref("Images/"+selected.EPIC);
+    ref.put(file).then(()=>{
+        ref.getDownloadURL().then(url=>{
+            firebase.database().ref("Voters/"+selected.EPIC).update({ImageURL:url});
+            document.getElementById("voterImage").src=url;
+            document.getElementById("voterImage").style.display="block";
+        });
+    });
+});
+
+// 🔹 PRINT with loading
+function printCard(){
+    let box=document.getElementById("printLoading");
+    box.style.display="block";
+
+    setTimeout(()=>{
+        box.style.display="none";
+        window.print();
+    },2000);
+}
+
+// 🔹 WhatsApp (WITHOUT IMAGE)
+function sendWA(){
+    let note=document.getElementById("senderNote").value;
+    firebase.database().ref("Voters/"+selected.EPIC).update({SenderNote:note});
+
+    let msg=`*Voter Information*%0A%0A👤 ${selected.Name}%0A🆔 EPIC: ${selected.EPIC}%0A🏛 AC: ${selected.AcNo}%0A📍 Part: ${selected.PartNo}%0A🏠 Address: ${selected.Address}%0A🗳 Booth: ${selected.VotingAddress}%0A%0A📝 Message: ${note}`;
+
+    window.open(`https://wa.me/?text=${msg}`);
+}
+
+// Search box
+document.getElementById("search").addEventListener("input",e=>{
+    let t=e.target.value.toLowerCase();
+    let f=Object.values(voters).filter(v=>
+        v.Name.toLowerCase().includes(t) ||
+        v.EPIC.toLowerCase().includes(t)
+    );
+    showList(f);
+});
+
+</script>
+</body>
+</html>
