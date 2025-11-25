@@ -1,87 +1,86 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Voter Card Panel</title>
-
-<!-- Firebase v8 (Best for Realtime DB + Storage) -->
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voter List with Image Upload</title>
 <style>
-body { font-family: Arial; padding: 20px; background: #eef2ff; }
+body { font-family: Arial; margin:0; padding:10px; background:#f3f3f3; }
+h2 { text-align:center; margin-bottom:15px; }
+input, textarea { width:100%; padding:10px; margin-bottom:12px; border-radius:8px; border:2px solid #777; font-size:16px; }
+.list-item { padding:14px; background:white; border:2px solid #aaa; margin-bottom:10px; border-radius:12px; cursor:pointer; transition:.3s; font-size:16px; }
+.list-item:hover { transform:scale(1.03); box-shadow:0 0 10px gray; word-wrap:break-word; }
 
-.card {
-    width: 350px;
-    background: white;
-    padding: 20px;
-    border-radius: 10px;
-    margin: auto;
-    box-shadow: 0 0 10px #999;
-    display:none;
+#popup { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); display:none; justify-content:center; align-items:flex-start; overflow-y:auto; padding:20px; box-sizing:border-box; }
+.card { width:95%; max-width:400px; background:white; border:3px solid black; border-radius:15px; padding:20px; text-align:left; box-sizing:border-box; }
+.card img { width:100%; max-height:200px; object-fit:contain; margin-bottom:10px; }
+
+/* Buttons */
+.btn { padding:12px; width:100%; margin-top:10px; background:#008cff; color:white; border:none; cursor:pointer; font-size:16px; border-radius:10px; box-shadow:0 4px 0 #003f7f; }
+.btn:active { transform:translateY(4px); box-shadow:0 1px 0 #003f7f; }
+.close-btn { background:red; box-shadow:0 4px 0 #7a0000; }
+.color-box { width:40px; height:40px; border-radius:10px; margin:6px; cursor:pointer; border:2px solid black; display:inline-block; }
+
+/* PRINT MODE FIX */
+@media print { 
+    body * { visibility:hidden } 
+    #popup, #popup * { visibility:visible } 
+    #popup { position:absolute; top:0; left:0; width:100%; } 
+    .btn,.close-btn,.color-box,input[type="file"],input,h2,textarea { display:none !important; } 
 }
 
-#photoPreview {
-    width: 100%;
-    height: 250px;
-    object-fit: cover;
-    border-radius: 10px;
-    background:#ddd;
-}
-
-.label { font-size: 14px; color: #444; margin-top: 10px; display:block; }
-input, textarea, button {
-    width: 100%; padding: 8px; margin-top: 5px;
-    border-radius: 6px; border:1px solid #aaa;
-}
-button { background:#2563eb; color:white; border:none; margin-top:10px; cursor:pointer; }
-
-.closeBtn {
-    background:red; margin-bottom:15px;
+/* Mobile tweaks */
+@media(max-width:500px){ 
+    input,textarea{font-size:14px;padding:10px} 
+    .list-item{font-size:14px;padding:12px} 
+    .btn{font-size:14px;padding:10px} 
+    .color-box{width:35px;height:35px;margin:4px} 
+    .card{padding:15px} 
+    .card img{max-height:150px;} 
 }
 </style>
 </head>
 <body>
 
-<h2 style="text-align:center;">Voter Card Panel</h2>
+<h2>🗳 Voter List</h2>
+<input id="search" placeholder="Search Name, EPIC, AC No, Part No...">
+<div id="list"></div>
 
-<!-- Search EPIC -->
-<input id="searchEpic" placeholder="EPIC Number">
-<button onclick="loadCard()">Open Card</button>
+<!-- POPUP -->
+<div id="popup">
+    <div class="card" id="cardBox">
+        <h3 id="pName"></h3>
+        <p><b>🆔 EPIC:</b> <span id="pEpic"></span></p>
+        <p><b>🏛 AC No:</b> <span id="pAc"></span></p>
+        <p><b>📍 Part No:</b> <span id="pPart"></span></p>
+        <p><b>🏠 Address:</b> <span id="pAddress"></span></p>
+        <p><b>🗳 Booth:</b> <span id="pVoteAddress"></span></p>
 
-<!-- Card Box -->
-<div class="card" id="cardBox">
+        <img id="voterImage" src="" alt="" style="display:none;"/>
 
-    <button class="closeBtn" onclick="closeCard()">Close</button>
+        <label><b>Upload Image:</b></label>
+        <input type="file" id="imageInput" accept="image/*">
 
-    <img id="photoPreview" src="" alt="Voter Photo">
+        <label><b>Sender Message:</b></label>
+        <textarea id="senderNote" placeholder="Your note..." rows="4"></textarea>
 
-    <label class="label">Upload Photo</label>
-    <input type="file" id="photoInput">
+        <div>
+            <div class="color-box" onclick="setColor('#fca5a5')" style="background:#fca5a5"></div>
+            <div class="color-box" onclick="setColor('#a5f7c5')" style="background:#a5f7c5"></div>
+            <div class="color-box" onclick="setColor('#9fd1ff')" style="background:#9fd1ff"></div>
+        </div>
 
-    <label class="label">EPIC Number</label>
-    <input id="epicInput" readonly>
-
-    <label class="label">Name</label>
-    <input id="nameInput">
-
-    <label class="label">Address</label>
-    <textarea id="addressInput"></textarea>
-
-    <label class="label">Booth Number</label>
-    <input id="boothInput">
-
-    <label class="label">Voting Address</label>
-    <input id="votingAddressInput">
-
-    <button onclick="saveData()">Save</button>
-    <button onclick="printCard()">Print Card</button>
-    <button onclick="sendWhatsapp()">WhatsApp Share</button>
+        <button class="btn" onclick="printCard()">🖨 Print</button>
+        <button class="btn" onclick="sendWA()">📩 WhatsApp Send</button>
+        <button class="btn close-btn" onclick="closePopup()">❌ Close</button>
+    </div>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
 <script>
-// ================= Firebase Setup =================
+// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
   authDomain: "voter-25c94.firebaseapp.com",
@@ -91,111 +90,102 @@ const firebaseConfig = {
   messagingSenderId: "297773534400",
   appId: "1:297773534400:web:3722c487b8c83e9b787125"
 };
-
 firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-const storage = firebase.storage();
 
-let uploadedImageURL = "";
+let voters={}, selected=null, globalSenderNote="";
 
-// ================= LOAD CARD =================
-function loadCard() {
-    let epic = document.getElementById("searchEpic").value.trim();
-    if (epic === "") { alert("EPIC डालें"); return; }
+// Load data
+firebase.database().ref("/").once("value").then(snap=>{
+    const data = snap.val();
+    globalSenderNote = data.GlobalSenderNote || "";
+    voters = data.Voters || {};
+    showList(voters);
+});
 
-    db.ref("Voters/" + epic).once("value").then(snapshot => {
-        if (!snapshot.exists()) {
-            alert("Voter Not Found!");
-            return;
-        }
-
-        let data = snapshot.val();
-
-        document.getElementById("cardBox").style.display = "block";
-
-        document.getElementById("epicInput").value = data.EPIC || epic;
-        document.getElementById("nameInput").value = data.Name || "";
-        document.getElementById("addressInput").value = data.Address || "";
-        document.getElementById("boothInput").value = data.Booth || "";
-        document.getElementById("votingAddressInput").value = data.VotingAddress || "";
-
-        uploadedImageURL = data.ImageURL || "";
-        document.getElementById("photoPreview").src = uploadedImageURL || "";
+// Show list
+function showList(data){
+    const box = document.getElementById("list");
+    box.innerHTML = "";
+    Object.values(data).forEach(v=>{
+        let div = document.createElement("div");
+        div.className = "list-item";
+        div.style.background = v.Color || "white";
+        div.style.borderColor = v.Color || "#aaa";
+        div.dataset.epic = v.EPIC;
+        div.innerHTML = `<b>${v.Name}</b><br>🆔 ${v.EPIC} | 🏛 AC:${v.AcNo} | 📍 Part:${v.PartNo} | 🗳 Booth:${v.VotingAddress || "NA"}`;
+        div.onclick = ()=>openPopup(v);
+        box.appendChild(div);
     });
 }
 
-// ================= CLOSE CARD =================
-function closeCard() {
-    document.getElementById("cardBox").style.display = "none";
+// Popup
+function openPopup(v){
+    selected = v;
+    document.getElementById("pName").innerText = v.Name;
+    document.getElementById("pEpic").innerText = v.EPIC;
+    document.getElementById("pAc").innerText = v.AcNo;
+    document.getElementById("pPart").innerText = v.PartNo;
+    document.getElementById("pAddress").innerText = v.Address || "Not Available";
+    document.getElementById("pVoteAddress").innerText = v.VotingAddress || "Not Available";
+    document.getElementById("senderNote").value = v.SenderNote || globalSenderNote || "";
+    document.getElementById("cardBox").style.background = v.Color || "white";
+    
+    const img = document.getElementById("voterImage");
+    if(v.ImageURL){ img.src=v.ImageURL; img.style.display="block"; } 
+    else { img.style.display="none"; }
+    
+    document.getElementById("popup").style.display = "flex";
 }
 
-// ================= PHOTO UPLOAD =================
-document.getElementById("photoInput").addEventListener("change", function (e) {
-    let file = e.target.files[0];
-    if (!file) return;
+// Close popup
+function closePopup(){ document.getElementById("popup").style.display="none"; }
 
-    let epic = document.getElementById("epicInput").value.trim();
-    if (epic === "") {
-        alert("EPIC पहले load करो!");
-        return;
+// Set Color
+function setColor(c){
+    document.getElementById("cardBox").style.background = c;
+    if(selected){
+        firebase.database().ref("Voters/"+selected.EPIC).update({Color:c});
+        document.querySelectorAll(".list-item").forEach(item=>{
+            if(item.dataset.epic===selected.EPIC){
+                item.style.background=c;
+                item.style.borderColor=c;
+            }
+        });
     }
+}
 
-    // Preview
-    let reader = new FileReader();
-    reader.onload = function (event) {
-        document.getElementById("photoPreview").src = event.target.result;
-    };
-    reader.readAsDataURL(file);
+// Print
+function printCard(){ window.print(); }
 
-    // Upload to Firebase Storage
-    let storageRef = storage.ref("voterPhotos/" + epic + ".jpg");
-    
-    storageRef.put(file).then(() => {
-        storageRef.getDownloadURL().then(url => {
-            uploadedImageURL = url;
-            db.ref("Voters/" + epic).update({ ImageURL: url });
+// WhatsApp
+function sendWA(){
+    let note = document.getElementById("senderNote").value || "—";
+    firebase.database().ref("GlobalSenderNote").set(note);
+    if(selected){ firebase.database().ref("Voters/"+selected.EPIC).update({SenderNote:note}); }
+    let text = `*Voter Info*%0A%0A👤 ${selected.Name}%0A🆔 EPIC: ${selected.EPIC}%0A🏛 AC: ${selected.AcNo}%0A📍 Part: ${selected.PartNo}%0A🏠 Address: ${selected.Address || "NA"}%0A🗳 Booth: ${selected.VotingAddress || "NA"}%0A%0A📝 Message: ${note}`;
+    window.open(`https://wa.me/?text=${text}`);
+}
+
+// Upload Image
+document.getElementById("imageInput").addEventListener("change", e=>{
+    const file = e.target.files[0];
+    if(!file || !selected) return;
+    const storageRef = firebase.storage().ref(`voterImages/${selected.EPIC}`);
+    storageRef.put(file).then(()=>{
+        storageRef.getDownloadURL().then(url=>{
+            document.getElementById("voterImage").src=url;
+            document.getElementById("voterImage").style.display="block";
+            firebase.database().ref("Voters/"+selected.EPIC).update({ImageURL:url});
         });
     });
 });
 
-// ================= SAVE DATA =================
-function saveData() {
-    let epic = document.getElementById("epicInput").value.trim();
-
-    let data = {
-        EPIC: epic,
-        Name: document.getElementById("nameInput").value,
-        Address: document.getElementById("addressInput").value,
-        Booth: document.getElementById("boothInput").value,
-        VotingAddress: document.getElementById("votingAddressInput").value,
-        ImageURL: uploadedImageURL
-    };
-
-    db.ref("Voters/" + epic).update(data);
-    alert("Saved Successfully!");
-}
-
-// ================= PRINT =================
-function printCard() {
-    let content = document.getElementById("cardBox").innerHTML;
-    let win = window.open("", "", "width=400,height=600");
-    win.document.write("<html><body>" + content + "</body></html>");
-    win.document.close();
-    win.print();
-}
-
-// ================= WHATSAPP =================
-function sendWhatsapp() {
-    let msg =
-        "EPIC: " + document.getElementById("epicInput").value +
-        "\nName: " + document.getElementById("nameInput").value +
-        "\nAddress: " + document.getElementById("addressInput").value +
-        "\nBooth: " + document.getElementById("boothInput").value +
-        "\nVoting Address: " + document.getElementById("votingAddressInput").value;
-
-    window.open("https://wa.me/?text=" + encodeURIComponent(msg), "_blank");
-}
+// Search
+document.getElementById("search").addEventListener("input", e=>{
+    let t=e.target.value.toLowerCase();
+    let f=Object.values(voters).filter(v=>v.Name.toLowerCase().includes(t) || v.EPIC.toLowerCase().includes(t) || String(v.AcNo).includes(t) || String(v.PartNo).includes(t));
+    showList(f);
+});
 </script>
-
 </body>
 </html>
