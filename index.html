@@ -5,26 +5,23 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Responsive Slider with Firebase Google Login</title>
 
-<!-- PWA Required -->
-<link rel="manifest" href="manifest.json" />
-<link rel="apple-touch-icon" href="icons/icon-192.png">
+<!-- PWA manifest -->
+<link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#ffeb3b">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
 
 <!-- Service Worker -->
 <script>
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
     navigator.serviceWorker.register("./sw.js")
-      .then(() => console.log("Service Worker Registered"))
-      .catch(err => console.log("SW Failed:", err));
+      .then(reg => console.log("ServiceWorker registered:", reg))
+      .catch(err => console.log("SW registration failed:", err));
   });
 }
 </script>
 
+<!-- CSS -->
 <style>
-/* आपका पूरा CSS वही रखा है */
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
   font-family: Arial, sans-serif;
@@ -36,13 +33,36 @@ body {
   min-height: 100vh;
   padding: 20px;
 }
+
+/* Slider */
 .slider { width: 90%; max-width: 1000px; margin-top: 50px; overflow: hidden; }
 .slides { display: flex; transition: transform 0.5s ease-in-out; }
 .slides img { width: 100%; height: auto; object-fit: contain; flex-shrink: 0; border-radius: 8px; }
+
+/* Ward and candidate text */
 .ward-text { margin-top: 15px; font-size: 48px; font-weight: bold; color: #ff5722; text-shadow: 4px 4px 8px #aaa, -4px -4px 8px #fff; text-align: center; }
 .candidate-text { font-size: 28px; font-weight: bold; color: #795548; text-shadow: 2px 2px 5px #aaa, -2px -2px 5px #fff; text-align: center; margin-bottom: 20px; }
 
-.google-btn, .install-btn {
+/* 3D Google login button */
+.google-btn {
+  padding: 14px 30px;
+  font-size: 18px;
+  font-weight: bold;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(145deg, #4285F4, #34A853, #FBBC05, #EA4335);
+  box-shadow: 4px 4px 15px #aaa, -4px -4px 15px #fff;
+  cursor: pointer;
+  transition: 0.3s;
+}
+.google-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 6px 6px 20px #888, -6px -6px 20px #fff;
+}
+
+/* 3D PWA install button */
+.install-btn {
   padding: 14px 30px;
   font-size: 18px;
   font-weight: bold;
@@ -50,16 +70,30 @@ body {
   border: none;
   border-radius: 12px;
   cursor: pointer;
+  background: linear-gradient(145deg, #FF6B6B, #FFD93D, #6BCB77, #4D96FF);
   box-shadow: 4px 4px 15px #aaa, -4px -4px 15px #fff;
+  transition: transform 0.2s, box-shadow 0.2s;
   margin-top: 15px;
 }
-.google-btn { background: linear-gradient(145deg, #4285F4, #34A853, #FBBC05, #EA4335); }
-.install-btn { background: linear-gradient(145deg, #FF6B6B, #FFD93D, #6BCB77, #4D96FF); }
+.install-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 6px 6px 20px #888, -6px -6px 20px #fff;
+}
+.install-btn:active {
+  transform: scale(0.97);
+  box-shadow: 2px 2px 10px #888, -2px -2px 10px #fff;
+}
+
+/* Responsive adjustments */
+@media screen and (max-width: 768px) {
+  .ward-text { font-size: 36px; }
+  .candidate-text { font-size: 22px; }
+  .google-btn, .install-btn { font-size: 16px; padding: 12px 25px; }
+}
 </style>
 </head>
 
 <body>
-
 <div class="slider">
   <div class="slides">
     <img src="https://i.ibb.co/NgFTprmS/images-1.jpg" alt="Image 1">
@@ -71,52 +105,73 @@ body {
 <div class="ward-text">Ward No. 8</div>
 <div class="candidate-text">उम्मेदवार: सचिन देसाई</div>
 
+<!-- Google Login Button -->
 <button class="google-btn" id="google-login">Login with Google</button>
+
+<!-- PWA Install Button (Initially Hidden) -->
 <button id="install-btn" class="install-btn" style="display:none;">Install App</button>
 
+<!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 
 <script>
-// Firebase
-firebase.initializeApp({
+// Firebase config
+const firebaseConfig = {
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
   authDomain: "voter-25c94.firebaseapp.com",
+  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
   projectId: "voter-25c94",
   storageBucket: "voter-25c94.appspot.com",
   messagingSenderId: "297773534400",
   appId: "1:297773534400:web:3722c487b8c83e9b787125"
-});
-
+};
+firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
+const provider = new firebase.auth.GoogleAuthProvider();
+
+// Ensure persistence
 auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 
-document.getElementById('google-login').onclick = () => {
-  auth.signInWithPopup(new firebase.auth.GoogleAuthProvider())
-  .then(() => window.location.href = "login-page.html");
-};
-
-// Slider
-let index = 0;
-setInterval(() => {
-  index = (index + 1) % 3;
-  document.querySelector('.slides').style.transform = `translateX(-${index * 100}%)`;
-}, 3000);
-
-// Install App Button
-let installPrompt;
-const install_btn = document.getElementById("install-btn");
-
-window.addEventListener("beforeinstallprompt", (e) => {
-  e.preventDefault();
-  installPrompt = e;
-  install_btn.style.display = "block";
+// Google login
+document.getElementById('google-login').addEventListener('click', () => {
+  auth.signInWithPopup(provider)
+    .then(result => {
+      console.log("User info:", result.user);
+      window.location.href = 'login-page.html'; // Ensure this file exists
+    })
+    .catch(err => {
+      console.error("Login error:", err);
+      alert("Google login failed. Check console.");
+    });
 });
 
-install_btn.onclick = async () => {
-  install_btn.style.display = "none";
-  installPrompt.prompt();
-};
+// Slider functionality
+const slides = document.querySelector('.slides');
+let currentIndex = 0;
+const total = slides.children.length;
+function showSlide(index) { slides.style.transform = `translateX(-${index * 100}%)`; }
+setInterval(() => { currentIndex = (currentIndex + 1) % total; showSlide(currentIndex); }, 3000);
+
+// PWA Install Button
+let deferredPrompt;
+const installBtn = document.getElementById('install-btn');
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  installBtn.style.display = 'block';
+});
+
+installBtn.addEventListener('click', async () => {
+  installBtn.style.display = 'none';
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    const choiceResult = await deferredPrompt.userChoice;
+    console.log('User choice:', choiceResult.outcome);
+    deferredPrompt = null;
+  }
+});
 </script>
 </body>
 </html>
