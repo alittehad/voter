@@ -14,144 +14,169 @@
 <div class="max-w-xl mx-auto bg-white shadow-md p-6 rounded-lg">
 <h2 class="text-xl font-bold mb-4">🗳 Voter Information</h2>
 
-<!-- Form -->
-<label class="block mb-2 font-semibold">EPIC Number:</label>
+<label>EPIC Number:</label>
 <input id="epicSearch" class="w-full p-2 border rounded mb-2" placeholder="Enter EPIC">
-<button id="loadBtn" class="bg-blue-600 text-white px-4 py-2 rounded mb-4 w-full">Load Details</button>
 
-<div id="formArea" class="hidden">
+<button id="loadBtn" class="bg-blue-600 text-white w-full py-2 rounded">Load Details</button>
 
-<label>Name:</label>
+<div id="formArea" class="hidden mt-4">
+
+<label>Name</label>
 <input id="name" class="w-full p-2 border rounded mb-2">
 
-<label>AC No:</label>
+<label>AC No</label>
 <input id="acNo" class="w-full p-2 border rounded mb-2">
 
-<label>Part No:</label>
+<label>Part No</label>
 <input id="partNo" class="w-full p-2 border rounded mb-2">
 
-<label>Address:</label>
+<label>Address</label>
 <input id="address" class="w-full p-2 border rounded mb-2">
 
-<label>Booth:</label>
+<label>Booth</label>
 <input id="booth" class="w-full p-2 border rounded mb-2">
 
-<label>Sender Note:</label>
-<textarea id="note" class="w-full p-2 border rounded mb-2" placeholder="Write message..."></textarea>
+<label>Sender Note</label>
+<textarea id="note" class="w-full p-2 border rounded mb-2"></textarea>
 
-<!-- Image Upload -->
+<!-- IMAGE -->
 <label>Voter Image</label>
-<input type="file" id="uploadImage" class="w-full mb-2">
+<input type="file" id="uploadImage" class="block mb-2">
 
 <img id="preview" class="hidden w-32 border rounded mb-2">
+
+<button id="deleteImg" class="hidden bg-red-500 text-white w-full py-2 rounded mb-2">🗑 Delete Image</button>
 
 <button id="saveBtn" class="bg-green-600 text-white w-full py-2 rounded mb-2">💾 Save</button>
 <button id="printBtn" class="bg-gray-600 text-white w-full py-2 rounded mb-2">🖨 Print</button>
 <button id="whatsappSend" class="bg-green-500 text-white w-full py-2 rounded">📩 WhatsApp</button>
+</div>
+</div>
 
-</div>
-</div>
 
 <!-- PRINT AREA -->
 <div id="printArea" class="hidden p-6">
-    <h2 class="text-lg font-bold">Voter Detail</h2>
-    <img id="printImg" class="w-32 my-2">
-    <p id="printData" class="text-sm leading-6"></p>
+<h2 class="text-lg font-bold">Voter Details</h2>
+<img id="printImg" class="w-32 my-2">
+<pre id="printData" class="text-sm leading-6 whitespace-pre-wrap"></pre>
 </div>
 
 
 <script>
-/* -------- FIREBASE SETUP -------- */
+/* Firebase Setup */
 const firebaseConfig = {
     apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
     authDomain: "voter-25c94.firebaseapp.com",
     databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
     projectId: "voter-25c94",
 };
+
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-/* -------- LOAD DETAILS -------- */
-document.getElementById("loadBtn").addEventListener("click", async () => {
-    const epic = document.getElementById("epicSearch").value;
-    const snap = await db.ref("Voters/" + epic).get();
-
-    if (!snap.exists()) return alert("No data found!");
-
-    const data = snap.val();
-    document.getElementById("formArea").classList.remove("hidden");
-
-    document.getElementById("name").value = data.Name;
-    document.getElementById("acNo").value = data.AcNo;
-    document.getElementById("partNo").value = data.PartNo;
-    document.getElementById("address").value = data.Address;
-    document.getElementById("booth").value = data.VotingAddress;
-});
-
-/* -------- IMAGE UPLOAD (imgbb) -------- */
 let uploadedImageURL = "";
 
-document.getElementById("uploadImage").addEventListener("change", async function(){
+/* Load Data */
+document.getElementById("loadBtn").onclick = async () => {
+    const epic = epicSearch.value.trim();
+    if (!epic) return alert("Enter EPIC");
+
+    const snap = await db.ref("Voters/" + epic).get();
+    if (!snap.exists()) return alert("Not Found ❌");
+
+    const data = snap.val();
+    formArea.classList.remove("hidden");
+
+    name.value = data.Name || "";
+    acNo.value = data.AcNo || "";
+    partNo.value = data.PartNo || "";
+    address.value = data.Address || "";
+    booth.value = data.VotingAddress || "";
+    note.value = data.Note || "";
+
+    uploadedImageURL = data.Image || "";
+
+    if (uploadedImageURL) {
+        preview.src = uploadedImageURL;
+        preview.classList.remove("hidden");
+        deleteImg.classList.remove("hidden");
+    }
+};
+
+/* Upload Image (imgbb) */
+uploadImage.onchange = async function() {
     const file = this.files[0];
-    const form = new FormData();
-    form.append("image", file);
+    const fd = new FormData();
+    fd.append("image", file);
 
-    let res = await fetch("https://api.imgbb.com/1/upload?key=7894e8cd9ee3a6cc520e2285d0b3f923", {method:"POST", body:form});
+    let res = await fetch("https://api.imgbb.com/1/upload?key=7894e8cd9ee3a6cc520e2285d0b3f923", {
+        method: "POST",
+        body: fd
+    });
+
     let json = await res.json();
-
     uploadedImageURL = json.data.url;
 
-    document.getElementById("preview").src = uploadedImageURL;
-    document.getElementById("preview").classList.remove("hidden");
-});
+    preview.src = uploadedImageURL;
+    preview.classList.remove("hidden");
+    deleteImg.classList.remove("hidden");
+};
 
-/* -------- SAVE -------- */
-document.getElementById("saveBtn").addEventListener("click", () => {
-    const epic = document.getElementById("epicSearch").value;
+/* Delete Image */
+deleteImg.onclick = () => {
+    uploadedImageURL = "";
+    preview.classList.add("hidden");
+    deleteImg.classList.add("hidden");
+};
+
+/* SAVE */
+saveBtn.onclick = () => {
+    const epic = epicSearch.value.trim();
     db.ref("Voters/" + epic).update({
         Name: name.value,
         AcNo: acNo.value,
         PartNo: partNo.value,
         Address: address.value,
         VotingAddress: booth.value,
-        Image: uploadedImageURL,
-        Note: note.value
+        Note: note.value,
+        Image: uploadedImageURL
     });
-    alert("Saved Successfully ✅");
-});
 
-/* -------- PRINT FIX -------- */
-document.getElementById("printBtn").addEventListener("click", () => {
+    alert("Saved Successfully ✔");
+};
 
-    document.getElementById("printImg").src = uploadedImageURL;
-    document.getElementById("printData").innerText =
-`Name: ${name.value}
+/* PRINT FIX */
+printBtn.onclick = () => {
+    printImg.src = uploadedImageURL;
+    printData.innerText = `
+Name: ${name.value}
 EPIC: ${epicSearch.value}
 AC No: ${acNo.value}
 Part No: ${partNo.value}
 Address: ${address.value}
 Booth: ${booth.value}
+
+Note:
 ${note.value}`;
 
-    document.getElementById("printArea").style.display = "block";
+    printArea.style.display = "block";
 
-    setTimeout(() => {
-        window.print();
-    }, 300);
-}); 
-
-window.onafterprint = () =>{
-    document.getElementById("printArea").style.display = "none";
+    setTimeout(() => window.print(), 300);
 };
 
-/* -------- WHATSAPP SEND -------- */
-document.getElementById("whatsappSend").addEventListener("click", () => {
-    let phone = prompt("Enter 10 digit WhatsApp Number:");
-    let message = 
-`👤 Name: ${name.value}
+window.onafterprint = () =>
+    printArea.style.display = "none";
+
+/* WhatsApp */
+whatsappSend.onclick = () => {
+    let phone = prompt("Enter WhatsApp Number:");
+    if (!phone) return;
+
+    let msg = `
+👤 Name: ${name.value}
 🆔 EPIC: ${epicSearch.value}
-🏛 AC No: ${acNo.value}
-📍 Part No: ${partNo.value}
+🏛 AC: ${acNo.value}
+📍 Part: ${partNo.value}
 🏠 Address: ${address.value}
 🗳 Booth: ${booth.value}
 
@@ -159,10 +184,12 @@ document.getElementById("whatsappSend").addEventListener("click", () => {
 ${note.value}
 
 📸 Image:
-${uploadedImageURL}`;
+${uploadedImageURL}
+`;
 
-    window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(message)}`, "_blank");
-});
+    window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`);
+};
 </script>
+
 </body>
 </html>
