@@ -1,60 +1,98 @@
 <!DOCTYPE html>
 <html lang="mr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Responsive Slider with Firebase Google Login</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Voter App</title>
 
-<!-- PWA Required -->
+<!-- Manifest -->
 <link rel="manifest" href="manifest.json" />
-<link rel="apple-touch-icon" href="icons/icon-192.png">
-<meta name="theme-color" content="#ffeb3b">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-
-<!-- Service Worker -->
-<script>
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", function() {
-    navigator.serviceWorker.register("./sw.js")
-      .then(() => console.log("Service Worker Registered"))
-      .catch(err => console.log("SW Failed:", err));
-  });
-}
-</script>
+<link rel="apple-touch-icon" href="icon-192.png" />
+<meta name="theme-color" content="#ffeb3b" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
 
 <style>
-/* आपका पूरा CSS वही रखा है */
-* { box-sizing: border-box; margin: 0; padding: 0; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
 body {
-  font-family: Arial, sans-serif;
   background: #ffeb3b;
+  font-family: Arial, sans-serif;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  min-height: 100vh;
-  padding: 20px;
+  height: 100vh;
+  width: 100vw;
+  padding: 10px;
+  overflow-x: hidden;
 }
-.slider { width: 90%; max-width: 1000px; margin-top: 50px; overflow: hidden; }
-.slides { display: flex; transition: transform 0.5s ease-in-out; }
-.slides img { width: 100%; height: auto; object-fit: contain; flex-shrink: 0; border-radius: 8px; }
-.ward-text { margin-top: 15px; font-size: 48px; font-weight: bold; color: #ff5722; text-shadow: 4px 4px 8px #aaa, -4px -4px 8px #fff; text-align: center; }
-.candidate-text { font-size: 28px; font-weight: bold; color: #795548; text-shadow: 2px 2px 5px #aaa, -2px -2px 5px #fff; text-align: center; margin-bottom: 20px; }
 
-.google-btn, .install-btn {
+/* Slider */
+.slider {
+  width: 100%;
+  max-width: 800px;
+  overflow: hidden;
+  margin-top: 5px;
+}
+.slides {
+  display: flex;
+  transition: transform 0.5s ease-in-out;
+}
+.slides img {
+  width: 100%;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+/* Text */
+.ward-text {
+  margin-top: 10px;
+  font-size: 48px;
+  font-weight: bold;
+  color: #ff5722;
+  text-shadow: 4px 4px 8px #aaa, -4px -4px 8px #fff;
+  text-align: center;
+}
+.candidate-text {
+  font-size: 28px;
+  font-weight: bold;
+  color: #795548;
+  text-shadow: 2px 2px 5px #aaa, -2px -2px 5px #fff;
+  text-align: center;
+}
+
+/* Buttons */
+button {
   padding: 14px 30px;
   font-size: 18px;
   font-weight: bold;
-  color: white;
-  border: none;
   border-radius: 12px;
   cursor: pointer;
-  box-shadow: 4px 4px 15px #aaa, -4px -4px 15px #fff;
+  border: none;
   margin-top: 15px;
+  width: 90%;
+  max-width: 320px;
+  box-shadow: 4px 4px 15px #aaa, -4px -4px 15px #fff;
 }
-.google-btn { background: linear-gradient(145deg, #4285F4, #34A853, #FBBC05, #EA4335); }
-.install-btn { background: linear-gradient(145deg, #FF6B6B, #FFD93D, #6BCB77, #4D96FF); }
+
+.google-btn {
+  background: linear-gradient(145deg, #4285F4, #34A853, #FBBC05, #EA4335);
+  color: white;
+}
+
+.install-btn {
+  display:none;
+  background: linear-gradient(145deg, #FF6B6B, #FFD93D, #6BCB77, #4D96FF);
+  color:white;
+}
+
+/* Responsive Text */
+@media (max-width: 768px) {
+  .ward-text { font-size: 32px; }
+  .candidate-text { font-size: 20px; }
+  button { font-size: 16px; padding: 10px; }
+}
 </style>
 </head>
 
@@ -62,9 +100,9 @@ body {
 
 <div class="slider">
   <div class="slides">
-    <img src="https://i.ibb.co/NgFTprmS/images-1.jpg" alt="Image 1">
-    <img src="https://i.ibb.co/zHnxn3Lf/images.jpg" alt="Image 2">
-    <img src="https://i.ibb.co/7wHNN9B/Whats-App-Image-2025-11-24-at-11-56-26-3fbcdaac.jpg" alt="Image 3">
+    <img src="https://i.ibb.co/NgFTprmS/images-1.jpg" />
+    <img src="https://i.ibb.co/zHnxn3Lf/images.jpg" />
+    <img src="https://i.ibb.co/7wHNN9B/Whats-App-Image-2025-11-24-at-11-56-26-3fbcdaac.jpg" />
   </div>
 </div>
 
@@ -72,13 +110,14 @@ body {
 <div class="candidate-text">उम्मेदवार: सचिन देसाई</div>
 
 <button class="google-btn" id="google-login">Login with Google</button>
-<button id="install-btn" class="install-btn" style="display:none;">Install App</button>
+<button class="install-btn" id="install-btn">Install App</button>
 
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 
 <script>
-// Firebase
+// Firebase Config
 firebase.initializeApp({
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
   authDomain: "voter-25c94.firebaseapp.com",
@@ -91,32 +130,40 @@ firebase.initializeApp({
 const auth = firebase.auth();
 auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 
-document.getElementById('google-login').onclick = () => {
+// Google Login
+document.getElementById("google-login").onclick = () => {
   auth.signInWithPopup(new firebase.auth.GoogleAuthProvider())
-  .then(() => window.location.href = "login-page.html");
+    .then(() => window.location.href = "login-page.html")
+    .catch(err => alert("Login Failed ❌: " + err));
 };
 
-// Slider
+// Slider Auto Change
 let index = 0;
 setInterval(() => {
   index = (index + 1) % 3;
-  document.querySelector('.slides').style.transform = `translateX(-${index * 100}%)`;
+  document.querySelector(".slides").style.transform = `translateX(-${index * 100}%)`;
 }, 3000);
 
-// Install App Button
-let installPrompt;
-const install_btn = document.getElementById("install-btn");
-
+// PWA Install Button
+let installEvent;
 window.addEventListener("beforeinstallprompt", (e) => {
   e.preventDefault();
-  installPrompt = e;
-  install_btn.style.display = "block";
+  installEvent = e;
+  document.getElementById("install-btn").style.display = "block";
 });
 
-install_btn.onclick = async () => {
-  install_btn.style.display = "none";
-  installPrompt.prompt();
+document.getElementById("install-btn").onclick = () => {
+  installEvent.prompt();
 };
+</script>
+
+<script>
+// Service Worker Register
+if("serviceWorker" in navigator){
+navigator.serviceWorker.register("sw.js")
+.then(()=>console.log("SW ready"))
+.catch(()=>console.log("SW failed"));
+}
 </script>
 </body>
 </html>
