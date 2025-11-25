@@ -16,6 +16,7 @@ input, textarea {
     margin-bottom:10px;border-radius:12px;cursor:pointer;
     transition:.3s;font-size:16px;
 }
+.highlight { background: #ffe08a !important; border-color:#d6a300 !important; }
 .list-item:hover{
     transform:scale(1.03);box-shadow:0 0 10px gray;
 }
@@ -40,6 +41,7 @@ input, textarea {
 }
 .btn:active{ transform:translateY(4px); }
 .close-btn{ background:red;box-shadow:0 4px 0 #7a0000; }
+.color-btn{ background:#ffa600; box-shadow:0 4px 0 #b36b00; }
 
 /* PRINT */
 @media print{
@@ -61,18 +63,15 @@ input, textarea {
         <p><b>🆔 EPIC:</b> <span id="pEpic"></span></p>
         <p><b>🏛 AC No:</b> <span id="pAc"></span></p>
         <p><b>📍 Part No:</b> <span id="pPart"></span></p>
-
-        <label><b>🏠 Address:</b></label>
-        <input id="pAddress">
-
-        <label><b>🗳 Booth:</b></label>
-        <input id="pVoteAddress">
+        <p><b>🏠 Address:</b> <span id="pAddress"></span></p>
+        <p><b>🗳 Booth:</b> <span id="pVoteAddress"></span></p>
 
         <img id="voterImage" style="display:none; margin-top:10px;">
 
         <label><b>📝 Sender Message:</b></label>
         <input id="senderNote" placeholder="Type message here">
 
+        <button class="btn color-btn" onclick="highlightItem()">🎨 Highlight</button>
         <button class="btn" onclick="printDetails()">🖨 Print</button>
         <button class="btn" onclick="sendWhatsApp()">📩 WhatsApp</button>
         <button class="btn close-btn" onclick="closePopup()">❌ Close</button>
@@ -90,7 +89,7 @@ firebase.initializeApp({
   storageBucket: "voter-25c94.appspot.com"
 });
 
-let voters={}, selected=null, globalSenderNote="";
+let voters={}, selected=null, globalSenderNote="", activeListItem=null;
 
 // Load voters
 firebase.database().ref("/").once("value").then(snap=>{
@@ -107,7 +106,12 @@ function showList(data){
         const div = document.createElement("div");
         div.className = "list-item";
         div.innerHTML = `<b>${v.Name}</b><br>🆔 ${v.EPIC} | 🏛 AC:${v.AcNo} | 📍 Part:${v.PartNo}`;
-        div.onclick = ()=>openPopup(v);
+
+        div.onclick = () => {
+            activeListItem = div; 
+            openPopup(v);
+        };
+
         box.appendChild(div);
     });
 }
@@ -119,9 +123,8 @@ function openPopup(v){
     document.getElementById("pEpic").innerText = v.EPIC;
     document.getElementById("pAc").innerText = v.AcNo;
     document.getElementById("pPart").innerText = v.PartNo;
-
-    document.getElementById("pAddress").value = v.Address || "";
-    document.getElementById("pVoteAddress").value = v.VotingAddress || "";
+    document.getElementById("pAddress").innerText = v.Address || "";
+    document.getElementById("pVoteAddress").innerText = v.VotingAddress || "";
     document.getElementById("senderNote").value = v.SenderNote || globalSenderNote;
 
     const img = document.getElementById("voterImage");
@@ -133,6 +136,14 @@ function openPopup(v){
     }
 
     document.getElementById("popup").style.display = "flex";
+}
+
+// Highlight both list item + card
+function highlightItem(){
+    if(activeListItem){
+        activeListItem.classList.toggle("highlight");
+    }
+    document.getElementById("cardBox").classList.toggle("highlight");
 }
 
 // Close popup
@@ -149,8 +160,8 @@ function printDetails(){
 function sendWhatsApp(){
     const msg = `👤 Name: ${selected.Name}
 🆔 EPIC: ${selected.EPIC}
-🏠 Address: ${document.getElementById("pAddress").value}
-📍 Booth: ${document.getElementById("pVoteAddress").value}
+🏠 Address: ${selected.Address}
+📍 Booth: ${selected.VotingAddress}
 📝 Message: ${document.getElementById("senderNote").value}`;
 
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`);
@@ -162,8 +173,8 @@ document.getElementById("search").addEventListener("input", e=>{
     const f = Object.values(voters).filter(v =>
         (v.Name || "").toLowerCase().includes(t) ||
         (v.EPIC || "").toLowerCase().includes(t) ||
-        (v.AcNo !== undefined && v.AcNo.toString().includes(t)) ||
-        (v.PartNo !== undefined && v.PartNo.toString().includes(t)) ||
+        (v.AcNo+"").includes(t) ||
+        (v.PartNo+"").includes(t) ||
         (v.Address || "").toLowerCase().includes(t) ||
         (v.VotingAddress || "").toLowerCase().includes(t) ||
         (v.SenderNote || "").toLowerCase().includes(t)
