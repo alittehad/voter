@@ -1,141 +1,121 @@
 <!DOCTYPE html>
 <html lang="mr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ward Election App</title>
-
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#ffeb3b">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ward App</title>
 
 <style>
-*{margin:0;padding:0;box-sizing:border-box;}
+* { margin:0; padding:0; box-sizing:border-box; }
 
-body{
+body {
   background:#ffeb3b;
-  font-family:'Arial';
+  font-family:Arial, sans-serif;
   display:flex;
   flex-direction:column;
   align-items:center;
-  height:100vh;
-  overflow:hidden;
+  padding-top:10px;
 }
 
-/* ---------- Flip Slider ---------- */
+/* ---- Slider ---- */
 
-.slider{
-  width:100%;
+.slider {
+  width:90vw;
   max-width:650px;
   height:260px;
   position:relative;
-  margin-top:15px;
-  perspective:1000px;
+  perspective:1200px;
+  border-radius:20px;
 }
 
-.slide-item{
+.slide {
   width:100%;
   height:100%;
   position:absolute;
-  backface-visibility:hidden;
+  top:0;
+  left:0;
   border-radius:20px;
+  background:white;
+  backface-visibility:hidden;
   display:flex;
   align-items:center;
   justify-content:center;
   overflow:hidden;
-  background:white;
-  box-shadow:0 10px 25px rgba(0,0,0,0.2);
-  transition:transform 0.8s ease-in-out;
+  transition:transform .9s ease;
+  box-shadow:0 8px 25px rgba(0,0,0,0.15);
 }
 
-.slide-item img{
+.slide img {
   width:100%;
   height:100%;
-  object-fit:contain;
-  border-radius:20px;
+  object-fit:cover;
 }
 
-/* Flip states */
-.flip-out{
+.hidden {
   transform:rotateY(180deg);
 }
 
-.flip-in{
+.visible {
   transform:rotateY(0deg);
 }
 
-/* ---------- Text ---------- */
+/* ---- Text ---- */
 
-.ward-text{
+.ward-text {
   font-size:6vw;
   font-weight:bold;
-  margin-top:10px;
-  text-align:center;
   color:#c62828;
-  text-shadow:3px 3px 10px #fff;
+  margin-top:12px;
+  text-shadow:2px 2px 6px #ffffff;
 }
 
-.candidate-text{
+.candidate-text {
   font-size:4.8vw;
   font-weight:bold;
-  color:#5d4037;
-  text-align:center;
-  text-shadow:2px 2px 6px white;
-  margin-bottom:15px;
+  color:#4e342e;
+  margin:5px 0 20px;
 }
 
-/* ---------- 3D Buttons ---------- */
+/* ---- 3D Buttons ---- */
 
-.btn{
+.btn {
   width:85%;
   max-width:330px;
-  padding:16px;
-  margin:12px auto;
+  padding:15px;
+  margin:12px 0;
   font-size:20px;
   font-weight:bold;
-  border-radius:18px;
+  border-radius:14px;
   cursor:pointer;
   border:none;
-  transition:0.2s;
-  background:#ffeb3b;
-  box-shadow:
-     8px 8px 20px #c0b428,
-    -8px -8px 20px #fff685;
-}
-
-.btn:active{
-  box-shadow:
-     inset 6px 6px 15px #c0b428,
-     inset -6px -6px 15px #fff685;
-}
-
-.google-btn{
-  background:linear-gradient(145deg,#4285F4,#34A853,#FBBC05,#EA4335);
   color:white;
-  box-shadow:
-     8px 8px 20px rgba(0,0,0,0.3),
-    -8px -8px 20px rgba(255,255,255,0.7);
+  transition:0.2s;
+  background:#ffea00;
+  box-shadow:6px 6px 15px #c9bd26, -6px -6px 15px #fffaaa;
 }
 
-.google-btn:active{
-  box-shadow:
-     inset 6px 6px 15px rgba(0,0,0,0.35),
-     inset -6px -6px 15px rgba(255,255,255,0.7);
+.btn:active {
+  box-shadow:inset 5px 5px 12px #c9bd26, inset -5px -5px 12px #fffaaa;
 }
 
-.install-btn{
- background:linear-gradient(145deg,#FF6B6B,#FFD93D,#6BCB77,#4D96FF);
- color:white;
+/* Google button better color balance */
+.google-btn {
+  background:#4285F4;
+}
+
+/* Install button */
+.install-btn {
+  background:#34A853;
 }
 </style>
 </head>
 
 <body>
 
-<!-- Flip Slider -->
 <div class="slider">
-  <div class="slide-item flip-in"><img src="https://i.ibb.co/NgFTprmS/images-1.jpg"></div>
-  <div class="slide-item flip-out"><img src="https://i.ibb.co/zHnxn3Lf/images.jpg"></div>
-  <div class="slide-item flip-out"><img src="https://i.ibb.co/7wHNN9B/Whats-App-Image-2025-11-24-at-11-56-26-3fbcdaac.jpg"></div>
+  <div class="slide visible"><img src="https://i.ibb.co/NgFTprmS/images-1.jpg"></div>
+  <div class="slide hidden"><img src="https://i.ibb.co/zHnxn3Lf/images.jpg"></div>
+  <div class="slide hidden"><img src="https://i.ibb.co/7wHNN9B/Whats-App-Image-2025-11-24-at-11-56-26-3fbcdaac.jpg"></div>
 </div>
 
 <div class="ward-text">Ward No. 8</div>
@@ -144,13 +124,11 @@ body{
 <button class="btn google-btn" id="google-login">Google Login</button>
 <button class="btn install-btn" id="install-btn" style="display:none;">Install App</button>
 
-
-<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 
 <script>
-// Firebase Setup
+// Firebase
 firebase.initializeApp({
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
   authDomain: "voter-25c94.firebaseapp.com",
@@ -161,36 +139,32 @@ firebase.initializeApp({
 });
 
 const auth = firebase.auth();
-auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 
-document.getElementById('google-login').onclick = () => {
+document.querySelector("#google-login").onclick = () => {
   auth.signInWithPopup(new firebase.auth.GoogleAuthProvider())
-  .then(()=>location.href="login-page.html");
+  .then(() => location.href = "login-page.html");
 };
 
 // Flip Slider Logic
-let current = 0;
-const slides = document.querySelectorAll(".slide-item");
+let index = 0;
+const slides = document.querySelectorAll(".slide");
 
 setInterval(() => {
-  slides[current].classList.replace("flip-in","flip-out");
-  current = (current + 1) % slides.length;
-  slides[current].classList.replace("flip-out","flip-in");
+  slides[index].classList.replace("visible","hidden");
+  index = (index+1) % slides.length;
+  slides[index].classList.replace("hidden","visible");
 }, 3000);
 
-// Install App
-let installPrompt;
-const installBtn = document.getElementById("install-btn");
-
+// Install app
+let promptEvent;
 window.addEventListener("beforeinstallprompt",(e)=>{
   e.preventDefault();
-  installPrompt=e;
-  installBtn.style.display="block";
+  promptEvent=e;
+  document.querySelector("#install-btn").style.display="block";
 });
 
-installBtn.onclick=async()=>{
-  installBtn.style.display="none";
-  installPrompt.prompt();
+document.querySelector("#install-btn").onclick=()=>{
+  promptEvent.prompt();
 };
 </script>
 
