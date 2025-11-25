@@ -3,44 +3,36 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Voter List App</title>
-
+<title>Voter Preview Only</title>
 <style>
 body { font-family: Arial; margin:0; padding:10px; background:#f3f3f3; }
 h2 { text-align:center; margin-bottom:15px; }
-
 input, textarea {
     width:100%; padding:10px; margin-bottom:12px;
     border-radius:8px; border:2px solid #777; font-size:16px;
 }
-
 .list-item{
     padding:14px;background:white;border:2px solid #aaa;
     margin-bottom:10px;border-radius:12px;cursor:pointer;
     transition:.3s;font-size:16px;
 }
-
 .list-item:hover{
     transform:scale(1.03);box-shadow:0 0 10px gray;
 }
-
 #popup{
     position:fixed;top:0;left:0;width:100%;height:100%;
     background:rgba(0,0,0,0.7);display:none;
     justify-content:center;align-items:flex-start;
     padding:20px;overflow-y:auto;
 }
-
 .card{
     width:95%;max-width:420px;background:white;
     border:3px solid black;border-radius:15px;padding:20px;
 }
-
 .card img{
     width:100%;max-height:200px;object-fit:contain;
     border-radius:12px;margin-bottom:10px;
 }
-
 .btn{
     padding:12px;width:100%;margin-top:10px;background:#008cff;
     color:white;border:none;font-size:16px;cursor:pointer;
@@ -49,11 +41,7 @@ input, textarea {
 .btn:active{ transform:translateY(4px); }
 .close-btn{ background:red;box-shadow:0 4px 0 #7a0000; }
 
-.loadingBox{
-    display:none;background:#fff;border:3px solid black;
-    padding:10px;text-align:center;font-size:18px;font-weight:bold;
-}
-
+/* PRINT */
 @media print{
     body *{ visibility:hidden; }
     #popup, #popup *{ visibility:visible; }
@@ -61,144 +49,126 @@ input, textarea {
 }
 </style>
 </head>
-
 <body>
 
-<h2>🗳 Voter List</h2>
+<h2>🗳 Voter List Preview</h2>
 <input id="search" placeholder="Search Name, EPIC, AC No, Part No, Address, Booth...">
 <div id="list"></div>
 
 <div id="popup">
     <div class="card" id="cardBox">
-
-        <div class="loadingBox" id="printLoading">⏱ Preparing Print…</div>
-
         <h3 id="pName"></h3>
         <p><b>🆔 EPIC:</b> <span id="pEpic"></span></p>
         <p><b>🏛 AC No:</b> <span id="pAc"></span></p>
         <p><b>📍 Part No:</b> <span id="pPart"></span></p>
-        <p><b>🏠 Address:</b> <span id="pAddress"></span></p>
-        <p><b>🗳 Booth:</b> <span id="pVoteAddress"></span></p>
 
-        <img id="voterImage" style="display:none;"/>
+        <label><b>🏠 Address:</b></label>
+        <input id="pAddress">
 
-        <label><b>Sender Message:</b></label>
-        <textarea id="senderNote" placeholder="Your message..." rows="4"></textarea>
+        <label><b>🗳 Booth:</b></label>
+        <input id="pVoteAddress">
 
-        <button class="btn" onclick="saveAndPrint()">🖨 Save & Print</button>
-        <button class="btn" onclick="saveAndWA()">📩 Save & WhatsApp</button>
+        <img id="voterImage" style="display:none; margin-top:10px;">
+
+        <label><b>📝 Sender Message:</b></label>
+        <textarea id="senderNote" rows="4"></textarea>
+
+        <button class="btn" onclick="printDetails()">🖨 Print</button>
+        <button class="btn" onclick="sendWhatsApp()">📩 WhatsApp</button>
         <button class="btn close-btn" onclick="closePopup()">❌ Close</button>
     </div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase.js"></script>
 <script>
-
+// Firebase config
 firebase.initializeApp({
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
   authDomain: "voter-25c94.firebaseapp.com",
-  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
+  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com/",
   projectId: "voter-25c94",
   storageBucket: "voter-25c94.appspot.com"
 });
 
-let voters={},selected=null,globalSenderNote="";
+let voters={}, selected=null, globalSenderNote="";
 
+// Load voters
 firebase.database().ref("/").once("value").then(snap=>{
-    globalSenderNote=snap.val().GlobalSenderNote || "";
-    voters=snap.val().Voters || {};
+    globalSenderNote = snap.val().GlobalSenderNote || "";
+    voters = snap.val().Voters || {};
     showList(voters);
 });
 
-// SHOW LIST
+// Show list
 function showList(data){
-    let box=document.getElementById("list");
-    box.innerHTML="";
+    const box = document.getElementById("list");
+    box.innerHTML = "";
     Object.values(data).forEach(v=>{
-        let div=document.createElement("div");
-        div.className="list-item";
-        div.innerHTML=`<b>${v.Name}</b><br>🆔 ${v.EPIC} | 🏛 AC:${v.AcNo} | 📍 Part:${v.PartNo}`;
-        div.onclick=()=>openPopup(v);
+        const div = document.createElement("div");
+        div.className = "list-item";
+        div.innerHTML = `<b>${v.Name}</b><br>🆔 ${v.EPIC} | 🏛 AC:${v.AcNo} | 📍 Part:${v.PartNo}`;
+        div.onclick = ()=>openPopup(v);
         box.appendChild(div);
     });
 }
 
-// OPEN POPUP
+// Open popup
 function openPopup(v){
-    selected=v;
+    selected = v;
+    document.getElementById("pName").innerText = v.Name;
+    document.getElementById("pEpic").innerText = v.EPIC;
+    document.getElementById("pAc").innerText = v.AcNo;
+    document.getElementById("pPart").innerText = v.PartNo;
 
-    document.getElementById("pName").innerText=v.Name;
-    document.getElementById("pEpic").innerText=v.EPIC;
-    document.getElementById("pAc").innerText=v.AcNo;
-    document.getElementById("pPart").innerText=v.PartNo;
-    document.getElementById("pAddress").innerText=v.Address;
-    document.getElementById("pVoteAddress").innerText=v.VotingAddress;
-    document.getElementById("senderNote").value=v.SenderNote || globalSenderNote;
+    document.getElementById("pAddress").value = v.Address || "";
+    document.getElementById("pVoteAddress").value = v.VotingAddress || "";
+    document.getElementById("senderNote").value = v.SenderNote || globalSenderNote;
 
+    const img = document.getElementById("voterImage");
     if(v.ImageURL){
-        let img=document.getElementById("voterImage");
-        img.src=v.ImageURL;
-        img.style.display="block";
+        img.src = v.ImageURL;
+        img.style.display = "block";
+    } else {
+        img.style.display = "none";
     }
 
-    document.getElementById("popup").style.display="flex";
+    document.getElementById("popup").style.display = "flex";
 }
 
-// CLOSE
+// Close popup
 function closePopup(){
-    document.getElementById("popup").style.display="none";
+    document.getElementById("popup").style.display = "none";
 }
 
-// SAVE + PRINT
-function saveAndPrint(){
-    let note=document.getElementById("senderNote").value;
-
-    firebase.database().ref("Voters/"+selected.EPIC).update({
-        SenderNote:note
-    });
-
-    document.getElementById("printLoading").style.display="block";
-
-    setTimeout(()=>{
-        document.getElementById("printLoading").style.display="none";
-        window.print();
-    },1500);
+// Print
+function printDetails(){
+    window.print();
 }
 
-// SAVE + WHATSAPP SEND
-function saveAndWA(){
-    let note=document.getElementById("senderNote").value;
+// WhatsApp
+function sendWhatsApp(){
+    const msg = `👤 Name: ${selected.Name}
+🆔 EPIC: ${selected.EPIC}
+🏠 Address: ${document.getElementById("pAddress").value}
+📍 Booth: ${document.getElementById("pVoteAddress").value}
+📝 Message: ${document.getElementById("senderNote").value}`;
 
-    firebase.database().ref("Voters/"+selected.EPIC).update({
-        SenderNote:note
-    });
-
-    let msg=`*Voter Information*%0A
-👤 ${selected.Name}%0A
-🆔 EPIC: ${selected.EPIC}%0A
-🏛 AC No: ${selected.AcNo}%0A
-📍 Part No: ${selected.PartNo}%0A
-🏠 Address: ${selected.Address}%0A
-🗳 Booth: ${selected.VotingAddress}%0A%0A
-📝 *Message:* ${note}`;
-
-    window.open(`https://wa.me/?text=${msg}`);
+    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`);
 }
 
-// FULL SEARCH SYSTEM
-document.getElementById("search").addEventListener("input",e=>{
-    let t=e.target.value.toLowerCase();
-    let f=Object.values(voters).filter(v=>
+// Search
+document.getElementById("search").addEventListener("input", e=>{
+    const t = e.target.value.toLowerCase();
+    const f = Object.values(voters).filter(v =>
         v.Name.toLowerCase().includes(t) ||
         v.EPIC.toLowerCase().includes(t) ||
         v.AcNo.toString().includes(t) ||
         v.PartNo.toString().includes(t) ||
-        (v.Address || "").toLowerCase().includes(t) ||
-        (v.VotingAddress || "").toLowerCase().includes(t)
+        (v.Address||"").toLowerCase().includes(t) ||
+        (v.VotingAddress||"").toLowerCase().includes(t)
     );
     showList(f);
 });
-
 </script>
 </body>
 </html>
