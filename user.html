@@ -74,7 +74,6 @@ input, textarea { width:100%; padding:10px; margin-bottom:12px; border-radius:8p
 <!-- Firebase CDN -->
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
 <script>
 const firebaseConfig = {
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
@@ -85,13 +84,14 @@ const firebaseConfig = {
   messagingSenderId: "297773534400",
   appId: "1:297773534400:web:3722c487b8c83e9b787125"
 };
+
 firebase.initializeApp(firebaseConfig);
 
 let voters={}, selected=null, selectedFile=null, globalSenderNote="";
 
-// Load data
-firebase.database().ref("/").once("value").then(snap=>{
-    const data = snap.val();
+// Load data from Realtime Database
+firebase.database().ref("/").on("value", snap=>{
+    const data = snap.val() || {};
     globalSenderNote = data.GlobalSenderNote || "";
     voters = data.Voters || {};
     showList(voters);
@@ -136,7 +136,7 @@ function openPopup(v){
 function closePopup(){ document.getElementById("popup").style.display="none"; }
 
 // File select + preview
-document.getElementById("imageInput").addEventListener("change", e => {
+document.getElementById("imageInput").addEventListener("change", e=>{
     selectedFile = e.target.files[0];
     if(selectedFile){
         const reader = new FileReader();
@@ -149,36 +149,41 @@ document.getElementById("imageInput").addEventListener("change", e => {
     }
 });
 
-// Upload image
-document.getElementById("uploadBtn").addEventListener("click", () => {
+// Upload image to Imgbb
+document.getElementById("uploadBtn").addEventListener("click", async ()=>{
     if(!selectedFile || !selected) return alert("Select a file first!");
     document.getElementById("loadingImg").style.display="block";
-    const ref = firebase.storage().ref(`voterImages/${selected.EPIC.replace(/\./g,'_')}`);
-    ref.put(selectedFile).then(()=> ref.getDownloadURL()).then(url=>{
+
+    const form = new FormData();
+    form.append("image", selectedFile);
+    const key = "7894e8cd9ee3a6cc520e2285d0b3f923"; // Imgbb API key
+
+    try{
+        const res = await fetch(`https://api.imgbb.com/1/upload?key=${key}`, { method:"POST", body:form });
+        const data = await res.json();
+        const url = data.data.display_url;
         document.getElementById("voterImage").src = url;
         document.getElementById("voterImage").style.display="block";
+
+        // Save in Realtime DB
         firebase.database().ref(`Voters/${selected.EPIC.replace(/\./g,'_')}`).update({ImageURL:url});
-        selected.ImageURL = url; 
-        selectedFile=null;
+        selected.ImageURL = url;
+        selectedFile = null;
         document.getElementById("loadingImg").style.display="none";
         alert("Image uploaded successfully!");
-    }).catch(err=>{ 
-        alert("Upload failed: "+err.message); 
-        document.getElementById("loadingImg").style.display="none"; 
-    });
+    }catch(err){
+        alert("Upload failed: "+err.message);
+        document.getElementById("loadingImg").style.display="none";
+    }
 });
 
 // Delete image
 document.getElementById("deleteBtn").addEventListener("click", ()=>{
-    if(!selected || (!selected.ImageURL && !selectedFile)) return alert("No image to delete!");
-    const ref = firebase.storage().ref(`voterImages/${selected.EPIC.replace(/\./g,'_')}`);
-    ref.delete().then(()=>{
-        document.getElementById("voterImage").style.display="none";
-        firebase.database().ref(`Voters/${selected.EPIC.replace(/\./g,'_')}`).update({ImageURL:""});
-        selected.ImageURL = null;
-        selectedFile = null;
-        alert("Image deleted successfully!");
-    }).catch(err=>alert("Delete failed: "+err.message));
+    if(!selected || !selected.ImageURL) return alert("No image to delete!");
+    firebase.database().ref(`Voters/${selected.EPIC.replace(/\./g,'_')}`).update({ImageURL:""});
+    selected.ImageURL = null;
+    document.getElementById("voterImage").style.display="none";
+    alert("Image deleted!");
 });
 
 // Save voter info
@@ -211,9 +216,17 @@ function setColor(c){
 }
 
 // Print
-function printCard(){ window.print(); }
+function printCard(){
+    const printContent = document.getElementById("cardBox").innerHTML;
+    const WinPrint = window.open('', '', 'width=600,height=600');
+    WinPrint.document.write('<html><head><title>Print</title></head><body>'+printContent+'</body></html>');
+    WinPrint.document.close();
+    WinPrint.focus();
+    WinPrint.print();
+    WinPrint.close();
+}
 
-// WhatsApp
+// WhatsApp send
 function sendWA(){
     if(!selected) return;
     let note = document.getElementById("senderNote").value || "—";
