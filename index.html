@@ -1,163 +1,140 @@
 <!DOCTYPE html>
-<html lang="mr">
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Voter App 2025</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Voter App</title>
+    <link rel="manifest" href="manifest.json" />
 
-<!-- PWA -->
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#ffeb3b" />
-<link rel="apple-touch-icon" href="icon-192.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-<script>
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("sw.js").then(() => {
-      console.log("Service Worker Registered");
-    });
-  });
-}
-</script>
+        body {
+            background: #fefae0;
+            font-family: Arial, sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding-top: 20px;
+        }
 
-<style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
+        .container {
+            width: 92%;
+            max-width: 430px;
+            background: white;
+            border-radius: 18px;
+            padding: 18px;
+            text-align: center;
+            box-shadow: 0px 6px 15px rgba(0,0,0,0.1);
+        }
 
-body {
-  background: #ffeb3b;
-  font-family: Arial, sans-serif;
-  height: 100dvh;
-  width: 100vw;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
+        /* ---- IMAGE FIX ---- */
+        .banner img {
+            width: 100%;
+            border-radius: 14px;
+            margin-bottom: 12px;
+            object-fit: cover;
+            max-height: 190px;
+        }
 
-/* Slider */
-.slider {
-  width: 100%;
-  max-width: 600px;
-  height: 270px;
-  overflow: hidden;
-  margin-top: 5px;
-  border-radius: 12px;
-}
+        /* ---- SLIDER ---- */
+        .swiper {
+            width: 100%;
+            margin-top: 5px;
+        }
 
-.slides {
-  display: flex;
-  width: 300%;
-  height: 100%;
-  transition: transform 0.6s ease-in-out;
-}
+        .swiper img {
+            width: 100%;
+            border-radius: 12px;
+        }
 
-.slides img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
+        /* ---- 3D BUTTONS ---- */
+        .btn {
+            width: 100%;
+            background: #ffcc00;
+            border: none;
+            padding: 15px;
+            font-size: 20px;
+            margin-top: 12px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0px 5px 0px #b68b00;
+            transition: all 0.2s ease;
+        }
 
-/* Text */
-.ward-text {
-  margin-top: 8px;
-  font-size: 34px;
-  font-weight: bold;
-  text-align: center;
-  color: #ff5722;
-}
+        .btn:active {
+            transform: translateY(4px);
+            box-shadow: 0px 2px 0px #b68b00;
+        }
 
-.candidate-text {
-  font-size: 20px;
-  font-weight: bold;
-  text-align: center;
-  color: #795548;
-}
+        #installBtn {
+            margin-top: 15px;
+            background: #4CAF50;
+            color: white;
+            box-shadow: 0px 5px 0px #2d6e34;
+        }
 
-/* Buttons */
-button {
-  padding: 12px 24px;
-  font-size: 18px;
-  font-weight: bold;
-  color: #fff;
-  border: none;
-  border-radius: 12px;
-  width: 85%;
-  max-width: 260px;
-  cursor: pointer;
-  box-shadow: 4px 4px 14px rgba(0,0,0,0.2);
-  margin-top: 12px;
-}
-
-.google-btn {
-  background: linear-gradient(145deg,#4285F4,#34A853,#FBBC05,#EA4335);
-}
-
-.install-btn {
-  background: linear-gradient(145deg,#FF6B6B,#FFD93D,#6BCB77,#4D96FF);
-  display: none;
-}
-</style>
+        /* Desktop fix */
+        @media (min-width: 768px) {
+            body {
+                overflow: hidden;
+            }
+        }
+    </style>
 </head>
 
 <body>
+    <div class="container">
 
-<!-- SLIDER -->
-<div class="slider">
-  <div class="slides">
-    <img src="https://i.ibb.co/NgFTprmS/images-1.jpg">
-    <img src="https://i.ibb.co/zHnxn3Lf/images.jpg">
-    <img src="https://i.ibb.co/7wHNN9B/Whats-App-Image-2025-11-24-at-11-56-26-3fbcdaac.jpg">
-  </div>
-</div>
+        <!-- IMAGE -->
+        <div class="banner">
+            <img src="icon-512.png" alt="Leader Image">
+        </div>
 
-<div class="ward-text">Ward No. 8</div>
-<div class="candidate-text">उम्मेदवार: सचिन देसाई</div>
+        <!-- SLIDER -->
+        <div class="swiper">
+            <img src="icon-192.png" alt="">
+        </div>
 
-<button id="google-login" class="google-btn">Login with Google</button>
-<button id="install-btn" class="install-btn">Install App</button>
+        <!-- BUTTONS -->
+        <button class="btn">Voter List</button>
+        <button class="btn">Add Member</button>
+        <button id="installBtn" style="display:none;" class="btn">Install App</button>
 
-
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    </div>
 
 <script>
-// Firebase Init
-firebase.initializeApp({
-  apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
-  authDomain: "voter-25c94.firebaseapp.com",
-  projectId: "voter-25c94",
-  storageBucket: "voter-25c94.appspot.com",
-  messagingSenderId: "297773534400",
-  appId: "1:297773534400:web:3722c487b8c83e9b787125"
-});
-
-const auth = firebase.auth();
-
-document.getElementById("google-login").onclick = () => {
-  auth.signInWithPopup(new firebase.auth.GoogleAuthProvider())
-  .then(() => (window.location.href = "login-page.html"));
-};
-
-// Slider Auto Scroll
-let index = 0;
-setInterval(() => {
-  index = (index + 1) % 3;
-  document.querySelector(".slides").style.transform =
-    `translateX(-${index * 100}%)`;
-}, 3000);
-
-// INSTALL BUTTON
-let installEvent;
-const installBtn = document.getElementById("install-btn");
+let deferredPrompt;
+const installBtn = document.getElementById("installBtn");
 
 window.addEventListener("beforeinstallprompt", (e) => {
-  e.preventDefault();
-  installEvent = e;
-  installBtn.style.display = "block";
+    e.preventDefault();
+    deferredPrompt = e;
+    installBtn.style.display = "block";
 });
 
-installBtn.onclick = () => installEvent.prompt();
+installBtn.addEventListener("click", async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    deferredPrompt = null;
+});
 </script>
+
+<script>
+if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("sw.js").then(() =>
+        console.log("Service Worker Registered")
+    );
+}
+</script>
+
 </body>
 </html>
