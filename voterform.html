@@ -13,19 +13,13 @@ label{font-weight:bold;margin-top:10px;display:block}
 input,textarea{width:100%;padding:10px;margin-top:5px;border-radius:8px;border:1px solid #777}
 
 button{padding:12px;margin-top:10px;width:100%;border:none;border-radius:8px;font-size:17px;cursor:pointer}
-.save{background:#28a745;color:white}
 .print{background:#007bff;color:white}
 .whatsapp{background:#25d366;color:white}
 
-/* Image preview */
-#previewBox{
-    width:100%;display:flex;justify-content:center;margin-top:10px;
-}
-#previewImg{
-    width:150px;height:180px;object-fit:cover;border-radius:10px;border:2px solid #444;
-}
+/* Image preview removed from UI but kept logic hidden */
+#previewBox{display:none}
 
-/* HIDE IMAGE IN PRINT */
+/* PRINT MODE */
 @media print {
     #previewBox, #previewImg { display:none !important; }
 }
@@ -43,10 +37,8 @@ button{padding:12px;margin-top:10px;width:100%;border:none;border-radius:8px;fon
 
 <div id="info" style="display:none;">
 
-<div id="previewBox"><img id="previewImg" style="display:none;"></div>
-
 <label>👤 Name:</label>
-<input id="name">
+<input id="name" disabled>
 
 <label>🏠 Voter Address:</label>
 <input id="address">
@@ -54,12 +46,8 @@ button{padding:12px;margin-top:10px;width:100%;border:none;border-radius:8px;fon
 <label>📍 Voting Booth Address:</label>
 <input id="booth">
 
-<label>🖼 Select Photo (Only Preview):</label>
-<input type="file" id="fileInput" accept="image/*">
-
-<button class="save" onclick="save()">💾 Save</button>
 <button class="print" onclick="printDetails()">🖨 Print</button>
-<button class="whatsapp" onclick="sendWhatsApp()">📩 WhatsApp Send</button>
+<button class="whatsapp" onclick="sendWhatsApp()">📩 WhatsApp</button>
 </div>
 </div>
 
@@ -76,15 +64,12 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 
-let loadedImage = ""; // preview only - no upload
-
-
 // ---------- LOAD DETAILS ----------
 function loadDetails(){
   let epic = document.getElementById("epic").value.trim();
   if(!epic) return alert("Enter EPIC number!");
 
-  db.ref("voters/"+epic).once("value").then(snap=>{
+  db.ref("Voters/"+epic).once("value").then(snap=>{
     if(!snap.exists()) return alert("Voter not found!");
 
     let data = snap.val();
@@ -93,52 +78,18 @@ function loadDetails(){
     document.getElementById("address").value = data.address || "";
     document.getElementById("booth").value = data.booth || "";
 
-    document.getElementById("previewImg").style.display="none";
-    loadedImage = "";
-
     document.getElementById("info").style.display="block";
   });
 }
 
 
-// ---------- ONLY PREVIEW IMAGE ----------
-document.getElementById("fileInput").addEventListener("change", function(){
-  const file = this.files[0];
-  if(!file) return;
-
-  const reader = new FileReader();
-  reader.onload = function(e){
-     loadedImage = e.target.result;
-     document.getElementById("previewImg").src = loadedImage;
-     document.getElementById("previewImg").style.display="block";
-  }
-  reader.readAsDataURL(file);
-});
-
-
-// ---------- SAVE ----------
-function save(){
-  let epic = document.getElementById("epic").value.trim();
-
-  db.ref("voters/"+epic).update({
-    name: document.getElementById("name").value,
-    address: document.getElementById("address").value,
-    booth: document.getElementById("booth").value
-  });
-
-  alert("Updated Successfully!");
-}
-
-
-
-// ---------- PRINT (IMAGE HIDDEN) ----------
+// ---------- PRINT ----------
 function printDetails(){
   window.print();
 }
 
 
-
-// ---------- WHATSAPP (NO IMAGE) ----------
+// ---------- WHATSAPP ----------
 function sendWhatsApp(){
   let msg = `👤 Name: ${document.getElementById("name").value}
 🆔 EPIC: ${document.getElementById("epic").value}
