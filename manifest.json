@@ -4,10 +4,10 @@
   "start_url": "/index.html",
   "scope": "/",
   "display": "standalone",
+  "theme_color": "#ffeb3b",
   "background_color": "#ffffff",
-  "theme_color": "#007bff",
-  "description": "Voter card register and check app",
   "orientation": "portrait",
+  "description": "Voter card register and check app",
   "icons": [
     {
       "src": "/icons/icon-192.png",
