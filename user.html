@@ -1,218 +1,167 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hi">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Voter List with Imgbb Upload</title>
-<style>
-body { font-family: Arial; margin:0; padding:10px; background:#f3f3f3; }
-h2 { text-align:center; margin-bottom:15px; }
-input, textarea { width:100%; padding:10px; margin-bottom:12px; border-radius:8px; border:2px solid #777; font-size:16px; }
-.list-item { padding:14px; background:white; border:2px solid #aaa; margin-bottom:10px; border-radius:12px; cursor:pointer; transition:.3s; font-size:16px; }
-.list-item:hover { transform:scale(1.03); box-shadow:0 0 10px gray; word-wrap:break-word; }
-
-#popup { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); display:none; justify-content:center; align-items:flex-start; overflow-y:auto; padding:20px; box-sizing:border-box; }
-.card { width:95%; max-width:400px; background:white; border:3px solid black; border-radius:15px; padding:20px; text-align:left; box-sizing:border-box; }
-.card img { width:100%; max-height:200px; object-fit:contain; margin-bottom:10px; }
-
-.btn { padding:12px; width:100%; margin-top:10px; background:#008cff; color:white; border:none; cursor:pointer; font-size:16px; border-radius:10px; box-shadow:0 4px 0 #003f7f; }
-.btn:active { transform:translateY(4px); box-shadow:0 1px 0 #003f7f; }
-.close-btn { background:red; box-shadow:0 4px 0 #7a0000; }
-.delete-btn { background:#ff5722; box-shadow:0 4px 0 #aa2300; }
-.color-box { width:40px; height:40px; border-radius:10px; margin:6px; cursor:pointer; border:2px solid black; display:inline-block; }
-
-@media(max-width:500px){ 
-    input,textarea{font-size:14px;padding:10px} 
-    .list-item{font-size:14px;padding:12px} 
-    .btn{font-size:14px;padding:10px} 
-    .color-box{width:35px;height:35px;margin:4px} 
-    .card{padding:15px} 
-    .card img{max-height:150px;} 
-}
-</style>
+<title>Voter Manager</title>
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js"></script>
 </head>
-<body>
 
-<h2>🗳 Voter List</h2>
-<input id="search" placeholder="Search Name, EPIC, AC No, Part No...">
-<div id="list"></div>
+<body class="bg-gray-100 p-6">
 
-<!-- POPUP -->
-<div id="popup">
-    <div class="card" id="cardBox">
-        <p><b>👤 Name:</b> <input id="pNameInput" type="text"></p>
-        <p><b>🆔 EPIC:</b> <span id="pEpic"></span></p>
-        <p><b>🏛 AC No:</b> <input id="pAc" type="number"></p>
-        <p><b>📍 Part No:</b> <input id="pPart" type="number"></p>
-        <p><b>🏠 Address:</b> <input id="pAddress" type="text"></p>
-        <p><b>🗳 Booth:</b> <input id="pVoteAddress" type="text"></p>
+<div class="max-w-xl mx-auto bg-white shadow-md p-6 rounded-lg">
+<h2 class="text-xl font-bold mb-4">🗳 Voter Information</h2>
 
-        <img id="voterImage" src="" alt="" style="display:none;"/>
-        <div id="loadingImg" style="display:none;">Uploading...</div>
+<!-- Form -->
+<label class="block mb-2 font-semibold">EPIC Number:</label>
+<input id="epicSearch" class="w-full p-2 border rounded mb-2" placeholder="Enter EPIC">
+<button id="loadBtn" class="bg-blue-600 text-white px-4 py-2 rounded mb-4 w-full">Load Details</button>
 
-        <label><b>Upload Image:</b></label>
-        <input type="file" id="imageInput" accept="image/*">
-        <button class="btn" id="uploadBtn">Upload Image</button>
-        <button class="btn delete-btn" id="deleteBtn">Delete Image</button>
+<div id="formArea" class="hidden">
 
-        <label><b>Sender Message:</b></label>
-        <textarea id="senderNote" placeholder="Your note..." rows="4"></textarea>
+<label>Name:</label>
+<input id="name" class="w-full p-2 border rounded mb-2">
 
-        <div>
-            <div class="color-box" onclick="setColor('#fca5a5')" style="background:#fca5a5"></div>
-            <div class="color-box" onclick="setColor('#a5f7c5')" style="background:#a5f7c5"></div>
-            <div class="color-box" onclick="setColor('#9fd1ff')" style="background:#9fd1ff"></div>
-        </div>
+<label>AC No:</label>
+<input id="acNo" class="w-full p-2 border rounded mb-2">
 
-        <button class="btn" onclick="saveVoter()">💾 Save</button>
-        <button class="btn" onclick="printCard()">🖨 Print</button>
-        <button class="btn" onclick="sendWA()">📩 WhatsApp Send</button>
-        <button class="btn close-btn" onclick="closePopup()">❌ Close</button>
-    </div>
+<label>Part No:</label>
+<input id="partNo" class="w-full p-2 border rounded mb-2">
+
+<label>Address:</label>
+<input id="address" class="w-full p-2 border rounded mb-2">
+
+<label>Booth:</label>
+<input id="booth" class="w-full p-2 border rounded mb-2">
+
+<label>Sender Note:</label>
+<textarea id="note" class="w-full p-2 border rounded mb-2" placeholder="Write message..."></textarea>
+
+<!-- Image Upload -->
+<label>Voter Image</label>
+<input type="file" id="uploadImage" class="w-full mb-2">
+
+<img id="preview" class="hidden w-32 border rounded mb-2">
+
+<button id="saveBtn" class="bg-green-600 text-white w-full py-2 rounded mb-2">💾 Save</button>
+<button id="printBtn" class="bg-gray-600 text-white w-full py-2 rounded mb-2">🖨 Print</button>
+<button id="whatsappSend" class="bg-green-500 text-white w-full py-2 rounded">📩 WhatsApp</button>
+
+</div>
 </div>
 
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+<!-- PRINT AREA -->
+<div id="printArea" class="hidden p-6">
+    <h2 class="text-lg font-bold">Voter Detail</h2>
+    <img id="printImg" class="w-32 my-2">
+    <p id="printData" class="text-sm leading-6"></p>
+</div>
+
+
 <script>
+/* -------- FIREBASE SETUP -------- */
 const firebaseConfig = {
-  apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
-  authDomain: "voter-25c94.firebaseapp.com",
-  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
-  projectId: "voter-25c94"
+    apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
+    authDomain: "voter-25c94.firebaseapp.com",
+    databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
+    projectId: "voter-25c94",
 };
 firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
-let voters={}, selected=null, selectedFile=null, globalSenderNote="";
+/* -------- LOAD DETAILS -------- */
+document.getElementById("loadBtn").addEventListener("click", async () => {
+    const epic = document.getElementById("epicSearch").value;
+    const snap = await db.ref("Voters/" + epic).get();
 
-// Load data
-firebase.database().ref("/").once("value").then(snap=>{
-    const data = snap.val() || {};
-    globalSenderNote = data.GlobalSenderNote || "";
-    voters = data.Voters || {};
-    showList(voters);
+    if (!snap.exists()) return alert("No data found!");
+
+    const data = snap.val();
+    document.getElementById("formArea").classList.remove("hidden");
+
+    document.getElementById("name").value = data.Name;
+    document.getElementById("acNo").value = data.AcNo;
+    document.getElementById("partNo").value = data.PartNo;
+    document.getElementById("address").value = data.Address;
+    document.getElementById("booth").value = data.VotingAddress;
 });
 
-// Show list
-function showList(data){
-    const box = document.getElementById("list");
-    box.innerHTML = "";
-    Object.values(data).forEach(v=>{
-        let div = document.createElement("div");
-        div.className = "list-item";
-        div.style.background = v.Color || "white";
-        div.style.borderColor = v.Color || "#aaa";
-        div.dataset.epic = v.EPIC;
-        div.innerHTML = `<b>${v.Name}</b><br>🆔 ${v.EPIC} | 🏛 AC:${v.AcNo} | 📍 Part:${v.PartNo} | 🗳 Booth:${v.VotingAddress || "NA"}`;
-        div.onclick = ()=>openPopup(v);
-        box.appendChild(div);
+/* -------- IMAGE UPLOAD (imgbb) -------- */
+let uploadedImageURL = "";
+
+document.getElementById("uploadImage").addEventListener("change", async function(){
+    const file = this.files[0];
+    const form = new FormData();
+    form.append("image", file);
+
+    let res = await fetch("https://api.imgbb.com/1/upload?key=7894e8cd9ee3a6cc520e2285d0b3f923", {method:"POST", body:form});
+    let json = await res.json();
+
+    uploadedImageURL = json.data.url;
+
+    document.getElementById("preview").src = uploadedImageURL;
+    document.getElementById("preview").classList.remove("hidden");
+});
+
+/* -------- SAVE -------- */
+document.getElementById("saveBtn").addEventListener("click", () => {
+    const epic = document.getElementById("epicSearch").value;
+    db.ref("Voters/" + epic).update({
+        Name: name.value,
+        AcNo: acNo.value,
+        PartNo: partNo.value,
+        Address: address.value,
+        VotingAddress: booth.value,
+        Image: uploadedImageURL,
+        Note: note.value
     });
-}
-
-// Open popup
-function openPopup(v){
-    selected = v;
-    document.getElementById("pNameInput").value = v.Name;
-    document.getElementById("pEpic").innerText = v.EPIC;
-    document.getElementById("pAc").value = v.AcNo;
-    document.getElementById("pPart").value = v.PartNo;
-    document.getElementById("pAddress").value = v.Address || "";
-    document.getElementById("pVoteAddress").value = v.VotingAddress || "";
-    document.getElementById("senderNote").value = v.SenderNote || globalSenderNote || "";
-    document.getElementById("cardBox").style.background = v.Color || "white";
-
-    const img = document.getElementById("voterImage");
-    if(v.ImageURL){ img.src=v.ImageURL; img.style.display="block"; } 
-    else { img.style.display="none"; }
-
-    document.getElementById("popup").style.display = "flex";
-}
-
-// Close popup
-function closePopup(){ document.getElementById("popup").style.display="none"; }
-
-// File select
-document.getElementById("imageInput").addEventListener("change", e => { selectedFile = e.target.files[0]; });
-
-// Upload to Imgbb
-document.getElementById("uploadBtn").addEventListener("click", ()=>{
-    if(!selectedFile || !selected) return alert("Select a file first!");
-    document.getElementById("loadingImg").style.display="block";
-    let formData = new FormData();
-    formData.append("image", selectedFile);
-    fetch("https://api.imgbb.com/1/upload?key=7894e8cd9ee3a6cc520e2285d0b3f923", {
-        method: "POST",
-        body: formData
-    }).then(res=>res.json()).then(data=>{
-        let url = data.data.url;
-        selected.ImageURL = url;
-        firebase.database().ref(`Voters/${selected.EPIC}`).update({ImageURL:url});
-        document.getElementById("voterImage").src=url;
-        document.getElementById("voterImage").style.display="block";
-        selectedFile=null;
-        document.getElementById("loadingImg").style.display="none";
-        alert("Image uploaded successfully!");
-    }).catch(err=>{
-        alert("Upload failed: "+err.message);
-        document.getElementById("loadingImg").style.display="none";
-    });
+    alert("Saved Successfully ✅");
 });
 
-// Delete image
-document.getElementById("deleteBtn").addEventListener("click", ()=>{
-    if(!selected || !selected.ImageURL) return alert("No image to delete!");
-    selected.ImageURL = "";
-    firebase.database().ref(`Voters/${selected.EPIC}`).update({ImageURL:""});
-    document.getElementById("voterImage").style.display="none";
-    alert("Image deleted!");
-});
+/* -------- PRINT FIX -------- */
+document.getElementById("printBtn").addEventListener("click", () => {
 
-// Save voter
-function saveVoter(){
-    if(!selected) return;
-    let updates = {
-        Name: document.getElementById("pNameInput").value || selected.Name,
-        AcNo: document.getElementById("pAc").value,
-        PartNo: document.getElementById("pPart").value,
-        Address: document.getElementById("pAddress").value,
-        VotingAddress: document.getElementById("pVoteAddress").value,
-        SenderNote: document.getElementById("senderNote").value
-    };
-    firebase.database().ref(`Voters/${selected.EPIC}`).update(updates);
-    Object.assign(selected, updates);
-    showList(voters);
-    alert("Voter info saved!");
-}
+    document.getElementById("printImg").src = uploadedImageURL;
+    document.getElementById("printData").innerText =
+`Name: ${name.value}
+EPIC: ${epicSearch.value}
+AC No: ${acNo.value}
+Part No: ${partNo.value}
+Address: ${address.value}
+Booth: ${booth.value}
+${note.value}`;
 
-// Set color
-function setColor(c){
-    document.getElementById("cardBox").style.background = c;
-    if(selected){
-        firebase.database().ref(`Voters/${selected.EPIC}`).update({Color:c});
-        selected.Color = c;
-        document.querySelectorAll(".list-item").forEach(item=>{
-            if(item.dataset.epic===selected.EPIC){ item.style.background=c; item.style.borderColor=c; }
-        });
-    }
-}
+    document.getElementById("printArea").style.display = "block";
 
-// Print
-function printCard(){ window.print(); }
+    setTimeout(() => {
+        window.print();
+    }, 300);
+}); 
 
-// WhatsApp
-function sendWA(){
-    if(!selected) return;
-    let note = document.getElementById("senderNote").value || "—";
-    firebase.database().ref("GlobalSenderNote").set(note);
-    firebase.database().ref(`Voters/${selected.EPIC}`).update({SenderNote:note});
-    let text = `*Voter Info*%0A%0A👤 ${selected.Name}%0A🆔 EPIC: ${selected.EPIC}%0A🏛 AC: ${selected.AcNo}%0A📍 Part: ${selected.PartNo}%0A🏠 Address: ${selected.Address || "NA"}%0A🗳 Booth: ${selected.VotingAddress || "NA"}%0A%0A📝 Message: ${note}`;
-    window.open(`https://wa.me/?text=${text}`);
-}
+window.onafterprint = () =>{
+    document.getElementById("printArea").style.display = "none";
+};
 
-// Search
-document.getElementById("search").addEventListener("input", e=>{
-    let t = e.target.value.toLowerCase();
-    let f = Object.values(voters).filter(v=>v.Name.toLowerCase().includes(t) || v.EPIC.toLowerCase().includes(t) || String(v.AcNo).includes(t) || String(v.PartNo).includes(t) || (v.Address||"").toLowerCase().includes(t) || (v.VotingAddress||"").toLowerCase().includes(t));
-    showList(f);
+/* -------- WHATSAPP SEND -------- */
+document.getElementById("whatsappSend").addEventListener("click", () => {
+    let phone = prompt("Enter 10 digit WhatsApp Number:");
+    let message = 
+`👤 Name: ${name.value}
+🆔 EPIC: ${epicSearch.value}
+🏛 AC No: ${acNo.value}
+📍 Part No: ${partNo.value}
+🏠 Address: ${address.value}
+🗳 Booth: ${booth.value}
+
+📝 Note:
+${note.value}
+
+📸 Image:
+${uploadedImageURL}`;
+
+    window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(message)}`, "_blank");
 });
 </script>
 </body>
