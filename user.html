@@ -63,15 +63,15 @@ input, textarea {
         <p><b>📍 Part No:</b> <span id="pPart"></span></p>
 
         <label><b>🏠 Address:</b></label>
-        <input id="pAddress">
+        <input id="pAddress" readonly>
 
         <label><b>🗳 Booth:</b></label>
-        <input id="pVoteAddress">
+        <input id="pVoteAddress" readonly>
 
         <img id="voterImage" style="display:none; margin-top:10px;">
 
         <label><b>📝 Sender Message:</b></label>
-        <textarea id="senderNote" rows="4"></textarea>
+        <textarea id="senderNote" rows="4" readonly></textarea>
 
         <button class="btn" onclick="printDetails()">🖨 Print</button>
         <button class="btn" onclick="sendWhatsApp()">📩 WhatsApp</button>
