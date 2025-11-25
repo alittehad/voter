@@ -1,187 +1,547 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Voter Card</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Voter List with Card + Firebase Save</title>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css">
+
 <style>
-body {
-  font-family: Arial, sans-serif;
-  background: #f0f2f7;
-  padding: 20px;
-}
+  body { font-family: Arial, sans-serif; padding: 16px; background: #f3f6fb; color:#111; }
+  h1 { text-align:center; margin-bottom:14px; }
+  #controls { margin-bottom: 12px; display:flex; gap:8px; flex-wrap:wrap; }
+  #search { padding:8px; flex:1; min-width:200px; border-radius:6px; border:1px solid #bbb; }
+  button { padding:8px 10px; border-radius:6px; border:none; cursor:pointer; background:#1976d2; color:#fff; }
+  table { width:100%; border-collapse:collapse; margin-top:12px; background:#fff; border-radius:6px; overflow:hidden; }
+  th, td { padding:8px 10px; border-bottom:1px solid #eee; text-align:left; font-size:13px; }
+  th { background:#0b69d1; color:#fff; cursor:pointer; position:relative; }
+  tr:nth-child(even) td { background:#fbfcff; }
+  #pagination { margin-top:10px; }
+  #pagination button { padding:6px 10px; margin-right:6px; border-radius:6px; border:1px solid #ccc; background:#fff; cursor:pointer; }
 
-/* CARD DESIGN */
-.card {
-  width: 330px;
-  margin: auto;
-  padding: 18px;
-  border-radius: 15px;
-  background: linear-gradient(135deg, #ffeb3b, #ffca28);
-  box-shadow: 0 6px 20px #0003;
-  display: none;
-}
+  /* Card popup */
+  #viewCardPopup {
+    display:none;
+    position:fixed;
+    inset:0;
+    background: rgba(0,0,0,0.6);
+    z-index:9999;
+    justify-content:center;
+    align-items:flex-start;
+    padding-top:30px;
+  }
+  .cardBox {
+    width:100%; max-width:420px; background:#fff; border-radius:10px; padding:18px; box-shadow:0 8px 40px rgba(0,0,0,0.3);
+    border:4px solid #111;
+  }
+  .cardBox h2 { margin:0 0 8px 0; text-align:center; }
+  .cardBox img { width:140px; height:170px; object-fit:cover; display:block; margin:8px auto; border-radius:6px; border:2px solid #ddd; }
+  .cardRow { margin-bottom:8px; }
+  .cardRow label { display:block; font-weight:600; margin-bottom:4px; }
+  .cardRow input, .cardRow textarea { width:100%; padding:8px; border-radius:6px; border:1px solid #ccc; box-sizing:border-box; }
+  .card-actions { display:flex; gap:8px; margin-top:12px; }
+  .card-actions button { flex:1; }
+  .closeBtn { background:#d32f2f; }
+  .saveBtn { background:#388e3c; }
+  .uploadBtn { background:#1976d2; }
+  .waBtn { background:#25D366; color:#fff; }
+  .printBtn { background:#333; }
+  .small { font-size:12px; padding:6px 8px; }
 
-.card-header {
-  text-align: center;
-  font-size: 22px;
-  font-weight: bold;
-  color: #d32f2f;
-  margin-bottom: 14px;
-}
-
-.card img {
-  width: 100%;
-  border-radius: 10px;
-  border: 3px solid white;
-  margin-bottom: 12px;
-}
-
-.label { font-weight: bold; display: block; margin-bottom: 3px; }
-
-.inputBox {
-  margin-bottom: 12px;
-}
-
-.inputBox input {
-  width: 100%;
-  padding: 8px;
-  border-radius: 8px;
-  border: 1px solid #bbb;
-}
-
-button {
-  width: 100%;
-  margin-top: 12px;
-  padding: 10px;
-  border: none;
-  background: #1976d2;
-  color: white;
-  border-radius: 8px;
-  font-size: 17px;
-  cursor: pointer;
-}
-
-.whatsappBtn {
-  background: #25D366;
-}
-
-.printBtn {
-  background: #333;
-}
+  @media(max-width:520px){
+    .cardBox{ margin:8px; padding:12px; }
+    .cardBox img{ width:120px; height:150px; }
+  }
 </style>
 </head>
 <body>
 
-<h2>Voter Card Details</h2>
+<h1>Voter List</h1>
 
-<!-- INPUTS -->
-<div class="inputBox">
-  <label class="label">Name:</label>
-  <input type="text" id="nameInput" placeholder="Enter Name">
+<div id="controls">
+  <input id="search" placeholder="Search by Name, EPIC, AC No, Part No..." />
+  <button id="printBtn">Print</button>
+  <button id="whatsappBtn">Send via WhatsApp</button>
 </div>
 
-<div class="inputBox">
-  <label class="label">EPIC Number:</label>
-  <input type="text" id="epicInput" placeholder="Enter EPIC No">
+<table id="voterTable">
+  <thead></thead>
+  <tbody></tbody>
+</table>
+
+<div id="pagination"></div>
+
+<!-- VIEW CARD POPUP -->
+<div id="viewCardPopup">
+  <div class="cardBox" role="dialog" aria-modal="true">
+    <button onclick="closeCard()" class="closeBtn small" style="position:absolute; right:14px; top:14px;">Close</button>
+    <h2>VOTER CARD</h2>
+
+    <div style="text-align:center;">
+      <img id="cardPhoto" src="https://via.placeholder.com/140x170?text=No+Photo" alt="photo">
+      <div style="margin-top:8px;">
+        <input type="file" id="cardImgInput" accept="image/*" />
+        <button class="uploadBtn small" onclick="uploadPhoto()">Upload Photo</button>
+      </div>
+      <div style="margin-top:8px; font-size:12px; color:#666;">(Uploaded photo saved to Firebase Storage)</div>
+    </div>
+
+    <div style="margin-top:12px;">
+      <div class="cardRow"><label>Name</label><div id="cardName" style="font-weight:700"></div></div>
+      <div class="cardRow"><label>EPIC</label><div id="cardEpic" style="font-weight:700"></div></div>
+
+      <div class="cardRow">
+        <label>Address</label>
+        <textarea id="cardAddressInput" rows="2" placeholder="Add / Edit address"></textarea>
+        <button class="saveBtn small" onclick="saveAddress()">Save Address</button>
+      </div>
+
+      <div class="cardRow">
+        <label>Booth No</label>
+        <input id="cardBoothInput" placeholder="Add / Edit booth number" />
+        <button class="saveBtn small" onclick="saveBooth()">Save Booth</button>
+      </div>
+
+      <div class="cardRow">
+        <label>Voting Address</label>
+        <input id="cardVotingInput" placeholder="Add / Edit voting address" />
+        <button class="saveBtn small" onclick="saveVoting()">Save Voting Address</button>
+      </div>
+
+      <div style="margin-top:10px;">
+        <button class="printBtn" onclick="printCard()">🖨 Print Card</button>
+        <button class="waBtn" onclick="shareWhatsApp()">📩 Share WhatsApp</button>
+      </div>
+    </div>
+  </div>
 </div>
 
-<div class="inputBox">
-  <label class="label">Mobile Number:</label>
-  <input type="text" id="mobileInput" placeholder="Enter Mobile No">
-</div>
+<!-- Scripts -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
-<div class="inputBox">
-  <label class="label">Address:</label>
-  <input type="text" id="addressInput" placeholder="Enter Address">
-</div>
-
-<div class="inputBox">
-  <label class="label">Booth Number:</label>
-  <input type="text" id="boothInput" placeholder="Enter Booth No">
-</div>
-
-<div class="inputBox">
-  <label class="label">Upload Photo:</label>
-  <input type="file" id="uploadImg" accept="image/*">
-</div>
-
-<div class="inputBox">
-  <label class="label">Upload Extra Photo:</label>
-  <input type="file" id="extraImg" accept="image/*">
-</div>
-
-<button onclick="submitData()">Submit</button>
-
-<!-- CARD PREVIEW -->
-<div class="card" id="voterCard">
-  
-  <div class="card-header">VOTER ID CARD</div>
-
-  <img id="cardImg" src="">
-  <img id="extraCardImg" src="" style="display:none;">
-
-  <p id="cardName"></p>
-  <p id="cardEpic"></p>
-  <p id="cardMobile"></p>
-  <p id="cardAddress"></p>
-  <p id="cardBooth"></p>
-
-  <button class="whatsappBtn" onclick="sendWhatsApp()">Share on WhatsApp</button>
-  <button class="printBtn" onclick="window.print()">Print Card</button>
-
-</div>
+<!-- Firebase v8 -->
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
 
 <script>
-// SUBMIT FUNCTION
-function submitData() {
+/* ---------------------------
+   CONFIG: CSV + Firebase
+   --------------------------- */
+const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT8hv0c8CPDBHksZbD4igmVelXV_tEp01HiYVnDvbx3D8VbqzCJtQvF2Fl7HeO92ysrjuCqIR8VQpJc/pub?output=csv";
 
-  let name = document.getElementById("nameInput").value;
-  let epic = document.getElementById("epicInput").value;
-  let mobile = document.getElementById("mobileInput").value;
-  let address = document.getElementById("addressInput").value;
-  let booth = document.getElementById("boothInput").value;
+/* Your provided Firebase config */
+const firebaseConfig = {
+  apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
+  authDomain: "voter-25c94.firebaseapp.com",
+  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
+  projectId: "voter-25c94",
+  storageBucket: "voter-25c94.appspot.com",
+  messagingSenderId: "297773534400",
+  appId: "1:297773534400:web:3722c487b8c83e9b787125"
+};
 
-  document.getElementById("cardName").innerHTML = "<b>Name:</b> " + name;
-  document.getElementById("cardEpic").innerHTML = "<b>EPIC No:</b> " + epic;
-  document.getElementById("cardMobile").innerHTML = "<b>Mobile:</b> " + mobile;
-  document.getElementById("cardAddress").innerHTML = "<b>Address:</b> " + address;
-  document.getElementById("cardBooth").innerHTML = "<b>Booth No:</b> " + booth;
+/* Initialize Firebase */
+firebase.initializeApp(firebaseConfig);
+const rdb = firebase.database();
+const storage = firebase.storage();
 
-  // PHOTO 1
-  let photo = document.getElementById("uploadImg").files[0];
-  if (photo) {
-    let reader = new FileReader();
-    reader.onload = function(e) {
-      document.getElementById("cardImg").src = e.target.result;
-    };
-    reader.readAsDataURL(photo);
-  }
+/* ---------------------------
+   State
+   --------------------------- */
+let allData = [];        // original CSV rows (objects)
+let filteredData = [];   // filtered view
+let currentPage = 1;
+const rowsPerPage = 100;
 
-  // PHOTO 2
-  let extraPhoto = document.getElementById("extraImg").files[0];
-  if (extraPhoto) {
-    let reader2 = new FileReader();
-    reader2.onload = function(e) {
-      let extra = document.getElementById("extraCardImg");
-      extra.src = e.target.result;
-      extra.style.display = "block";
-    };
-    reader2.readAsDataURL(extraPhoto);
-  }
+let headers = [];        // columns from CSV
+let selectedIndex = null; // index in filteredData for opened card
 
-  document.getElementById("voterCard").style.display = "block";
+/* ---------------------------
+   Load CSV
+   --------------------------- */
+fetch(csvUrl)
+  .then(res => res.text())
+  .then(csvText => {
+    const results = Papa.parse(csvText, { header: true, skipEmptyLines: true });
+    allData = results.data.map(row => {
+      // trim keys & values
+      const obj = {};
+      Object.keys(row).forEach(k => { obj[k.trim()] = (row[k]||"").toString().trim(); });
+      return obj;
+    });
+    filteredData = [...allData];
+    headers = Object.keys(allData[0] || {});
+    renderTable();
+    renderPagination();
+    // Optionally, load RTDB cached updates (merge)
+    mergeRTDBUpdates();
+  })
+  .catch(err => {
+    console.error("CSV load error:", err);
+    alert("Failed to load CSV. Check csvUrl.");
+  });
+
+/* ---------------------------
+   Merge RTDB saved fields into table rows (if exist)
+   --------------------------- */
+function mergeRTDBUpdates(){
+  // we'll look up /Voters/<sanitizedEPIC> for each row — but to avoid mass reads, only on demand.
+  // Optionally, you can read entire /Voters node if small.
+  rdb.ref('Voters').once('value').then(snap=>{
+    const dbObj = snap.val() || {};
+    // create quick map by EPIC (case-insensitive)
+    const map = {};
+    Object.keys(dbObj).forEach(k => {
+      map[k.toString().toLowerCase()] = dbObj[k];
+    });
+    // merge into allData
+    allData.forEach(row => {
+      const epic = getFieldCI(row, 'EPIC');
+      if(!epic) return;
+      const key = sanitizeKey(epic).toLowerCase();
+      if(map[key]){
+        // copy known fields
+        if(map[key].Address) row.Address = map[key].Address;
+        if(map[key].Booth) row.Booth = map[key].Booth;
+        if(map[key].VotingAddress) row.VotingAddress = map[key].VotingAddress;
+        if(map[key].ImageURL) row.ImageURL = map[key].ImageURL; // keep for preview
+      }
+    });
+    filteredData = [...allData];
+    renderTable();
+  }).catch(err=>console.warn("RTDB merge err:",err));
 }
 
-// WHATSAPP SHARE
-function sendWhatsApp() {
-  let name = document.getElementById("nameInput").value;
-  let epic = document.getElementById("epicInput").value;
-  let mobile = document.getElementById("mobileInput").value;
-
-  let url = `https://wa.me/?text=Voter Card%0AName: ${name}%0AEPIC: ${epic}%0AMobile: ${mobile}`;
-  window.open(url, "_blank");
+/* ---------------------------
+   Helpers
+   --------------------------- */
+function getFieldCI(obj, name) {
+  // case-insensitive get property
+  if(!obj) return null;
+  const keys = Object.keys(obj);
+  const found = keys.find(k => k.toLowerCase() === name.toLowerCase());
+  return found ? obj[found] : null;
 }
+function sanitizeKey(s){
+  return s.replace(/\./g, '_').replace(/\$/g,'_').replace(/\[/g,'_').replace(/\]/g,'_').replace(/#/g,'_').replace(/\//g,'_');
+}
+
+/* ---------------------------
+   Render Table
+   --------------------------- */
+function renderTable(){
+  const table = document.getElementById('voterTable');
+  const thead = table.querySelector('thead');
+  const tbody = table.querySelector('tbody');
+  tbody.innerHTML = '';
+
+  if(!filteredData.length){
+    thead.innerHTML = '<tr><th>No data</th></tr>';
+    return;
+  }
+
+  // header row
+  const cols = headers.slice(); // keep original order
+  thead.innerHTML = '<tr>' + cols.map(c => `<th onclick="sortTable('${c.replace(/'/g,"\\'")}')">${c}</th>`).join('') + '<th>Action</th></tr>';
+
+  const start = (currentPage-1)*rowsPerPage;
+  const pageData = filteredData.slice(start, start + rowsPerPage);
+
+  pageData.forEach((row, idx) => {
+    const tr = document.createElement('tr');
+
+    cols.forEach(c => {
+      const v = row[c] || '';
+      const td = document.createElement('td');
+      td.innerText = v;
+      tr.appendChild(td);
+    });
+
+    // Action column
+    const actionTd = document.createElement('td');
+    const viewBtn = document.createElement('button');
+    viewBtn.textContent = 'View Card';
+    viewBtn.style.background = '#1976d2';
+    viewBtn.style.color = '#fff';
+    viewBtn.style.borderRadius = '6px';
+    viewBtn.style.padding = '6px 8px';
+    viewBtn.onclick = () => openCard(start + idx); // pass global index in filteredData
+    actionTd.appendChild(viewBtn);
+    tr.appendChild(actionTd);
+
+    tbody.appendChild(tr);
+  });
+}
+
+/* ---------------------------
+   Search
+   --------------------------- */
+document.getElementById('search').addEventListener('input', function(){
+  const t = this.value.trim().toLowerCase();
+  if(!t) {
+    filteredData = [...allData];
+  } else {
+    filteredData = allData.filter(row => {
+      return Object.values(row).some(v => (v||'').toString().toLowerCase().includes(t));
+    });
+  }
+  currentPage = 1;
+  renderTable();
+  renderPagination();
+});
+
+/* ---------------------------
+   Sorting
+   --------------------------- */
+let sortDir = {};
+function sortTable(col){
+  sortDir[col] = !sortDir[col];
+  filteredData.sort((a,b)=>{
+    const A = (a[col]||'').toString().toLowerCase();
+    const B = (b[col]||'').toString().toLowerCase();
+    if(A < B) return sortDir[col] ? -1 : 1;
+    if(A > B) return sortDir[col] ? 1 : -1;
+    return 0;
+  });
+  renderTable();
+}
+
+/* ---------------------------
+   Pagination
+   --------------------------- */
+function renderPagination(){
+  const total = Math.ceil(filteredData.length / rowsPerPage);
+  const div = document.getElementById('pagination');
+  div.innerHTML = '';
+  for(let i=1;i<=total;i++){
+    const b = document.createElement('button');
+    b.textContent = i;
+    if(i === currentPage) b.style.fontWeight = 'bold';
+    b.onclick = () => { currentPage = i; renderTable(); };
+    div.appendChild(b);
+  }
+}
+
+/* ---------------------------
+   Print & WhatsApp for full filteredData
+   --------------------------- */
+document.getElementById('printBtn').addEventListener('click', ()=>{
+  // build printable table of filteredData
+  const cols = headers;
+  let html = `<table border="1" style="border-collapse:collapse;width:100%"><thead><tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>`;
+  filteredData.forEach(row => {
+    html += '<tr>' + cols.map(c => `<td>${(row[c]||'')}</td>`).join('') + '</tr>';
+  });
+  html += '</tbody></table>';
+  const win = window.open('', '', 'width=900,height=700');
+  win.document.write('<html><head><title>Print</title></head><body>');
+  win.document.write(html);
+  win.document.write('</body></html>');
+  win.document.close();
+  win.print();
+});
+
+document.getElementById('whatsappBtn').addEventListener('click', ()=>{
+  let text = 'Voter List:\n\n';
+  filteredData.forEach(r => {
+    text += Object.values(r).join(' | ') + '\n';
+  });
+  const url = 'https://wa.me/?text=' + encodeURIComponent(text);
+  window.open(url, '_blank');
+});
+
+/* ---------------------------
+   CARD: openCard(index)
+   --------------------------- */
+function openCard(globalIndex){
+  // globalIndex is index inside filteredData
+  const row = filteredData[globalIndex];
+  if(!row) return alert('Row not found');
+
+  selectedIndex = globalIndex;
+
+  // detect EPIC field (case-insensitive)
+  const epic = getFieldCI(row, 'EPIC') || getFieldCI(row, 'epic') || getFieldCI(row, 'Epic') || Object.values(row)[0]; // fallback
+  const name = getFieldCI(row, 'Name') || getFieldCI(row, 'name') || '';
+
+  // set DOM
+  document.getElementById('cardName').innerText = name || '';
+  document.getElementById('cardEpic').innerText = epic || '';
+
+  // set inputs from local row if present
+  document.getElementById('cardAddressInput').value = row.Address || row.Address || '';
+  document.getElementById('cardBoothInput').value = row.Booth || row.Booth || '';
+  document.getElementById('cardVotingInput').value = row.VotingAddress || row.VotingAddress || '';
+
+  // show image: prefer saved URL (ImageURL) in row; else placeholder
+  const imgEl = document.getElementById('cardPhoto');
+  if(row.ImageURL) {
+    imgEl.src = row.ImageURL;
+  } else if (row.Image) {
+    imgEl.src = row.Image;
+  } else {
+    imgEl.src = 'https://via.placeholder.com/140x170?text=No+Photo';
+  }
+
+  // store epic in element dataset for use in uploads/saves
+  imgEl.dataset.epic = epic;
+
+  // Show popup
+  document.getElementById('viewCardPopup').style.display = 'flex';
+}
+
+/* ---------------------------
+   Close card
+   --------------------------- */
+function closeCard(){
+  document.getElementById('viewCardPopup').style.display = 'none';
+}
+
+/* ---------------------------
+   Save Address / Booth / Voting -> RTDB
+   --------------------------- */
+function saveAddress(){
+  const epic = document.getElementById('cardPhoto').dataset.epic;
+  if(!epic) return alert('EPIC missing');
+  const val = document.getElementById('cardAddressInput').value || '';
+  const key = sanitizeKey(epic);
+  rdb.ref('Voters/' + key).update({ Address: val }).then(()=>{
+    // update local data
+    updateLocalRowField(epic, 'Address', val);
+    alert('Address saved');
+  }).catch(e=>alert('Save error: '+e.message));
+}
+
+function saveBooth(){
+  const epic = document.getElementById('cardPhoto').dataset.epic;
+  if(!epic) return alert('EPIC missing');
+  const val = document.getElementById('cardBoothInput').value || '';
+  const key = sanitizeKey(epic);
+  rdb.ref('Voters/' + key).update({ Booth: val }).then(()=>{
+    updateLocalRowField(epic, 'Booth', val);
+    alert('Booth saved');
+  }).catch(e=>alert('Save error: '+e.message));
+}
+
+function saveVoting(){
+  const epic = document.getElementById('cardPhoto').dataset.epic;
+  if(!epic) return alert('EPIC missing');
+  const val = document.getElementById('cardVotingInput').value || '';
+  const key = sanitizeKey(epic);
+  rdb.ref('Voters/' + key).update({ VotingAddress: val }).then(()=>{
+    updateLocalRowField(epic, 'VotingAddress', val);
+    alert('Voting address saved');
+  }).catch(e=>alert('Save error: '+e.message));
+}
+
+/* Update the filteredData / allData row that matches EPIC (case-insensitive) */
+function updateLocalRowField(epic, field, value){
+  // update allData & filteredData
+  function updater(arr){
+    arr.forEach(r=>{
+      const e = getFieldCI(r,'EPIC') || getFieldCI(r,'epic') || getFieldCI(r,'Epic') || '';
+      if(e && e.toString().toLowerCase() === epic.toString().toLowerCase()){
+        r[field] = value;
+      }
+    });
+  }
+  updater(allData);
+  updater(filteredData);
+  renderTable();
+}
+
+/* ---------------------------
+   Upload Photo -> Firebase Storage -> save RTDB ImageURL -> update table
+   --------------------------- */
+function uploadPhoto(){
+  const fileInput = document.getElementById('cardImgInput');
+  const file = fileInput.files[0];
+  if(!file) return alert('Choose a file first');
+  const epic = document.getElementById('cardPhoto').dataset.epic;
+  if(!epic) return alert('EPIC missing');
+
+  const key = sanitizeKey(epic);
+  const storageRef = storage.ref().child('voterImages/' + key + '_' + Date.now());
+
+  const uploadTask = storageRef.put(file);
+  uploadTask.on('state_changed',
+    snapshot => {
+      // progress (optional)
+    },
+    error => {
+      alert('Upload error: ' + error.message);
+    },
+    () => {
+      // success
+      uploadTask.snapshot.ref.getDownloadURL().then(url=>{
+        // save url to RTDB
+        rdb.ref('Voters/' + key).update({ ImageURL: url }).then(()=>{
+          // update UI
+          document.getElementById('cardPhoto').src = url;
+          updateLocalRowField(epic, 'ImageURL', url);
+          alert('Photo uploaded & saved');
+        }).catch(e=>{
+          alert('DB save error: '+e.message);
+        });
+      });
+    }
+  );
+}
+
+/* ---------------------------
+   Print Card (opens printable window)
+   --------------------------- */
+function printCard(){
+  const name = document.getElementById('cardName').innerText;
+  const epic = document.getElementById('cardEpic').innerText;
+  const address = document.getElementById('cardAddressInput').value;
+  const booth = document.getElementById('cardBoothInput').value;
+  const voting = document.getElementById('cardVotingInput').value;
+  const img = document.getElementById('cardPhoto').src;
+
+  const html = `
+    <html><head><title>Print Voter Card</title>
+    <style>body{font-family:Arial;padding:20px;} .card{width:320px;border:1px solid #444;padding:12px;border-radius:8px;} .card img{width:140px;height:170px;object-fit:cover;display:block;margin:0 auto 10px;} </style>
+    </head><body>
+    <div class="card">
+      <img src="${img}" alt="photo">
+      <h3 style="text-align:center">${name}</h3>
+      <p><b>EPIC:</b> ${epic}</p>
+      <p><b>Address:</b> ${escapeHtml(address)}</p>
+      <p><b>Booth:</b> ${escapeHtml(booth)}</p>
+      <p><b>Voting Address:</b> ${escapeHtml(voting)}</p>
+    </div>
+    </body></html>
+  `;
+  const w = window.open('', '_blank', 'width=600,height=700');
+  w.document.write(html);
+  w.document.close();
+  w.focus();
+  w.print();
+}
+
+/* ---------------------------
+   WhatsApp share for single card
+   --------------------------- */
+function shareWhatsApp(){
+  const name = document.getElementById('cardName').innerText;
+  const epic = document.getElementById('cardEpic').innerText;
+  const address = document.getElementById('cardAddressInput').value;
+  const booth = document.getElementById('cardBoothInput').value;
+  const voting = document.getElementById('cardVotingInput').value;
+
+  const text = `VOTER DETAILS\nName: ${name}\nEPIC: ${epic}\nAddress: ${address}\nBooth: ${booth}\nVoting Address: ${voting}`;
+  const url = 'https://wa.me/?text=' + encodeURIComponent(text);
+  window.open(url, '_blank');
+}
+
+/* ---------------------------
+   Utility: escape HTML for printing
+   --------------------------- */
+function escapeHtml(s){ return (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
 </script>
-
 </body>
 </html>
