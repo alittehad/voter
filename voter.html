@@ -45,14 +45,14 @@ input, textarea {
 @media print{
     body *{ visibility:hidden; }
     #popup, #popup *{ visibility:visible; }
-    .btn, input, textarea{ display:none !important; }
+    .btn{ display:none !important; }
 }
 </style>
 </head>
 <body>
 
 <h2>🗳 Voter List Preview</h2>
-<input id="search" placeholder="Search Name, EPIC, AC No, Part No, Address, Booth...">
+<input id="search" placeholder="Search Name, EPIC, AC No, Part No, Address, Booth, Message...">
 <div id="list"></div>
 
 <div id="popup">
@@ -71,7 +71,7 @@ input, textarea {
         <img id="voterImage" style="display:none; margin-top:10px;">
 
         <label><b>📝 Sender Message:</b></label>
-        <textarea id="senderNote" rows="4"></textarea>
+        <input id="senderNote" placeholder="Type message here">
 
         <button class="btn" onclick="printDetails()">🖨 Print</button>
         <button class="btn" onclick="sendWhatsApp()">📩 WhatsApp</button>
@@ -156,16 +156,17 @@ function sendWhatsApp(){
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`);
 }
 
-// Search
+// Search (All fields)
 document.getElementById("search").addEventListener("input", e=>{
     const t = e.target.value.toLowerCase();
     const f = Object.values(voters).filter(v =>
-        v.Name.toLowerCase().includes(t) ||
-        v.EPIC.toLowerCase().includes(t) ||
-        v.AcNo.toString().includes(t) ||
-        v.PartNo.toString().includes(t) ||
-        (v.Address||"").toLowerCase().includes(t) ||
-        (v.VotingAddress||"").toLowerCase().includes(t)
+        (v.Name || "").toLowerCase().includes(t) ||
+        (v.EPIC || "").toLowerCase().includes(t) ||
+        (v.AcNo !== undefined && v.AcNo.toString().includes(t)) ||
+        (v.PartNo !== undefined && v.PartNo.toString().includes(t)) ||
+        (v.Address || "").toLowerCase().includes(t) ||
+        (v.VotingAddress || "").toLowerCase().includes(t) ||
+        (v.SenderNote || "").toLowerCase().includes(t)
     );
     showList(f);
 });
