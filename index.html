@@ -41,11 +41,11 @@ body {
   padding: 10px;
 }
 
-/* Slider */
+/* SLIDER AREA (Mobile Default) */
 .slider {
   width: 100%;
   max-width: 1000px;
-  height: 45vh;      /* screen का 45% हिस्सा */
+  height: 45vh;    /* MOBILE 45% HEIGHT */
   overflow: hidden;
   margin-top: 10px;
 }
@@ -59,12 +59,12 @@ body {
 .slides img {
   width: 100%;
   height: 100%;
-  object-fit: cover; /* image auto crop होकर fit होगी */
+  object-fit: cover;   /* मोबाइल — perfect full fit */
   flex-shrink: 0;
   border-radius: 8px;
 }
 
-/* Text Section */
+/* TEXTS */
 .ward-text {
   font-size: 36px;
   font-weight: bold;
@@ -81,7 +81,7 @@ body {
   text-align: center;
 }
 
-/* Buttons */
+/* BUTTONS */
 .google-btn, .install-btn {
   padding: 14px 30px;
   font-size: 18px;
@@ -100,6 +100,29 @@ body {
 
 .install-btn {
   background: linear-gradient(145deg, #FF6B6B, #FFD93D, #6BCB77, #4D96FF);
+}
+
+/* -------------------------
+   PC / LAPTOP PERFECT FIX
+   ------------------------- */
+@media (min-width: 768px) {
+
+  .slider {
+    height: 60vh;   /* PC पर बड़ा height */
+  }
+
+  .slides img {
+    object-fit: contain !important; /* PC पर image बिल्कुल नहीं कटेगी */
+    background: #000; /* look बेहतर लगेगा */
+  }
+
+  .ward-text {
+    font-size: 42px;
+  }
+
+  .candidate-text {
+    font-size: 28px;
+  }
 }
 </style>
 </head>
