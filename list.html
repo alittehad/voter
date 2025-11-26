@@ -1,75 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Voter Preview Only</title>
-
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Voter List Preview</title>
 <style>
-body { font-family: Arial; margin:0; padding:10px; background:#f3f3f3; }
-h2 { text-align:center; margin-bottom:15px; }
-
-input {
-    width:100%; padding:10px; margin-bottom:12px;
-    border-radius:8px; border:2px solid #777; font-size:16px;
-}
-
-.list-item{
-    padding:14px;background:white;border:2px solid #aaa;
-    margin-bottom:10px;border-radius:12px;cursor:pointer;
-    transition:.3s;font-size:16px;
-}
-.highlight { background: #ffe08a !important; border-color:#d6a300 !important; }
-.list-item:hover{
-    transform:scale(1.03);box-shadow:0 0 10px gray;
-}
-
-#popup{
-    position:fixed;top:0;left:0;width:100%;height:100%;
-    background:rgba(0,0,0,0.7);display:none;
-    justify-content:center;align-items:flex-start;
-    padding:20px;overflow-y:auto;
-}
-.card{
-    width:95%;max-width:420px;background:white;
-    border:3px solid black;border-radius:15px;padding:20px;
-}
-
-.card img{
-    width:100%;max-height:200px;object-fit:contain;
-    border-radius:12px;margin-bottom:10px;
-}
-
-.btn{
-    padding:12px;width:100%;margin-top:10px;background:#008cff;
-    color:white;border:none;font-size:16px;cursor:pointer;
-    border-radius:10px;box-shadow:0 4px 0 #003f7f;
-}
-.btn:active{ transform:translateY(4px); }
-.close-btn{ background:red;box-shadow:0 4px 0 #7a0000; }
-.color-btn{ background:#ffa600; box-shadow:0 4px 0 #b36b00; }
-
-@media print{
-    body *{ visibility:hidden; }
-    #popup, #popup *{ visibility:visible; }
-    .btn{ display:none !important; }
-}
+body { font-family: Arial, sans-serif; padding: 10px; }
+h2 { text-align: center; }
 </style>
 </head>
 <body>
 
 <h2>🗳 Voter List Preview</h2>
 
-<script>
-// ⭐ NEW 100% WORKING TRANSLATION USING LIBRETRANSLATE (NO KEY REQUIRED)
+<!-- 🌐 TRANSLATION DROPDOWN ADDED -->
+<div style="text-align:center; margin-bottom:15px;">
+    <select id="translateMenu" style="padding:10px; font-size:16px; border-radius:8px; border:2px solid #007bff; width:90%; max-width:350px;">
+        <option value="" selected>🌐 भाषा चुनें / Select Language</option>
+        <option value="mr-en">Marathi → English</option>
+        <option value="en-mr">English → Marathi</option>
+    </select>
+</div>
 
+<div id="contentArea">
+    <p>वसई विरार महानगरपालिका</p>
+    <p>प्रभाग क्र : ८ - वॉर्ड ८</p>
+    <p>यादी भाग क्र. २७२ : १ - धानीवगांवबा-हाचापाडाधानीवहरवटे</p>
+    <p>मुळ प्रारूप मतदार यादी</p>
+    <p>दिनांक २०-११-२०२५</p>
+</div>
+
+<script>
+// ⭐ WORKING TRANSLATION USING LIBRETRANSLATE
 async function translatePage(from, to) {
-    const walker = document.createTreeWalker(
-        document.body,
-        NodeFilter.SHOW_TEXT,
-        null,
-        false
-    );
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
 
     let nodes = [];
     let texts = [];
@@ -77,7 +41,6 @@ async function translatePage(from, to) {
     while (walker.nextNode()) {
         let n = walker.currentNode;
         let t = n.textContent.trim();
-
         if (t.length > 1) {
             nodes.push(n);
             texts.push(t);
@@ -89,12 +52,7 @@ async function translatePage(from, to) {
     try {
         let res = await fetch("https://libretranslate.de/translate", {
             method: "POST",
-            body: JSON.stringify({
-                q: texts.join("\n"),
-                source: from,
-                target: to,
-                format: "text"
-            }),
+            body: JSON.stringify({ q: texts.join("\n"), source: from, target: to, format: "text" }),
             headers: { "Content-Type": "application/json" }
         });
 
@@ -111,201 +69,13 @@ async function translatePage(from, to) {
     }
 }
 
-// Dropdown listener SAME रखो
-document.getElementById("translateMenu").addEventListener("change", function () {
-    let val = this.value;
-
-    if (val === "mr-en") translatePage("mr", "en");
-    if (val === "en-mr") translatePage("en", "mr");
-
-    this.value = "";
-});
-</script>
-
-
-<input id="search" placeholder="Search Name, EPIC, AC No, Part No, Address, Booth, Message...">
-<div id="list"></div>
-
-<!-- Popup -->
-<div id="popup">
-    <div class="card" id="cardBox">
-        <h3 id="pName"></h3>
-        <p><b>🆔 EPIC:</b> <span id="pEpic"></span></p>
-        <p><b>🏛 AC No:</b> <span id="pAc"></span></p>
-        <p><b>📍 Part No:</b> <span id="pPart"></span></p>
-        <p><b>🏠 Address:</b> <span id="pAddress"></span></p>
-        <p><b>🗳 Booth:</b> <span id="pVoteAddress"></span></p>
-
-        <img id="voterImage" style="display:none; margin-top:10px;">
-
-        <label><b>📝 Sender Message:</b></label>
-        <input id="senderNote" placeholder="Type message here">
-
-        <button class="btn color-btn" onclick="highlightItem()">🎨 Highlight</button>
-        <button class="btn" onclick="printDetails()">🖨 Print</button>
-        <button class="btn" onclick="sendWhatsApp()">📩 WhatsApp</button>
-        <button class="btn close-btn" onclick="closePopup()">❌ Close</button>
-    </div>
-</div>
-
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase.js"></script>
-
-<script>
-// Firebase config
-firebase.initializeApp({
-  apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
-  authDomain: "voter-25c94.firebaseapp.com",
-  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com/",
-  projectId: "voter-25c94",
-  storageBucket: "voter-25c94.appspot.com"
-});
-
-let voters={}, selected=null, globalSenderNote="", activeListItem=null;
-
-// Load voters
-firebase.database().ref("/").once("value").then(snap=>{
-    globalSenderNote = snap.val().GlobalSenderNote || "";
-    voters = snap.val().Voters || {};
-    showList(voters);
-});
-
-// Show list
-function showList(data){
-    const box = document.getElementById("list");
-    box.innerHTML = "";
-    Object.values(data).forEach(v=>{
-        const div = document.createElement("div");
-        div.className = "list-item";
-        div.setAttribute("data-full-text",
-            `${v.Name} ${v.EPIC} ${v.AcNo} ${v.PartNo} ${v.Address} ${v.VotingAddress}`
-        );
-
-        div.innerHTML = `<b>${v.Name}</b><br>🆔 ${v.EPIC} | 
-        🏛 AC:${v.AcNo} | 📍 Part:${v.PartNo}`;
-
-        div.onclick = () => {
-            activeListItem = div; 
-            openPopup(v);
-        };
-
-        box.appendChild(div);
-    });
-}
-
-// Open popup
-function openPopup(v){
-    selected = v;
-
-    document.getElementById("pName").innerText = v.Name;
-    document.getElementById("pEpic").innerText = v.EPIC;
-    document.getElementById("pAc").innerText = v.AcNo;
-    document.getElementById("pPart").innerText = v.PartNo;
-    document.getElementById("pAddress").innerText = v.Address || "";
-    document.getElementById("pVoteAddress").innerText = v.VotingAddress || "";
-    document.getElementById("senderNote").value = v.SenderNote || globalSenderNote;
-
-    const img = document.getElementById("voterImage");
-    img.style.display = v.ImageURL ? "block" : "none";
-    if(v.ImageURL) img.src = v.ImageURL;
-
-    document.getElementById("popup").style.display = "flex";
-}
-
-// Highlight
-function highlightItem(){
-    if(activeListItem) activeListItem.classList.toggle("highlight");
-    document.getElementById("cardBox").classList.toggle("highlight");
-}
-
-function closePopup(){ document.getElementById("popup").style.display = "none"; }
-function printDetails(){ window.print(); }
-
-// WhatsApp
-function sendWhatsApp(){
-    const msg = `👤 Name: ${selected.Name}
-🆔 EPIC: ${selected.EPIC}
-🏠 Address: ${selected.Address}
-📍 Booth: ${selected.VotingAddress}
-📝 Message: ${document.getElementById("senderNote").value}`;
-
-    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`);
-}
-
-//
-// ⭐⭐⭐ WORKING TRANSLATION SYSTEM ⭐⭐⭐
-//
-async function translatePage(from, to) {
-
-    const walker = document.createTreeWalker(
-        document.body,
-        NodeFilter.SHOW_TEXT,
-        null,
-        false
-    );
-
-    let nodes = [];
-    let texts = [];
-
-    while (walker.nextNode()) {
-        let n = walker.currentNode;
-        let t = n.textContent.trim();
-
-        if (t.length > 1) {
-            nodes.push(n);
-            texts.push(t);
-        }
-    }
-
-    if (texts.length === 0) return;
-
-    // ✔ NEW WORKING FREE GOOGLE TRANSLATE ENDPOINT
-    let url =
-        "https://translate.googleapis.com/translate_a/single?client=gtx&sl=" +
-        from +
-        "&tl=" +
-        to +
-        "&dt=t&q=" +
-        encodeURIComponent(texts.join("\n"));
-
-    try {
-        let res = await fetch(url);
-        let data = await res.json();
-
-        let translated = data[0].map(x => x[0]).join("").split("\n");
-
-        translated.forEach((t, i) => {
-            nodes[i].textContent = t;
-        });
-
-    } catch (err) {
-        alert("Translation failed!");
-        console.error(err);
-    }
-}
-
 // Dropdown listener
+
 document.getElementById("translateMenu").addEventListener("change", function () {
     let val = this.value;
-
     if (val === "mr-en") translatePage("mr", "en");
     if (val === "en-mr") translatePage("en", "mr");
-
     this.value = "";
-});
-
-// Search
-document.getElementById("search").addEventListener("input", e=>{
-    const t = e.target.value.toLowerCase();
-    const f = Object.values(voters).filter(v =>
-        (v.Name || "").toLowerCase().includes(t) ||
-        (v.EPIC || "").toLowerCase().includes(t) ||
-        (v.AcNo+"").includes(t) ||
-        (v.PartNo+"").includes(t) ||
-        (v.Address || "").toLowerCase().includes(t) ||
-        (v.VotingAddress || "").toLowerCase().includes(t) ||
-        (v.SenderNote || "").toLowerCase().includes(t)
-    );
-    showList(f);
 });
 </script>
 
