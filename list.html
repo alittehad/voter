@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="mr">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -40,65 +40,65 @@ input, textarea, select {
 .btn:active{ transform:translateY(4px); }
 .close-btn{ background:red;box-shadow:0 4px 0 #7a0000; }
 .color-btn{ background:#ffa600; box-shadow:0 4px 0 #b36b00; }
-#loadingIndicator{
-    position:fixed;top:10px;right:10px;background:#008cff;color:white;padding:6px 12px;border-radius:8px;display:none;
-}
+
 /* PRINT */
 @media print{
     body *{ visibility:hidden; }
     #popup, #popup *{ visibility:visible; }
     .btn{ display:none !important; }
 }
+.lang-switch { text-align:center; margin-bottom:12px; }
+.lang-switch select { padding:8px 12px; font-size:16px; border-radius:8px; border:2px solid #007bff; }
 </style>
 </head>
 <body>
 
-<!-- 🌐 TRANSLATION DROPDOWN -->
-<div style="text-align:center; margin-bottom:15px;">
-    <select id="translateMenu">
-        <option value="" selected>🌐 भाषा चुनें / Select Language</option>
-        <option value="mr-en">Marathi → English</option>
-        <option value="en-mr">English → Marathi</option>
-    </select>
+<!-- LANGUAGE SWITCH -->
+<div class="lang-switch">
+  <select id="lang">
+    <option value="mr">🇮🇳 मराठी (Marathi)</option>
+    <option value="en">🇮🇳 English</option>
+  </select>
 </div>
-
-<div id="loadingIndicator">Translating...</div>
 
 <!-- Translate Area -->
 <div id="translateArea">
-    <h2 class="translatable">🗳 Voter List Preview</h2>
-    <label class="label translatable">Search Voter:</label>
+    <h2 class="label" data-mr="🗳 मतदार यादी पूर्वावलोकन" data-en="🗳 Voter List Preview">🗳 मतदार यादी पूर्वावलोकन</h2>
+    <label class="label" data-mr="मतदाता शोधा" data-en="Search Voter:">मतदाता शोधा</label>
 </div>
 
 <!-- Search and List -->
-<input id="search" placeholder="Search Name, EPIC, AC No, Part No, Address, Booth, Message..." class="translatable">
+<input id="search" class="label" 
+       data-mr="नाव, EPIC, AC क्र., भाग क्र., पत्ता शोधा" 
+       data-en="Search Name, EPIC, AC No, Part No, Address, Booth, Message..."
+       placeholder="नाव, EPIC, AC क्र., भाग क्र., पत्ता शोधा">
 <div id="list"></div>
 
 <!-- Popup -->
 <div id="popup">
     <div class="card" id="cardBox">
         <h3 id="pName"></h3>
-        <p><b class="label translatable">🆔 EPIC:</b> <span id="pEpic"></span></p>
-        <p><b class="label translatable">🏛 AC No:</b> <span id="pAc"></span></p>
-        <p><b class="label translatable">📍 Part No:</b> <span id="pPart"></span></p>
-        <p><b class="label translatable">🏠 Address:</b> <span id="pAddress"></span></p>
-        <p><b class="label translatable">🗳 Booth:</b> <span id="pVoteAddress"></span></p>
+        <p><b class="label" data-mr="🆔 EPIC क्रमांक:" data-en="🆔 EPIC:">🆔 EPIC क्रमांक:</b> <span id="pEpic"></span></p>
+        <p><b class="label" data-mr="🏛 विधानसभा:" data-en="🏛 AC No:">🏛 विधानसभा:</b> <span id="pAc"></span></p>
+        <p><b class="label" data-mr="📍 भाग क्रमांक:" data-en="📍 Part No:">📍 भाग क्रमांक:</b> <span id="pPart"></span></p>
+        <p><b class="label" data-mr="🏠 पत्ता:" data-en="🏠 Address:">🏠 पत्ता:</b> <span id="pAddress"></span></p>
+        <p><b class="label" data-mr="🗳 मतदान केंद्र:" data-en="🗳 Booth:">🗳 मतदान केंद्र:</b> <span id="pVoteAddress"></span></p>
 
         <img id="voterImage" style="display:none; margin-top:10px;">
 
-        <label class="label translatable"><b>📝 Sender Message:</b></label>
-        <input id="senderNote" placeholder="Type message here" class="translatable">
+        <label class="label" data-mr="📝 संदेश:" data-en="📝 Sender Message:"><b>📝 संदेश:</b></label>
+        <input id="senderNote" placeholder="संदेश टाका / Type message here">
 
-        <button class="btn color-btn" onclick="highlightItem()">🎨 Highlight</button>
-        <button class="btn" onclick="printDetails()">🖨 Print</button>
+        <button class="btn color-btn" onclick="highlightItem()">🎨 हायलाइट / Highlight</button>
+        <button class="btn" onclick="printDetails()">🖨 छापा / Print</button>
         <button class="btn" onclick="sendWhatsApp()">📩 WhatsApp</button>
-        <button class="btn close-btn" onclick="closePopup()">❌ Close</button>
+        <button class="btn close-btn" onclick="closePopup()">❌ बंद करा / Close</button>
     </div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase.js"></script>
 <script>
-// Firebase config (same as your previous)
+// Firebase config (unchanged)
 firebase.initializeApp({
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
   authDomain: "voter-25c94.firebaseapp.com",
@@ -123,6 +123,7 @@ function showList(data){
     Object.values(data).forEach(v=>{
         const div = document.createElement("div");
         div.className = "list-item";
+        // Name line kept as-is (data is language-neutral). You can localize icons/text if needed.
         div.innerHTML = `<b>${v.Name}</b><br>🆔 ${v.EPIC} | 🏛 AC:${v.AcNo} | 📍 Part:${v.PartNo}`;
         div.onclick = ()=>{ activeListItem=div; openPopup(v); };
         box.appendChild(div);
@@ -161,11 +162,12 @@ function printDetails(){ window.print(); }
 
 // WhatsApp
 function sendWhatsApp(){
+    if(!selected) return;
     const msg=`👤 Name: ${selected.Name}
 🆔 EPIC: ${selected.EPIC}
-🏠 Address: ${selected.Address}
-📍 Booth: ${selected.VotingAddress}
-📝 Message: ${document.getElementById("senderNote").value}`;
+🏠 Address: ${selected.Address || ""}
+📍 Booth: ${selected.VotingAddress || ""}
+📝 Message: ${document.getElementById("senderNote").value || ""}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`);
 }
 
@@ -184,51 +186,39 @@ document.getElementById("search").addEventListener("input", e=>{
     showList(f);
 });
 
-// 🌐 Translation with CORS proxy + emoji-safe + loading
-async function translateTextSafe(texts, from, to){
-    const loader = document.getElementById("loadingIndicator");
-    loader.style.display = "block";
-    try{
-        const proxy = "https://api.allorigins.win/raw?url=";
-        const url = encodeURIComponent("https://translate.argosopentech.com/translate");
-
-        const res = await fetch(proxy + url, {
-            method: "POST",
-            body: JSON.stringify({q:texts.join("\n"), source:from, target:to, format:"text"}),
-            headers: {"Content-Type":"application/json"}
-        });
-
-        if(!res.ok){ console.error("Translation failed:", res.status, res.statusText); alert("Translation failed!"); return texts; }
-
-        const data = await res.json();
-        return data.translatedText.split("\n");
-    } catch(err){
-        console.error("Translation failed:", err);
-        alert("Translation failed! Check your internet.");
-        return texts;
-    } finally{
-        loader.style.display = "none";
+/* ---------------------------
+   Manual language switching
+   (Rasta-3: data attributes)
+   ---------------------------*/
+function applyLanguage(lang) {
+  // labels: elements with class "label"
+  document.querySelectorAll(".label").forEach(el => {
+    // prefer data-mr / data-en values, preserve emoji if present
+    const attr = (lang === "mr") ? el.dataset.mr : el.dataset.en;
+    if (attr !== undefined) {
+      // If element contains emoji at start in dataset, it's already included.
+      // For inputs (placeholder) vs normal text nodes:
+      if (el.tagName === "INPUT" || el.tagName === "TEXTAREA") {
+        el.placeholder = attr;
+      } else {
+        // For label elements that include <b> child (like sender label), handle innerHTML carefully
+        // Keep existing emoji if dataset doesn't include emoji: dataset should include emoji+text.
+        el.innerText = attr;
+      }
     }
+  });
+
+  // Also handle placeholders for elements that are not .label but translatable, e.g., the search input was class label already.
+  // If you have other elements with data attributes, they can be included by adding the "label" class.
 }
 
-async function translatePageSafe(from,to){
-    const elements = Array.from(document.querySelectorAll(".translatable"));
-    const texts = elements.map(el=>el.placeholder?el.placeholder:el.textContent)
-                          .map(t=>t.replace(/[\u{1F300}-\u{1F6FF}]/gu,"").replace(":","").trim());
-    const translated = await translateTextSafe(texts,from,to);
-    elements.forEach((el,i)=>{
-        const emoji = el.textContent ? el.textContent.match(/[\u{1F300}-\u{1F6FF}]/gu) || "" : "";
-        if(el.placeholder!==undefined && el.placeholder!==""){ el.placeholder = translated[i]; }
-        else el.textContent = emoji + " " + translated[i] + (el.classList.contains("label")?":":"");
-    });
-}
-
-// Dropdown listener
-document.getElementById("translateMenu").addEventListener("change", function(){
-    if(this.value==="mr-en") translatePageSafe("mr","en");
-    if(this.value==="en-mr") translatePageSafe("en","mr");
-    this.value="";
+// attach listener
+document.getElementById("lang").addEventListener("change", function () {
+  applyLanguage(this.value);
 });
+
+// default language = Marathi
+applyLanguage("mr");
 </script>
 </body>
 </html>
