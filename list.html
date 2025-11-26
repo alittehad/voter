@@ -6,18 +6,23 @@
 <title>Voter Preview Only</title>
 <style>
 body { font-family: Arial; margin:0; padding:10px; background:#f3f3f3; }
-h2 { text-align:center; margin-bottom:15px; }
+h2 { text-align:center; margin-bottom:10px; font-size:16px; text-transform: lowercase; }
 input, textarea, select {
-    width:100%; padding:10px; margin-bottom:12px;
-    border-radius:8px; border:2px solid #777; font-size:16px;
+    width:100%; padding:8px; margin-bottom:8px;
+    border-radius:6px; border:1px solid #777; font-size:14px;
+    text-transform: lowercase;
 }
 .list-item{
-    padding:14px;background:white;border:2px solid #aaa;
-    margin-bottom:10px;border-radius:12px;cursor:pointer;
-    transition:.3s;font-size:16px;
+    padding:6px 8px; background:white;
+    border:1px solid #aaa; margin-bottom:4px;
+    border-radius:6px; cursor:pointer;
+    transition:.2s; font-size:12px;
+    text-transform: lowercase; line-height:1.3em;
+    word-break: break-word;
 }
 .highlight { background: #ffe08a !important; border-color:#d6a300 !important; }
-.list-item:hover{ transform:scale(1.03); box-shadow:0 0 10px gray; }
+.list-item:hover{ transform:scale(1.03); box-shadow:0 0 6px gray; }
+
 #popup{
     position:fixed;top:0;left:0;width:100%;height:100%;
     background:rgba(0,0,0,0.7);display:none;
@@ -26,20 +31,21 @@ input, textarea, select {
 }
 .card{
     width:95%;max-width:420px;background:white;
-    border:3px solid black;border-radius:15px;padding:20px;
+    border:3px solid black;border-radius:12px;padding:15px;
+    font-size:13px; text-transform: lowercase;
 }
 .card img{
-    width:100%;max-height:200px;object-fit:contain;
-    border-radius:12px;margin-bottom:10px;
+    width:100%;max-height:180px;object-fit:contain;
+    border-radius:10px;margin-bottom:8px;
 }
 .btn{
-    padding:12px;width:100%;margin-top:10px;background:#008cff;
-    color:white;border:none;font-size:16px;cursor:pointer;
-    border-radius:10px;box-shadow:0 4px 0 #003f7f;
+    padding:10px;width:100%;margin-top:8px;background:#008cff;
+    color:white;border:none;font-size:14px;cursor:pointer;
+    border-radius:8px;box-shadow:0 3px 0 #003f7f;
 }
-.btn:active{ transform:translateY(4px); }
-.close-btn{ background:red;box-shadow:0 4px 0 #7a0000; }
-.color-btn{ background:#ffa600; box-shadow:0 4px 0 #b36b00; }
+.btn:active{ transform:translateY(3px); }
+.close-btn{ background:red;box-shadow:0 3px 0 #7a0000; }
+.color-btn{ background:#ffa600; box-shadow:0 3px 0 #b36b00; }
 
 /* PRINT */
 @media print{
@@ -47,13 +53,12 @@ input, textarea, select {
     #popup, #popup *{ visibility:visible; }
     .btn{ display:none !important; }
 }
-.lang-switch { text-align:center; margin-bottom:12px; }
-.lang-switch select { padding:8px 12px; font-size:16px; border-radius:8px; border:2px solid #007bff; }
+.lang-switch { text-align:center; margin-bottom:10px; }
+.lang-switch select { padding:6px 10px; font-size:14px; border-radius:6px; border:1px solid #007bff; }
 </style>
 </head>
 <body>
 
-<!-- LANGUAGE SWITCH -->
 <div class="lang-switch">
   <select id="lang">
     <option value="mr">🇮🇳 मराठी (Marathi)</option>
@@ -61,20 +66,17 @@ input, textarea, select {
   </select>
 </div>
 
-<!-- Translate Area -->
 <div id="translateArea">
     <h2 class="label" data-mr="🗳 मतदार यादी पूर्वावलोकन" data-en="🗳 Voter List Preview">🗳 मतदार यादी पूर्वावलोकन</h2>
     <label class="label" data-mr="मतदाता शोधा" data-en="Search Voter:">मतदाता शोधा</label>
 </div>
 
-<!-- Search and List -->
 <input id="search" class="label" 
        data-mr="नाव, EPIC, AC क्र., भाग क्र., पत्ता शोधा" 
        data-en="Search Name, EPIC, AC No, Part No, Address, Booth, Message..."
        placeholder="नाव, EPIC, AC क्र., भाग क्र., पत्ता शोधा">
 <div id="list"></div>
 
-<!-- Popup -->
 <div id="popup">
     <div class="card" id="cardBox">
         <h3 id="pName"></h3>
@@ -98,7 +100,7 @@ input, textarea, select {
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase.js"></script>
 <script>
-// Firebase config (unchanged)
+// Firebase config
 firebase.initializeApp({
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
   authDomain: "voter-25c94.firebaseapp.com",
@@ -123,8 +125,7 @@ function showList(data){
     Object.values(data).forEach(v=>{
         const div = document.createElement("div");
         div.className = "list-item";
-        // Name line kept as-is (data is language-neutral). You can localize icons/text if needed.
-        div.innerHTML = `<b>${v.Name}</b><br>🆔 ${v.EPIC} | 🏛 AC:${v.AcNo} | 📍 Part:${v.PartNo}`;
+        div.innerHTML = `<b>${(v.Name||"").toLowerCase()}</b><br>🆔 ${(v.EPIC||"").toLowerCase()} | 🏛 AC:${v.AcNo} | 📍 Part:${v.PartNo}`;
         div.onclick = ()=>{ activeListItem=div; openPopup(v); };
         box.appendChild(div);
     });
@@ -133,13 +134,13 @@ function showList(data){
 // Open popup
 function openPopup(v){
     selected=v;
-    document.getElementById("pName").innerText=v.Name;
-    document.getElementById("pEpic").innerText=v.EPIC;
+    document.getElementById("pName").innerText=(v.Name||"").toLowerCase();
+    document.getElementById("pEpic").innerText=(v.EPIC||"").toLowerCase();
     document.getElementById("pAc").innerText=v.AcNo;
     document.getElementById("pPart").innerText=v.PartNo;
-    document.getElementById("pAddress").innerText=v.Address||"";
-    document.getElementById("pVoteAddress").innerText=v.VotingAddress||"";
-    document.getElementById("senderNote").value=v.SenderNote||globalSenderNote;
+    document.getElementById("pAddress").innerText=(v.Address||"").toLowerCase();
+    document.getElementById("pVoteAddress").innerText=(v.VotingAddress||"").toLowerCase();
+    document.getElementById("senderNote").value=(v.SenderNote||globalSenderNote).toLowerCase();
 
     const img=document.getElementById("voterImage");
     if(v.ImageURL){ img.src=v.ImageURL; img.style.display="block"; }
@@ -163,11 +164,11 @@ function printDetails(){ window.print(); }
 // WhatsApp
 function sendWhatsApp(){
     if(!selected) return;
-    const msg=`👤 Name: ${selected.Name}
-🆔 EPIC: ${selected.EPIC}
-🏠 Address: ${selected.Address || ""}
-📍 Booth: ${selected.VotingAddress || ""}
-📝 Message: ${document.getElementById("senderNote").value || ""}`;
+    const msg=`👤 Name: ${(selected.Name||"").toLowerCase()}
+🆔 EPIC: ${(selected.EPIC||"").toLowerCase()}
+🏠 Address: ${(selected.Address||"").toLowerCase()}
+📍 Booth: ${(selected.VotingAddress||"").toLowerCase()}
+📝 Message: ${(document.getElementById("senderNote").value||"").toLowerCase()}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`);
 }
 
@@ -186,38 +187,19 @@ document.getElementById("search").addEventListener("input", e=>{
     showList(f);
 });
 
-/* ---------------------------
-   Manual language switching
-   (Rasta-3: data attributes)
-   ---------------------------*/
+// Language switching
 function applyLanguage(lang) {
-  // labels: elements with class "label"
   document.querySelectorAll(".label").forEach(el => {
-    // prefer data-mr / data-en values, preserve emoji if present
     const attr = (lang === "mr") ? el.dataset.mr : el.dataset.en;
     if (attr !== undefined) {
-      // If element contains emoji at start in dataset, it's already included.
-      // For inputs (placeholder) vs normal text nodes:
-      if (el.tagName === "INPUT" || el.tagName === "TEXTAREA") {
-        el.placeholder = attr;
-      } else {
-        // For label elements that include <b> child (like sender label), handle innerHTML carefully
-        // Keep existing emoji if dataset doesn't include emoji: dataset should include emoji+text.
-        el.innerText = attr;
-      }
+      if (el.tagName === "INPUT" || el.tagName === "TEXTAREA") el.placeholder = attr;
+      else el.innerText = attr;
     }
   });
-
-  // Also handle placeholders for elements that are not .label but translatable, e.g., the search input was class label already.
-  // If you have other elements with data attributes, they can be included by adding the "label" class.
 }
-
-// attach listener
 document.getElementById("lang").addEventListener("change", function () {
   applyLanguage(this.value);
 });
-
-// default language = Marathi
 applyLanguage("mr");
 </script>
 </body>
