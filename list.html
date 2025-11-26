@@ -203,7 +203,13 @@ async function translatePage(from, to) {
 
     if (texts.length === 0) return;
 
-    let url = "https://translate.googleapis.com/translate_a/single?client=gtx&sl="
+
+
+
+
+
+    let url = "https://translate.googleapis.com/translate_a/t?client=gtx&sl="
+
               + from + "&tl=" + to + "&dt=t&q=" + encodeURIComponent(texts.join(" ||| "));
 
     try {
