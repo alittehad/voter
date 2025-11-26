@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Voter Preview Only</title>
 <style>
@@ -42,8 +42,6 @@ input, textarea {
 .btn:active{ transform:translateY(4px); }
 .close-btn{ background:red;box-shadow:0 4px 0 #7a0000; }
 .color-btn{ background:#ffa600; box-shadow:0 4px 0 #b36b00; }
-
-/* PRINT */
 @media print{
     body *{ visibility:hidden; }
     #popup, #popup *{ visibility:visible; }
@@ -55,13 +53,13 @@ input, textarea {
 
 <h2>🗳 Voter List Preview</h2>
 
-<!-- 🌐 TRANSLATION DROPDOWN -->
+<!-- TRANSLATION DROPDOWN -->
 <div style="text-align:center; margin-bottom:15px;">
-    <select id="translateMenu" style="padding:10px; font-size:16px; border-radius:8px; border:2px solid #007bff; width:90%; max-width:350px;">
-        <option value="" selected>🌐 भाषा चुनें / Select Language</option>
-        <option value="mr-en">Marathi → English</option>
-        <option value="en-mr">English → Marathi</option>
-    </select>
+<select id="translateMenu" style="padding:10px; font-size:16px; border-radius:8px; border:2px solid #007bff; width:90%; max-width:350px;">
+    <option value="" selected>🌐 भाषा चुनें / Select Language</option>
+    <option value="mr-en">Marathi → English</option>
+    <option value="en-mr">English → Marathi</option>
+</select>
 </div>
 
 <input id="search" placeholder="Search Name, EPIC, AC No, Part No, Address, Booth, Message...">
@@ -115,9 +113,7 @@ function showList(data){
     Object.values(data).forEach(v=>{
         const div = document.createElement("div");
         div.className = "list-item";
-        div.setAttribute("data-text", `${v.Name} ${v.EPIC} ${v.AcNo} ${v.PartNo} ${v.Address} ${v.VotingAddress}`);
         div.innerHTML = `<b>${v.Name}</b><br>🆔 ${v.EPIC} | 🏛 AC:${v.AcNo} | 📍 Part:${v.PartNo}`;
-
         div.onclick = () => { activeListItem = div; openPopup(v); };
         box.appendChild(div);
     });
@@ -135,25 +131,19 @@ function openPopup(v){
     document.getElementById("senderNote").value = v.SenderNote || globalSenderNote;
 
     const img = document.getElementById("voterImage");
-    if(v.ImageURL){ img.src = v.ImageURL; img.style.display = "block"; } 
-    else { img.style.display = "none"; }
+    if(v.ImageURL){ img.src=v.ImageURL; img.style.display="block"; } else { img.style.display="none"; }
 
-    document.getElementById("popup").style.display = "flex";
+    document.getElementById("popup").style.display="flex";
 }
 
-// Highlight
 function highlightItem(){
     if(activeListItem) activeListItem.classList.toggle("highlight");
     document.getElementById("cardBox").classList.toggle("highlight");
 }
 
-// Close popup
-function closePopup(){ document.getElementById("popup").style.display = "none"; }
-
-// Print
+function closePopup(){ document.getElementById("popup").style.display="none"; }
 function printDetails(){ window.print(); }
 
-// WhatsApp
 function sendWhatsApp(){
     const msg = `👤 Name: ${selected.Name}
 🆔 EPIC: ${selected.EPIC}
@@ -167,45 +157,48 @@ function sendWhatsApp(){
 document.getElementById("search").addEventListener("input", e=>{
     const t = e.target.value.toLowerCase();
     const f = Object.values(voters).filter(v =>
-        (v.Name || "").toLowerCase().includes(t) ||
-        (v.EPIC || "").toLowerCase().includes(t) ||
+        (v.Name||"").toLowerCase().includes(t) ||
+        (v.EPIC||"").toLowerCase().includes(t) ||
         (v.AcNo+"").includes(t) ||
         (v.PartNo+"").includes(t) ||
-        (v.Address || "").toLowerCase().includes(t) ||
-        (v.VotingAddress || "").toLowerCase().includes(t) ||
-        (v.SenderNote || "").toLowerCase().includes(t)
+        (v.Address||"").toLowerCase().includes(t) ||
+        (v.VotingAddress||"").toLowerCase().includes(t) ||
+        (v.SenderNote||"").toLowerCase().includes(t)
     );
     showList(f);
 });
 
-// ⭐ Translation using LibreTranslate on visible voter list
-async function translatePage(from, to){
-    const items = document.querySelectorAll("#list .list-item, #popup .card *:not(input):not(button)");
-    let texts = [];
-    items.forEach(el=>{ texts.push(el.innerText); });
-
-    if(texts.length===0) return;
-
+// ⭐ TRANSLATION
+async function translateText(texts, from, to){
     try{
-        let res = await fetch("https://libretranslate.de/translate",{
-            method:"POST",
-            body: JSON.stringify({q:texts.join("\n"), source:from, target:to, format:"text"}),
-            headers: {"Content-Type":"application/json"}
-        });
+        let url = "https://translate.googleapis.com/translate_a/single?client=gtx&sl="+from+"&tl="+to+"&dt=t&q="+encodeURIComponent(texts.join("\n"));
+        let res = await fetch(url);
         let data = await res.json();
-        let translated = data.translatedText.split("\n");
-        items.forEach((el,i)=>{ el.innerText = translated[i] || el.innerText; });
+        return data[0].map(x=>x[0]).join("\n").split("\n");
     }catch(e){
+        console.error("Translation failed", e);
         alert("Translation failed!");
-        console.error(e);
+        return texts;
     }
 }
 
-// Translation dropdown
-document.getElementById("translateMenu").addEventListener("change", function(){
+document.getElementById("translateMenu").addEventListener("change", async function(){
     let val = this.value;
-    if(val==="mr-en") translatePage("mr","en");
-    if(val==="en-mr") translatePage("en","mr");
+    if(!val) return;
+    let [from,to] = val.split("-");
+
+    // Translate list items
+    let listItems = Array.from(document.querySelectorAll("#list .list-item"));
+    let texts = listItems.map(li=>li.innerText);
+    let translated = await translateText(texts, from, to);
+    listItems.forEach((li,i)=>li.innerText = translated[i]);
+
+    // Translate popup text (excluding input/button)
+    let popupElems = Array.from(document.querySelectorAll("#popup .card *:not(input):not(button)"));
+    let popupTexts = popupElems.map(el=>el.innerText);
+    let translatedPopup = await translateText(popupTexts, from, to);
+    popupElems.forEach((el,i)=>el.innerText = translatedPopup[i]);
+
     this.value="";
 });
 </script>
