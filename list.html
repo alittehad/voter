@@ -60,7 +60,7 @@ input {
 
 <h2>🗳 Voter List Preview</h2>
 
-<!-- 🌐 TRANSLATION DROPDOWN MENU -->
+<!-- 🌐 TRANSLATION DROPDOWN -->
 <div style="text-align:center; margin-bottom:15px;">
     <select id="translateMenu" style="
         padding:10px; 
@@ -184,9 +184,17 @@ function sendWhatsApp(){
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`);
 }
 
-// 🔥 SUPER-FAST FULL PAGE TRANSLATION
+//
+// ⭐⭐⭐ WORKING TRANSLATION SYSTEM ⭐⭐⭐
+//
 async function translatePage(from, to) {
-    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
+
+    const walker = document.createTreeWalker(
+        document.body,
+        NodeFilter.SHOW_TEXT,
+        null,
+        false
+    );
 
     let nodes = [];
     let texts = [];
@@ -195,7 +203,7 @@ async function translatePage(from, to) {
         let n = walker.currentNode;
         let t = n.textContent.trim();
 
-        if (t.length > 0 && !/^\s*$/.test(t)) {
+        if (t.length > 1) {
             nodes.push(n);
             texts.push(t);
         }
@@ -203,41 +211,39 @@ async function translatePage(from, to) {
 
     if (texts.length === 0) return;
 
-
-
-
-
-
-    let url = "https://translate.googleapis.com/translate_a/t?client=gtx&sl="
-
-              + from + "&tl=" + to + "&dt=t&q=" + encodeURIComponent(texts.join(" ||| "));
+    // ✔ NEW WORKING FREE GOOGLE TRANSLATE ENDPOINT
+    let url =
+        "https://translate.googleapis.com/translate_a/single?client=gtx&sl=" +
+        from +
+        "&tl=" +
+        to +
+        "&dt=t&q=" +
+        encodeURIComponent(texts.join("\n"));
 
     try {
         let res = await fetch(url);
         let data = await res.json();
 
-        let translated = data[0]
-            .map(a => a[0])
-            .join("")
-            .split(" ||| ");
+        let translated = data[0].map(x => x[0]).join("").split("\n");
 
         translated.forEach((t, i) => {
-            nodes[i].textContent = t || nodes[i].textContent;
+            nodes[i].textContent = t;
         });
 
-    } catch (e) {
-        console.error("Translation failed:", e);
+    } catch (err) {
+        alert("Translation failed!");
+        console.error(err);
     }
 }
 
-// ⭐ Dropdown translator trigger
-document.getElementById("translateMenu").addEventListener("change", function() {
+// Dropdown listener
+document.getElementById("translateMenu").addEventListener("change", function () {
     let val = this.value;
 
     if (val === "mr-en") translatePage("mr", "en");
-    else if (val === "en-mr") translatePage("en", "mr");
+    if (val === "en-mr") translatePage("en", "mr");
 
-    this.value = ""; 
+    this.value = "";
 });
 
 // Search
