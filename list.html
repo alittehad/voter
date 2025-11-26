@@ -3,45 +3,45 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Voter Preview Only</title>
+<title>Voter List Preview (Local Data)</title>
 <style>
 body { font-family: Arial; margin:0; padding:10px; background:#f3f3f3; }
 h2 { text-align:center; margin-bottom:10px; font-size:16px; text-transform: lowercase; }
 input, textarea, select {
-    width:100%; padding:8px; margin-bottom:8px;
-    border-radius:6px; border:1px solid #777; font-size:14px;
-    text-transform: lowercase;
+    width:100%; padding:8px; margin-bottom:8px;
+    border-radius:6px; border:1px solid #777; font-size:14px;
+    text-transform: lowercase;
 }
 .list-item{
-    padding:6px 8px; background:white;
-    border:1px solid #aaa; margin-bottom:4px;
-    border-radius:6px; cursor:pointer;
-    transition:.2s; font-size:12px;
-    text-transform: lowercase; line-height:1.3em;
-    word-break: break-word;
+    padding:6px 8px; background:white;
+    border:1px solid #aaa; margin-bottom:4px;
+    border-radius:6px; cursor:pointer;
+    transition:.2s; font-size:12px;
+    text-transform: lowercase; line-height:1.3em;
+    word-break: break-word;
 }
 .highlight { background: #ffe08a !important; border-color:#d6a300 !important; }
 .list-item:hover{ transform:scale(1.03); box-shadow:0 0 6px gray; }
 
 #popup{
-    position:fixed;top:0;left:0;width:100%;height:100%;
-    background:rgba(0,0,0,0.7);display:none;
-    justify-content:center;align-items:flex-start;
-    padding:20px;overflow-y:auto;
+    position:fixed;top:0;left:0;width:100%;height:100%;
+    background:rgba(0,0,0,0.7);display:none;
+    justify-content:center;align-items:flex-start;
+    padding:20px;overflow-y:auto;
 }
 .card{
-    width:95%;max-width:420px;background:white;
-    border:3px solid black;border-radius:12px;padding:15px;
-    font-size:13px; text-transform: lowercase;
+    width:95%;max-width:420px;background:white;
+    border:3px solid black;border-radius:12px;padding:15px;
+    font-size:13px; text-transform: lowercase;
 }
 .card img{
-    width:100%;max-height:180px;object-fit:contain;
-    border-radius:10px;margin-bottom:8px;
+    width:100%;max-height:180px;object-fit:contain;
+    border-radius:10px;margin-bottom:8px;
 }
 .btn{
-    padding:10px;width:100%;margin-top:8px;background:#008cff;
-    color:white;border:none;font-size:14px;cursor:pointer;
-    border-radius:8px;box-shadow:0 3px 0 #003f7f;
+    padding:10px;width:100%;margin-top:8px;background:#008cff;
+    color:white;border:none;font-size:14px;cursor:pointer;
+    border-radius:8px;box-shadow:0 3px 0 #003f7f;
 }
 .btn:active{ transform:translateY(3px); }
 .close-btn{ background:red;box-shadow:0 3px 0 #7a0000; }
@@ -49,9 +49,9 @@ input, textarea, select {
 
 /* PRINT */
 @media print{
-    body *{ visibility:hidden; }
-    #popup, #popup *{ visibility:visible; }
-    .btn{ display:none !important; }
+    body *{ visibility:hidden; }
+    #popup, #popup *{ visibility:visible; }
+    .btn{ display:none !important; }
 }
 .lang-switch { text-align:center; margin-bottom:10px; }
 .lang-switch select { padding:6px 10px; font-size:14px; border-radius:6px; border:1px solid #007bff; }
@@ -79,12 +79,14 @@ input, textarea, select {
 
 <div id="popup">
     <div class="card" id="cardBox">
-        <h3 id="pName"></h3>
-        <p><b class="label" data-mr="🆔 EPIC क्रमांक:" data-en="🆔 EPIC:">🆔 EPIC क्रमांक:</b> <span id="pEpic"></span></p>
-        <p><b class="label" data-mr="🏛 विधानसभा:" data-en="🏛 AC No:">🏛 विधानसभा:</b> <span id="pAc"></span></p>
-        <p><b class="label" data-mr="📍 भाग क्रमांक:" data-en="📍 Part No:">📍 भाग क्रमांक:</b> <span id="pPart"></span></p>
-        <p><b class="label" data-mr="🏠 पत्ता:" data-en="🏠 Address:">🏠 पत्ता:</b> <span id="pAddress"></span></p>
-        <p><b class="label" data-mr="🗳 मतदान केंद्र:" data-en="🗳 Booth:">🗳 मतदान केंद्र:</b> <span id="pVoteAddress"></span></p>
+        <h3 id="pName"></h3>
+        <p><b class="label" data-mr="🆔 EPIC क्रमांक:" data-en="🆔 EPIC:">🆔 EPIC क्रमांक:</b> <span id="pEpic"></span></p>
+        <p><b class="label" data-mr="🏛 विधानसभा:" data-en="🏛 AC No:">🏛 विधानसभा:</b> <span id="pAc"></span></p>
+        <p><b class="label" data-mr="📍 भाग क्रमांक:" data-en="📍 Part No:">📍 भाग क्रमांक:</b> <span id="pPart"></span></p>
+        <p><b class="label" data-mr="🏠 पता:" data-en="🏠 Address:">🏠 पता:</b> <span id="pAddress"></span></p>
+        <p><b class="label" data-mr="🗳 मतदान केंद्र:" data-en="🗳 Booth:">🗳 मतदान केंद्र:</b> <span id="pVoteAddress"></span></p>
+        <p><b class="label" data-mr="🔗 संबंध:" data-en="🔗 Relation:">🔗 संबंध:</b> <span id="pRelation"></span> (<span id="pRelationType"></span>)</p>
+        <p><b class="label" data-mr="आयु/लिंग:" data-en="Age/Gender:">आयु/लिंग:</b> <span id="pAge"></span> / <span id="pGender"></span></p>
 
         <img id="voterImage" style="display:none; margin-top:10px;">
 
@@ -98,70 +100,402 @@ input, textarea, select {
     </div>
 </div>
 
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase.js"></script>
 <script>
-// Firebase config
-firebase.initializeApp({
-  apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
-  authDomain: "voter-25c94.firebaseapp.com",
-  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com/",
-  projectId: "voter-25c94",
-  storageBucket: "voter-25c94.appspot.com"
-});
+// --- START: LOCAL JSON DATA ---
+const voterData = {
+  "general_info": {
+    "date": "20-11-2025",
+    "corporation": "Vasai Virar Municipal Corporation",
+    "ward_no": "8 - Ward 8",
+    "list_part_no": "272",
+    "list_part_name": "1 - Dhanivgaonba-Hachapadadhanivaharwate"
+  },
+  "voters": [
+    {
+      "serial_no": 1,
+      "epic_no": "RBG4942918",
+      "sl_no_in_part": "131/272/1",
+      "voter_full_name": "Ansari saddam hussain",
+      "relation_name": "Ansari abubakar",
+      "relation_type": "Father's Name",
+      "house_number": "NA",
+      "age": 30,
+      "gender": "Male"
+    },
+    {
+      "serial_no": 2,
+      "epic_no": "MRL2020212",
+      "sl_no_in_part": "131/272/2",
+      "voter_full_name": "Arya jagjivan pardeshi",
+      "relation_name": "Arya pardeshi",
+      "relation_type": "Father's Name",
+      "house_number": "NA",
+      "age": 53,
+      "gender": "Male"
+    },
+    {
+      "serial_no": 3,
+      "epic_no": "MRL2022762",
+      "sl_no_in_part": "131/272/3",
+      "voter_full_name": "Arya malti devi jagjivan",
+      "relation_name": "Arya jagjivan",
+      "relation_type": "Husband's Name",
+      "house_number": "NA",
+      "age": 47,
+      "gender": "Female"
+    },
+    {
+      "serial_no": 4,
+      "epic_no": "RBG3601366",
+      "sl_no_in_part": "131/272/4",
+      "voter_full_name": "Arya ramkaran dayaram",
+      "relation_name": "Arya dayaram",
+      "relation_type": "Father's Name",
+      "house_number": "NA",
+      "age": 45,
+      "gender": "Male"
+    },
+    {
+      "serial_no": 5,
+      "epic_no": "RBG3601374",
+      "sl_no_in_part": "131/272/5",
+      "voter_full_name": "Arya rekha ramkaran",
+      "relation_name": "Arya ramkaran",
+      "relation_type": "Husband's Name",
+      "house_number": "NA",
+      "age": 43,
+      "gender": "Female"
+    },
+    {
+      "serial_no": 6,
+      "epic_no": "RBG5072202",
+      "sl_no_in_part": "131/272/6",
+      "voter_full_name": "Barf ananta balu",
+      "relation_name": "Barf balu",
+      "relation_type": "Father's Name",
+      "house_number": "NA",
+      "age": 28,
+      "gender": "Male"
+    },
+    {
+      "serial_no": 7,
+      "epic_no": "RBG4585816",
+      "sl_no_in_part": "131/272/7",
+      "voter_full_name": "Bhoir jyoti ladku",
+      "relation_name": "Bhoir ladku",
+      "relation_type": "Father's Name",
+      "house_number": "NA",
+      "age": 33,
+      "gender": "Female"
+    },
+    {
+      "serial_no": 8,
+      "epic_no": "RBG4997110",
+      "sl_no_in_part": "131/272/8",
+      "voter_full_name": "Barf naresh vishnu",
+      "relation_name": "Barf vishnu",
+      "relation_type": "Father's Name",
+      "house_number": "NA",
+      "age": 29,
+      "gender": "Male"
+    },
+    {
+      "serial_no": 9,
+      "epic_no": "RBG4997128",
+      "sl_no_in_part": "131/272/9",
+      "voter_full_name": "Bhoir geeta kathod",
+      "relation_name": "Bhoir kathod",
+      "relation_type": "Father's Name",
+      "house_number": "NA",
+      "age": 31,
+      "gender": "Female"
+    },
+    {
+      "serial_no": 10,
+      "epic_no": "RBG4997144",
+      "sl_no_in_part": "131/272/10",
+      "voter_full_name": "Bhoir rakesh ladku",
+      "relation_name": "Bhoir ladku",
+      "relation_type": "Father's Name",
+      "house_number": "NA",
+      "age": 30,
+      "gender": "Male"
+    },
+    {
+      "serial_no": 11,
+      "epic_no": "RBG4997136",
+      "sl_no_in_part": "131/272/11",
+      "voter_full_name": "Bhoir sharad ladku",
+      "relation_name": "Bhoir ladku",
+      "relation_type": "Father's Name",
+      "house_number": "NA",
+      "age": 33,
+      "gender": "Male"
+    },
+    {
+      "serial_no": 12,
+      "epic_no": "RBG4997466",
+      "sl_no_in_part": "131/272/12",
+      "voter_full_name": "Bhowar rajesh halya",
+      "relation_name": "Bhowar halya",
+      "relation_type": "Father's Name",
+      "house_number": "NA",
+      "age": 34,
+      "gender": "Male"
+    },
+    {
+      "serial_no": 13,
+      "epic_no": "RBG4997482",
+      "sl_no_in_part": "131/272/13",
+      "voter_full_name": "Bhowar rasika ravindra",
+      "relation_name": "Bhowar ravindra",
+      "relation_type": "Husband's Name",
+      "house_number": "NA",
+      "age": 33,
+      "gender": "Female"
+    },
+    {
+      "serial_no": 14,
+      "epic_no": "RBG4997474",
+      "sl_no_in_part": "131/272/14",
+      "voter_full_name": "Bhowar vinod balu",
+      "relation_name": "Bhowar balu",
+      "relation_type": "Father's Name",
+      "house_number": "NA",
+      "age": 33,
+      "gender": "Male"
+    },
+    {
+      "serial_no": 15,
+      "epic_no": "RBG4997540",
+      "sl_no_in_part": "131/272/15",
+      "voter_full_name": "Bhurkud naresh kisan",
+      "relation_name": "Bhurkud kisan",
+      "relation_type": "Father's Name",
+      "house_number": "NA",
+      "age": 35,
+      "gender": "Male"
+    },
+    {
+      "serial_no": 16,
+      "epic_no": "RBG4997557",
+      "sl_no_in_part": "131/272/16",
+      "voter_full_name": "Bhurkud nilesh lahu",
+      "relation_name": "Bhurkud lahu",
+      "relation_type": "Father's Name",
+      "house_number": "NA",
+      "age": 31,
+      "gender": "Male"
+    },
+    {
+      "serial_no": 17,
+      "epic_no": "RBG4384426",
+      "sl_no_in_part": "131/272/17",
+      "voter_full_name": "Bhuyal subhash ananta",
+      "relation_name": "Bhuyal ananta",
+      "relation_type": "Father's Name",
+      "house_number": "NA",
+      "age": 30,
+      "gender": "Male"
+    },
+    {
+      "serial_no": 18,
+      "epic_no": "RBG3601416",
+      "sl_no_in_part": "131/272/18",
+      "voter_full_name": "Chaubey rameshchandra ambikaprasad",
+      "relation_name": "Chaubey ambikaprasad",
+      "relation_type": "Father's Name",
+      "house_number": "NA",
+      "age": 52,
+      "gender": "Male"
+    },
+    {
+      "serial_no": 19,
+      "epic_no": "RBG3601424",
+      "sl_no_in_part": "131/272/19",
+      "voter_full_name": "Chaubey asha rameshchandra",
+      "relation_name": "Chaubey rameshchandra",
+      "relation_type": "Husband's Name",
+      "house_number": "NA",
+      "age": 39,
+      "gender": "Female"
+    },
+    {
+      "serial_no": 20,
+      "epic_no": "RBG4997490",
+      "sl_no_in_part": "131/272/20",
+      "voter_full_name": "Chaudhary ladka surekha",
+      "relation_name": "Chaudhary surekha",
+      "relation_type": "Father's Name",
+      "house_number": "NA",
+      "age": 38,
+      "gender": "Male"
+    },
+    {
+      "serial_no": 21,
+      "epic_no": "RBG4278826",
+      "sl_no_in_part": "131/272/21",
+      "voter_full_name": "Chaudhary madhuri vijay",
+      "relation_name": "Chaudhary vijay",
+      "relation_type": "Husband's Name",
+      "house_number": "NA",
+      "age": 36,
+      "gender": "Female"
+    },
+    {
+      "serial_no": 22,
+      "epic_no": "RBG4586129",
+      "sl_no_in_part": "131/272/22",
+      "voter_full_name": "Chaudhary pinki devi",
+      "relation_name": "Chaudhary amit",
+      "relation_type": "Husband's Name",
+      "house_number": "NA",
+      "age": 34,
+      "gender": "Female"
+    },
+    {
+      "serial_no": 23,
+      "epic_no": "RBG4997524",
+      "sl_no_in_part": "131/272/23",
+      "voter_full_name": "Chowdhury naresh ganesh",
+      "relation_name": "Chaudhary ganesh",
+      "relation_type": "Father's Name",
+      "house_number": "NA",
+      "age": 34,
+      "gender": "Male"
+    },
+    {
+      "serial_no": 24,
+      "epic_no": "RBG4997516",
+      "sl_no_in_part": "131/272/24",
+      "voter_full_name": "Chaudhary rajesh ganesh",
+      "relation_name": "Chaudhary ganesh",
+      "relation_type": "Father's Name",
+      "house_number": "NA",
+      "age": 31,
+      "gender": "Male"
+    },
+    {
+      "serial_no": 25,
+      "epic_no": "RBG4997508",
+      "sl_no_in_part": "131/272/25",
+      "voter_full_name": "Chaudhary sunil ramesh",
+      "relation_name": "Chaudhary ramesh",
+      "relation_type": "Father's Name",
+      "house_number": "NA",
+      "age": 28,
+      "gender": "Male"
+    },
+    {
+      "serial_no": 26,
+      "epic_no": "RBG4586194",
+      "sl_no_in_part": "131/272/26",
+      "voter_full_name": "Chaudhary puja santosh",
+      "relation_name": "Chaudhary santosh",
+      "relation_type": "Father's Name",
+      "house_number": "NA",
+      "age": 28,
+      "gender": "Female"
+    },
+    {
+      "serial_no": 27,
+      "epic_no": "RBG4586111",
+      "sl_no_in_part": "131/272/27",
+      "voter_full_name": "Chaudhary amit kumar",
+      "relation_name": "Chaudhary vishnu prasad",
+      "relation_type": "Father's Name",
+      "house_number": "NA",
+      "age": 28,
+      "gender": "Male"
+    },
+    {
+      "serial_no": 28,
+      "epic_no": "MRL2017242",
+      "sl_no_in_part": "131/272/28",
+      "voter_full_name": "Chaudhary anita cholelal",
+      "relation_name": "Chaudhary cholelal",
+      "relation_type": "Husband's Name",
+      "house_number": "NA",
+      "age": 47,
+      "gender": "Female"
+    },
+    {
+      "serial_no": 29,
+      "epic_no": "RBG3601200",
+      "sl_no_in_part": "131/272/29",
+      "voter_full_name": "Chaudhary subhash dundaya",
+      "relation_name": "Chaudhary dundaya",
+      "relation_type": "Father's Name",
+      "house_number": "NA",
+      "age": 45,
+      "gender": "Male"
+    },
+    {
+      "serial_no": 30,
+      "epic_no": "MRL2022887",
+      "sl_no_in_part": "131/272/30",
+      "voter_full_name": "Chauhan maltidevi munsi",
+      "relation_name": "Chauhan munsi",
+      "relation_type": "Father's Name",
+      "house_number": "NA",
+      "age": 43,
+      "gender": "Female",
+      "note": "Possible duplicate of Hunda Kaithal"
+    }
+  ]
+};
+// --- END: LOCAL JSON DATA ---
 
-let voters={}, selected=null, globalSenderNote="", activeListItem=null;
-const listEl = document.getElementById("list");
+let voters = voterData.voters;
+let generalInfo = voterData.general_info;
+let selected = null, activeListItem = null;
 
-// Function to load voters with error handling
-function loadVoters(){
-    // Show a loading message
-    listEl.innerHTML = '<div style="text-align:center; padding:20px; color:#555;">Loading voter data...</div>';
+// Initial list display
+showList(voters);
 
-    firebase.database().ref("/").once("value")
-    .then(snap => {
-        globalSenderNote = snap.val().GlobalSenderNote || "";
-        voters = snap.val().Voters || {};
-
-        if (Object.keys(voters).length === 0) {
-            // Display message if no data is found
-            listEl.innerHTML = '<div style="text-align:center; padding:20px; color:red;">मतदाता सूची खाली है। कृपया डेटाबेस में "Voters" नोड की जाँच करें।</div>';
-        } else {
-            showList(voters);
-        }
-    })
-    .catch(error => {
-        console.error("Firebase Database Error:", error);
-        // Display a detailed error message to the user
-        listEl.innerHTML = `<div style="text-align:center; padding:20px; color:red;">डेटा लोड करने में त्रुटि: ${error.message}। कृपया अपने Firebase के नियम और कनेक्शन विवरण की जाँच करें।</div>`;
-    });
-}
 
 // Show list
 function showList(data){
-    listEl.innerHTML = ""; // Clear the loading/error message
-    Object.values(data).forEach(v=>{
+    const box = document.getElementById("list");
+    box.innerHTML = "";
+    if (data.length === 0) {
+        box.innerHTML = '<div style="text-align:center; padding:20px; color:red;">कोई मतदाता नहीं मिला (No voters found).</div>';
+        return;
+    }
+    data.forEach(v=>{
         const div = document.createElement("div");
         div.className = "list-item";
-        div.innerHTML = `<b>${(v.Name||"").toLowerCase()}</b><br>🆔 ${(v.EPIC||"").toLowerCase()} | 🏛 AC:${v.AcNo} | 📍 Part:${v.PartNo}`;
+        // Displaying Name, EPIC, and Part Number (combining general info and voter info for AC/Part)
+        div.innerHTML = `<b>${(v.voter_full_name||"").toLowerCase()}</b><br>
+                        🆔 ${(v.epic_no||"").toLowerCase()} | 🏛 AC:${generalInfo.list_part_no.split('/')[0]||"NA"} | 📍 Part:${generalInfo.list_part_no||"NA"}`;
+        
         div.onclick = ()=>{ activeListItem=div; openPopup(v); };
-        listEl.appendChild(div);
+        box.appendChild(div);
     });
 }
 
 // Open popup
 function openPopup(v){
     selected=v;
-    document.getElementById("pName").innerText=(v.Name||"").toLowerCase();
-    document.getElementById("pEpic").innerText=(v.EPIC||"").toLowerCase();
-    document.getElementById("pAc").innerText=v.AcNo;
-    document.getElementById("pPart").innerText=v.PartNo;
-    document.getElementById("pAddress").innerText=(v.Address||"").toLowerCase();
-    document.getElementById("pVoteAddress").innerText=(v.VotingAddress||"").toLowerCase();
-    document.getElementById("senderNote").value=(v.SenderNote||globalSenderNote).toLowerCase();
+    const acNo = v.sl_no_in_part.split('/')[0] || generalInfo.list_part_no.split('/')[0];
+    const partNo = generalInfo.list_part_no;
+    const votingAddress = generalInfo.list_part_name;
 
-    const img=document.getElementById("voterImage");
-    if(v.ImageURL){ img.src=v.ImageURL; img.style.display="block"; }
-    else img.style.display="none";
+    document.getElementById("pName").innerText=(v.voter_full_name||"").toLowerCase();
+    document.getElementById("pEpic").innerText=(v.epic_no||"").toLowerCase();
+    document.getElementById("pAc").innerText=acNo; // Assuming AC is the first part of sl_no_in_part
+    document.getElementById("pPart").innerText=partNo; // Using list_part_no from general info
+    document.getElementById("pAddress").innerText=(v.house_number||"NA").toLowerCase();
+    document.getElementById("pVoteAddress").innerText=(votingAddress||"NA").toLowerCase();
+    document.getElementById("pRelation").innerText=(v.relation_name||"NA").toLowerCase();
+    document.getElementById("pRelationType").innerText=(v.relation_type||"NA").toLowerCase();
+    document.getElementById("pAge").innerText=v.age || "NA";
+    document.getElementById("pGender").innerText=v.gender || "NA";
+
+    // Since we don't have ImageURL or SenderNote in the JSON, these are placeholders
+    document.getElementById("senderNote").value="कोई संदेश नहीं (No message)";
+    document.getElementById("voterImage").style.display="none";
+
 
     document.getElementById("popup").style.display="flex";
 }
@@ -181,25 +515,34 @@ function printDetails(){ window.print(); }
 // WhatsApp
 function sendWhatsApp(){
     if(!selected) return;
-    const msg=`👤 Name: ${(selected.Name||"").toLowerCase()}
-🆔 EPIC: ${(selected.EPIC||"").toLowerCase()}
-🏠 Address: ${(selected.Address||"").toLowerCase()}
-📍 Booth: ${(selected.VotingAddress||"").toLowerCase()}
-📝 Message: ${(document.getElementById("senderNote").value||"").toLowerCase()}`;
+    const acNo = selected.sl_no_in_part.split('/')[0] || generalInfo.list_part_no.split('/')[0];
+    const partNo = generalInfo.list_part_no;
+    const votingAddress = generalInfo.list_part_name;
+    const senderMessage = document.getElementById("senderNote").value;
+
+    const msg=`👤 Name: ${(selected.voter_full_name||"").toLowerCase()}
+🆔 EPIC: ${(selected.epic_no||"").toLowerCase()}
+🏠 House No: ${(selected.house_number||"NA").toLowerCase()}
+🏛 AC No: ${acNo}
+📍 Part No: ${partNo}
+🗳 Booth: ${votingAddress}
+🔗 Relation: ${(selected.relation_name||"NA").toLowerCase()} (${(selected.relation_type||"NA").toLowerCase()})
+📝 Message: ${senderMessage.toLowerCase()}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`);
 }
 
 // Search
 document.getElementById("search").addEventListener("input", e=>{
     const t=e.target.value.toLowerCase();
-    const f=Object.values(voters).filter(v=>
-        (v.Name||"").toLowerCase().includes(t) ||
-        (v.EPIC||"").toLowerCase().includes(t) ||
-        (v.AcNo+"").includes(t) ||
-        (v.PartNo+"").includes(t) ||
-        (v.Address||"").toLowerCase().includes(t) ||
-        (v.VotingAddress||"").toLowerCase().includes(t) ||
-        (v.SenderNote||"").toLowerCase().includes(t)
+    const f=voters.filter(v=>
+        (v.voter_full_name||"").toLowerCase().includes(t) ||
+        (v.epic_no||"").toLowerCase().includes(t) ||
+        (v.relation_name||"").toLowerCase().includes(t) ||
+        (v.sl_no_in_part+"").includes(t) ||
+        (v.house_number||"").toLowerCase().includes(t) ||
+        // Search General Info fields as well
+        (generalInfo.list_part_name||"").toLowerCase().includes(t) ||
+        (generalInfo.list_part_no+"").includes(t)
     );
     showList(f);
 });
@@ -217,10 +560,7 @@ function applyLanguage(lang) {
 document.getElementById("lang").addEventListener("change", function () {
   applyLanguage(this.value);
 });
-
-// Initial calls
-loadVoters(); // Start loading data
-applyLanguage("mr"); // Apply default language
+applyLanguage("mr"); // Default language set to Marathi
 </script>
 </body>
 </html>
