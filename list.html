@@ -7,7 +7,7 @@
 <style>
 body { font-family: Arial; margin:0; padding:10px; background:#f3f3f3; }
 h2 { text-align:center; margin-bottom:15px; }
-input, textarea {
+input, textarea, select {
     width:100%; padding:10px; margin-bottom:12px;
     border-radius:8px; border:2px solid #777; font-size:16px;
 }
@@ -17,9 +17,7 @@ input, textarea {
     transition:.3s;font-size:16px;
 }
 .highlight { background: #ffe08a !important; border-color:#d6a300 !important; }
-.list-item:hover{
-    transform:scale(1.03);box-shadow:0 0 10px gray;
-}
+.list-item:hover{ transform:scale(1.03); box-shadow:0 0 10px gray; }
 #popup{
     position:fixed;top:0;left:0;width:100%;height:100%;
     background:rgba(0,0,0,0.7);display:none;
@@ -42,7 +40,9 @@ input, textarea {
 .btn:active{ transform:translateY(4px); }
 .close-btn{ background:red;box-shadow:0 4px 0 #7a0000; }
 .color-btn{ background:#ffa600; box-shadow:0 4px 0 #b36b00; }
-
+#loadingIndicator{
+    position:fixed;top:10px;right:10px;background:#008cff;color:white;padding:6px 12px;border-radius:8px;display:none;
+}
 /* PRINT */
 @media print{
     body *{ visibility:hidden; }
@@ -55,37 +55,39 @@ input, textarea {
 
 <!-- 🌐 TRANSLATION DROPDOWN -->
 <div style="text-align:center; margin-bottom:15px;">
-    <select id="translateMenu" style="padding:10px; font-size:16px; border-radius:8px; border:2px solid #007bff; width:90%; max-width:350px;">
+    <select id="translateMenu">
         <option value="" selected>🌐 भाषा चुनें / Select Language</option>
         <option value="mr-en">Marathi → English</option>
         <option value="en-mr">English → Marathi</option>
     </select>
 </div>
 
+<div id="loadingIndicator">Translating...</div>
+
 <!-- Translate Area -->
 <div id="translateArea">
-    <h2>🗳 Voter List Preview</h2>
-    <label>Search Voter:</label>
+    <h2 class="translatable">🗳 Voter List Preview</h2>
+    <label class="label translatable">Search Voter:</label>
 </div>
 
 <!-- Search and List -->
-<input id="search" placeholder="Search Name, EPIC, AC No, Part No, Address, Booth, Message...">
+<input id="search" placeholder="Search Name, EPIC, AC No, Part No, Address, Booth, Message..." class="translatable">
 <div id="list"></div>
 
 <!-- Popup -->
 <div id="popup">
     <div class="card" id="cardBox">
         <h3 id="pName"></h3>
-        <p><b class="label">🆔 EPIC:</b> <span id="pEpic"></span></p>
-        <p><b class="label">🏛 AC No:</b> <span id="pAc"></span></p>
-        <p><b class="label">📍 Part No:</b> <span id="pPart"></span></p>
-        <p><b class="label">🏠 Address:</b> <span id="pAddress"></span></p>
-        <p><b class="label">🗳 Booth:</b> <span id="pVoteAddress"></span></p>
+        <p><b class="label translatable">🆔 EPIC:</b> <span id="pEpic"></span></p>
+        <p><b class="label translatable">🏛 AC No:</b> <span id="pAc"></span></p>
+        <p><b class="label translatable">📍 Part No:</b> <span id="pPart"></span></p>
+        <p><b class="label translatable">🏠 Address:</b> <span id="pAddress"></span></p>
+        <p><b class="label translatable">🗳 Booth:</b> <span id="pVoteAddress"></span></p>
 
         <img id="voterImage" style="display:none; margin-top:10px;">
 
-        <label class="label"><b>📝 Sender Message:</b></label>
-        <input id="senderNote" placeholder="Type message here">
+        <label class="label translatable"><b>📝 Sender Message:</b></label>
+        <input id="senderNote" placeholder="Type message here" class="translatable">
 
         <button class="btn color-btn" onclick="highlightItem()">🎨 Highlight</button>
         <button class="btn" onclick="printDetails()">🖨 Print</button>
@@ -96,7 +98,7 @@ input, textarea {
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase.js"></script>
 <script>
-// Firebase config
+// Firebase config (same as your previous)
 firebase.initializeApp({
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
   authDomain: "voter-25c94.firebaseapp.com",
@@ -131,17 +133,11 @@ function showList(data){
 function openPopup(v){
     selected=v;
     document.getElementById("pName").innerText=v.Name;
-    document.getElementById("pEpic").previousElementSibling.textContent="🆔 EPIC:";
     document.getElementById("pEpic").innerText=v.EPIC;
-    document.getElementById("pAc").previousElementSibling.textContent="🏛 AC No:";
     document.getElementById("pAc").innerText=v.AcNo;
-    document.getElementById("pPart").previousElementSibling.textContent="📍 Part No:";
     document.getElementById("pPart").innerText=v.PartNo;
-    document.getElementById("pAddress").previousElementSibling.textContent="🏠 Address:";
     document.getElementById("pAddress").innerText=v.Address||"";
-    document.getElementById("pVoteAddress").previousElementSibling.textContent="🗳 Booth:";
     document.getElementById("pVoteAddress").innerText=v.VotingAddress||"";
-    document.getElementById("senderNote").previousElementSibling.textContent="📝 Sender Message:";
     document.getElementById("senderNote").value=v.SenderNote||globalSenderNote;
 
     const img=document.getElementById("voterImage");
@@ -188,43 +184,50 @@ document.getElementById("search").addEventListener("input", e=>{
     showList(f);
 });
 
-// 🌐 Emoji-safe Translation
-async function translateTextSafe(texts, from, to) {
-    try {
-        const res = await fetch("https://translate.argosopentech.com/translate", {
+// 🌐 Translation with CORS proxy + emoji-safe + loading
+async function translateTextSafe(texts, from, to){
+    const loader = document.getElementById("loadingIndicator");
+    loader.style.display = "block";
+    try{
+        const proxy = "https://api.allorigins.win/raw?url=";
+        const url = encodeURIComponent("https://translate.argosopentech.com/translate");
+
+        const res = await fetch(proxy + url, {
             method: "POST",
-            body: JSON.stringify({q: texts.join("\n"), source: from, target: to, format: "text"}),
-            headers: { "Content-Type": "application/json" }
+            body: JSON.stringify({q:texts.join("\n"), source:from, target:to, format:"text"}),
+            headers: {"Content-Type":"application/json"}
         });
-        if (!res.ok) { 
-            console.error("Translation failed:", res.status, res.statusText);
-            alert("Translation failed! Server error."); 
-            return texts; 
-        }
+
+        if(!res.ok){ console.error("Translation failed:", res.status, res.statusText); alert("Translation failed!"); return texts; }
+
         const data = await res.json();
         return data.translatedText.split("\n");
-    } catch (err) {
+    } catch(err){
         console.error("Translation failed:", err);
         alert("Translation failed! Check your internet.");
-        return texts; 
+        return texts;
+    } finally{
+        loader.style.display = "none";
     }
 }
 
-async function translatePageSafe(from, to) {
-    const labels = Array.from(document.querySelectorAll(".label"));
-    const texts = labels.map(l => l.textContent.replace(/[\u{1F300}-\u{1F6FF}]/gu, "").replace(":", "").trim());
-    const translated = await translateTextSafe(texts, from, to);
-    labels.forEach((l, i) => {
-        const emoji = l.textContent.match(/[\u{1F300}-\u{1F6FF}]/gu) || "";
-        l.textContent = emoji + " " + translated[i] + ":";
+async function translatePageSafe(from,to){
+    const elements = Array.from(document.querySelectorAll(".translatable"));
+    const texts = elements.map(el=>el.placeholder?el.placeholder:el.textContent)
+                          .map(t=>t.replace(/[\u{1F300}-\u{1F6FF}]/gu,"").replace(":","").trim());
+    const translated = await translateTextSafe(texts,from,to);
+    elements.forEach((el,i)=>{
+        const emoji = el.textContent ? el.textContent.match(/[\u{1F300}-\u{1F6FF}]/gu) || "" : "";
+        if(el.placeholder!==undefined && el.placeholder!==""){ el.placeholder = translated[i]; }
+        else el.textContent = emoji + " " + translated[i] + (el.classList.contains("label")?":":"");
     });
 }
 
 // Dropdown listener
-document.getElementById("translateMenu").addEventListener("change", function() {
-    if (this.value === "mr-en") translatePageSafe("mr", "en");
-    if (this.value === "en-mr") translatePageSafe("en", "mr");
-    this.value = "";
+document.getElementById("translateMenu").addEventListener("change", function(){
+    if(this.value==="mr-en") translatePageSafe("mr","en");
+    if(this.value==="en-mr") translatePageSafe("en","mr");
+    this.value="";
 });
 </script>
 </body>
