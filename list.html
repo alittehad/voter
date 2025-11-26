@@ -188,34 +188,43 @@ document.getElementById("search").addEventListener("input", e=>{
     showList(f);
 });
 
-// 🌐 Translation for labels only
-async function translateText(texts, from, to){
-    try{
-        let res = await fetch("https://libretranslate.de/translate", {
-            method:"POST",
-            body: JSON.stringify({q:texts.join("\n"), source:from, target:to, format:"text"}),
-            headers: {"Content-Type":"application/json"}
+// 🌐 Emoji-safe Translation
+async function translateTextSafe(texts, from, to) {
+    try {
+        const res = await fetch("https://translate.argosopentech.com/translate", {
+            method: "POST",
+            body: JSON.stringify({q: texts.join("\n"), source: from, target: to, format: "text"}),
+            headers: { "Content-Type": "application/json" }
         });
-        let data = await res.json();
+        if (!res.ok) { 
+            console.error("Translation failed:", res.status, res.statusText);
+            alert("Translation failed! Server error."); 
+            return texts; 
+        }
+        const data = await res.json();
         return data.translatedText.split("\n");
-    }catch(e){ console.error("Translation failed!",e); alert("Translation failed!"); return texts; }
+    } catch (err) {
+        console.error("Translation failed:", err);
+        alert("Translation failed! Check your internet.");
+        return texts; 
+    }
 }
 
-async function translatePage(from,to){
+async function translatePageSafe(from, to) {
     const labels = Array.from(document.querySelectorAll(".label"));
-    const texts = labels.map(l=>l.textContent.replace(/[:\u{1F300}-\u{1F6FF}]/gu,"").trim());
-    const translated = await translateText(texts, from, to);
-    labels.forEach((l,i)=>{ 
+    const texts = labels.map(l => l.textContent.replace(/[\u{1F300}-\u{1F6FF}]/gu, "").replace(":", "").trim());
+    const translated = await translateTextSafe(texts, from, to);
+    labels.forEach((l, i) => {
         const emoji = l.textContent.match(/[\u{1F300}-\u{1F6FF}]/gu) || "";
-        l.textContent = emoji + " " + translated[i] + ":"; 
+        l.textContent = emoji + " " + translated[i] + ":";
     });
 }
 
 // Dropdown listener
-document.getElementById("translateMenu").addEventListener("change", function(){
-    if(this.value==="mr-en") translatePage("mr","en");
-    if(this.value==="en-mr") translatePage("en","mr");
-    this.value="";
+document.getElementById("translateMenu").addEventListener("change", function() {
+    if (this.value === "mr-en") translatePageSafe("mr", "en");
+    if (this.value === "en-mr") translatePageSafe("en", "mr");
+    this.value = "";
 });
 </script>
 </body>
