@@ -3,82 +3,68 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Voter Search & Editor</title>
+<title>Add Voter JSON or Form</title>
 <style>
-body { font-family: Arial; padding:10px; background:#f7f7f7; }
-h2 { text-align:center; margin-bottom:15px; }
+body { font-family: Arial; padding:20px; background:#f7f7f7; }
+h2 { text-align:center; margin-bottom:20px; }
 
-#searchBox { width:100%; padding:10px; font-size:16px; border-radius:6px; border:1px solid #999; margin-bottom:15px; }
+textarea, input { width:100%; padding:10px; font-size:16px; border:2px solid #aaa; border-radius:6px; margin-bottom:10px; }
+button { padding:10px 15px; font-size:16px; border-radius:6px; border:1px solid #777; cursor:pointer; margin-top:5px; }
 
-.result-item {
-  padding:8px; background:white; border-radius:6px; margin-bottom:5px; cursor:pointer;
-  border-left:5px solid #007bff;
-}
+#status { margin-top:10px; font-weight:bold; padding:8px; border-radius:6px; }
+.success { background:#d4edda; color:#155724; border:1px solid #c3e6cb; }
+.error { background:#f8d7da; color:#721c24; border:1px solid #f5c6cb; }
+.warning { background:#fff3cd; color:#856404; border:1px solid #ffeeba; }
 
-#popup {
-  position:fixed; top:0; left:0; width:100%; height:100%; display:none;
-  background:rgba(0,0,0,0.7); justify-content:center; align-items:flex-start;
-  padding:20px; overflow-y:auto;
-}
-
-.card {
-  width:95%; max-width:450px; background:white; padding:15px; border-radius:10px;
-}
-
-.color-btn { width:30px; height:30px; border:none; margin-right:6px; border-radius:6px; cursor:pointer; }
-
-textarea { width:100%; height:80px; border-radius:6px; padding:6px; border:1px solid #aaa; }
-
-.btn { padding:8px 12px; margin-top:8px; border:none; border-radius:6px; cursor:pointer; color:white; }
-.btn-save { background:#28a745; }
-.btn-del { background:#dc3545; }
-.btn-print { background:#007bff; }
-.btn-whatsapp { background:#25d366; }
-.close-btn { background:red; }
-
-.voter-color-tag { width:20px; height:20px; display:inline-block; border-radius:4px; }
+.section { background:white; padding:15px; border-radius:10px; margin-bottom:20px; box-shadow:0 0 10px rgba(0,0,0,0.1); }
+.section h3 { margin-top:0; }
 </style>
 </head>
 <body>
 
-<h2>🗳 Voter Search</h2>
-<input type="text" id="searchBox" placeholder="Type 1 letter to search...">
-<div id="results"></div>
+<h2>🗳 Add Voter to Firebase</h2>
 
-<div id="popup">
-  <div class="card">
-    <h3 id="vName"></h3>
-    <p><b>EPIC:</b> <span id="vEpic"></span></p>
-    <p><b>Sl No in Part:</b> <span id="vSlNo"></span></p>
-    <p><b>Relation:</b> <span id="vRelation"></span></p>
-    <p><b>House Number:</b> <span id="vHouse"></span></p>
-    <p><b>Age/Gender:</b> <span id="vAge"></span> / <span id="vGender"></span></p>
-    <p><b>Saved Color:</b> <span class="voter-color-tag" id="vColorTag"></span></p>
-
-    <hr>
-    <p><b>Change Color:</b></p>
-    <button class="color-btn" style="background:#ff4444" onclick="saveColor('#ff4444')"></button>
-    <button class="color-btn" style="background:#44cc44" onclick="saveColor('#44cc44')"></button>
-    <button class="color-btn" style="background:#4477ff" onclick="saveColor('#4477ff')"></button>
-
-    <hr>
-    <p><b>Sender Message:</b></p>
-    <textarea id="vMsg"></textarea><br>
-    <button class="btn btn-save" onclick="saveMessage()">Save</button>
-    <button class="btn btn-del" onclick="deleteMessage()">Delete</button>
-    <hr>
-    <button class="btn btn-print" onclick="printCard()">Print</button>
-    <button class="btn btn-whatsapp" onclick="sendWhatsApp()">Send</button>
-    <button class="btn close-btn" onclick="closePopup()">Close</button>
-  </div>
+<div class="section">
+  <h3>1️⃣ Add via JSON (Bulk)</h3>
+  <p>Enter JSON array of voter objects:</p>
+  <textarea id="jsonInput">[
+  {
+    "serial_no": 360,
+    "epic_no": "RBG5489920",
+    "sl_no_in_part": "131/272/360",
+    "voter_full_name": "New Voter",
+    "relation_name": "Relation Name",
+    "relation_type": "Father's Name",
+    "house_number": "NA",
+    "age": 30,
+    "gender": "Male"
+  }
+]</textarea>
+  <button onclick="addJSON()">Add JSON</button>
 </div>
+
+<div class="section">
+  <h3>2️⃣ Add Single Voter via Form</h3>
+  <input type="number" id="fSerial" placeholder="Serial No">
+  <input type="text" id="fEpic" placeholder="EPIC No">
+  <input type="text" id="fSlNo" placeholder="Sl No in Part">
+  <input type="text" id="fName" placeholder="Voter Full Name">
+  <input type="text" id="fRelation" placeholder="Relation Name">
+  <input type="text" id="fRelationType" placeholder="Relation Type (Father/Mother/Husband)">
+  <input type="text" id="fHouse" placeholder="House Number">
+  <input type="number" id="fAge" placeholder="Age">
+  <input type="text" id="fGender" placeholder="Gender">
+  <button onclick="addSingleVoter()">Add Single Voter</button>
+</div>
+
+<div id="status"></div>
 
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
 <script>
-// Firebase config
+// Firebase Config
 const firebaseConfig = {
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
   authDomain: "voter-25c94.firebaseapp.com",
@@ -91,110 +77,96 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-let voters = [];
-let activeVoter = null;
+const requiredFields = ["serial_no","epic_no","sl_no_in_part","voter_full_name","relation_name","relation_type","house_number","age","gender"];
 
-// Load voters
-db.ref("voters").once("value").then(snap=>{
-    let data = snap.val() || {};
-    voters = Object.values(data);
-});
+function showStatus(msg, type){
+  const status = document.getElementById("status");
+  status.innerText = msg;
+  status.className = type;
+}
 
-// Search
-document.getElementById("searchBox").addEventListener("input", e=>{
-    let q = e.target.value.toLowerCase();
-    let html = "";
-    if(q.length>=1){
-        voters.forEach(v=>{
-            if(v.voter_full_name.toLowerCase().includes(q) || v.epic_no.toLowerCase().includes(q)){
-                html += `<div class="result-item" onclick="openCard('${v.epic_no}')">
-                            <b>${v.voter_full_name}</b> (${v.epic_no})
-                         </div>`;
-            }
-        });
+// --------------- Bulk JSON Add ----------------
+function addJSON() {
+  const input = document.getElementById("jsonInput").value.trim();
+  let newVoters;
+
+  try {
+    newVoters = JSON.parse(input);
+    if (!Array.isArray(newVoters)) {
+      showStatus("❌ Please enter a valid array of voter objects!", "error");
+      return;
     }
-    document.getElementById("results").innerHTML = html;
-});
+  } catch(e) {
+    showStatus("❌ Invalid JSON format!", "error");
+    return;
+  }
 
-// Open card
-function openCard(epic){
-    let v = voters.find(x=>x.epic_no===epic);
-    if(!v) return;
+  // Validate each voter
+  for(let i=0;i<newVoters.length;i++){
+    let v = newVoters[i];
+    for(let f of requiredFields){
+      if(!(f in v)){
+        showStatus(`❌ Missing field '${f}' in voter at index ${i}`, "error");
+        return;
+      }
+    }
+  }
 
-    activeVoter = v;
+  // Fetch existing voters
+  db.ref("voters").once("value").then(snap=>{
+    const existing = snap.val() || {};
+    let added=0, skipped=0;
 
-    document.getElementById("vName").innerText = v.voter_full_name;
-    document.getElementById("vEpic").innerText = v.epic_no;
-    document.getElementById("vSlNo").innerText = v.sl_no_in_part;
-    document.getElementById("vRelation").innerText = `${v.relation_name} (${v.relation_type})`;
-    document.getElementById("vHouse").innerText = v.house_number;
-    document.getElementById("vAge").innerText = v.age;
-    document.getElementById("vGender").innerText = v.gender;
-
-    // Load color
-    db.ref("voters/"+v.epic_no+"/color").once("value").then(snap=>{
-        document.getElementById("vColorTag").style.background = snap.val() || "#ffffff";
+    newVoters.forEach(v=>{
+      const key = v.epic_no;
+      if(existing[key]) skipped++;
+      else { existing[key]=v; added++; }
     });
 
-    // Load message
-    db.ref("voters/"+v.epic_no+"/message").once("value").then(snap=>{
-        document.getElementById("vMsg").value = snap.val() || "";
-    });
-
-    document.getElementById("popup").style.display="flex";
+    db.ref("voters").set(existing)
+      .then(()=>{
+        if(added>0 && skipped===0) showStatus(`✅ ${added} voter(s) added successfully!`, "success");
+        else if(added>0 && skipped>0) showStatus(`✅ ${added} added, ⚠️ ${skipped} skipped (EPIC exists)`, "warning");
+        else if(added===0 && skipped>0) showStatus(`⚠️ All ${skipped} voters skipped (EPIC exists)`, "warning");
+      })
+      .catch(err=>showStatus("❌ Error: "+err.message,"error"));
+  });
 }
 
-// Close card
-function closePopup(){ document.getElementById("popup").style.display="none"; }
+// --------------- Single Voter Form Add ----------------
+function addSingleVoter(){
+  let voter = {
+    serial_no: parseInt(document.getElementById("fSerial").value),
+    epic_no: document.getElementById("fEpic").value.trim(),
+    sl_no_in_part: document.getElementById("fSlNo").value.trim(),
+    voter_full_name: document.getElementById("fName").value.trim(),
+    relation_name: document.getElementById("fRelation").value.trim(),
+    relation_type: document.getElementById("fRelationType").value.trim(),
+    house_number: document.getElementById("fHouse").value.trim(),
+    age: parseInt(document.getElementById("fAge").value),
+    gender: document.getElementById("fGender").value.trim()
+  };
 
-// Save color
-function saveColor(color){
-    if(!activeVoter) return;
-    db.ref("voters/"+activeVoter.epic_no+"/color").set(color);
-    document.getElementById("vColorTag").style.background = color;
-}
+  // Validate
+  for(let f of requiredFields){
+    if(!voter[f] && voter[f]!==0){
+      showStatus(`❌ Field '${f}' is required!`, "error");
+      return;
+    }
+  }
 
-// Save message
-function saveMessage(){
-    if(!activeVoter) return;
-    let msg = document.getElementById("vMsg").value;
-    db.ref("voters/"+activeVoter.epic_no+"/message").set(msg);
-    alert("Message Saved!");
-}
-
-// Delete message
-function deleteMessage(){
-    if(!activeVoter) return;
-    db.ref("voters/"+activeVoter.epic_no+"/message").remove();
-    document.getElementById("vMsg").value="";
-}
-
-// Print
-function printCard(){
-    if(!activeVoter) return;
-    let text = `
-Name: ${activeVoter.voter_full_name}
-EPIC: ${activeVoter.epic_no}
-Sl No: ${activeVoter.sl_no_in_part}
-Relation: ${activeVoter.relation_name} (${activeVoter.relation_type})
-House Number: ${activeVoter.house_number}
-Age/Gender: ${activeVoter.age} / ${activeVoter.gender}
-
-Message:
-${document.getElementById("vMsg").value}
-`;
-    let w = window.open("","", "width=400,height=600");
-    w.document.write("<pre>"+text+"</pre>");
-    w.print();
-}
-
-// WhatsApp
-function sendWhatsApp(){
-    if(!activeVoter) return;
-    let text = `*Voter Details*\nName: ${activeVoter.voter_full_name}\nEPIC: ${activeVoter.epic_no}\nSl No: ${activeVoter.sl_no_in_part}\nRelation: ${activeVoter.relation_name} (${activeVoter.relation_type})\nHouse Number: ${activeVoter.house_number}\nAge/Gender: ${activeVoter.age}/${activeVoter.gender}\n\n*Message:*\n${document.getElementById("vMsg").value}`;
-    window.open("https://wa.me/?text="+encodeURIComponent(text), "_blank");
+  db.ref("voters").once("value").then(snap=>{
+    const existing = snap.val() || {};
+    if(existing[voter.epic_no]){
+      showStatus(`⚠️ EPIC ${voter.epic_no} already exists! Skipped.`, "warning");
+      return;
+    }
+    existing[voter.epic_no]=voter;
+    db.ref("voters").set(existing)
+      .then(()=> showStatus(`✅ Voter ${voter.voter_full_name} added successfully!`, "success"))
+      .catch(err=> showStatus("❌ Error: "+err.message,"error"));
+  });
 }
 </script>
-
 </body>
 </html>
