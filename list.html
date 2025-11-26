@@ -54,6 +54,67 @@ input, textarea {
 <body>
 
 <h2>🗳 Voter List Preview</h2>
+
+
+
+<!-- 🌐 Translator Box -->
+<div style="padding:15px; background:#fff3cd; border:2px solid #d6a300; border-radius:10px; margin-bottom:15px;">
+    <h3 style="margin-top:0; text-align:center;">🌐 Marathi ↔ English Translator</h3>
+
+    <textarea id="inputText" placeholder="Enter text..." 
+    style="width:100%; height:70px; padding:10px; border-radius:8px;"></textarea>
+
+    <select id="language" style="width:100%; padding:10px; border-radius:8px; margin-top:8px;">
+        <option value="mr-en">Marathi → English</option>
+        <option value="en-mr">English → Marathi</option>
+    </select>
+
+    <button onclick="translateText()" 
+    style="margin-top:10px; width:100%; padding:10px; background:#007bff; color:white; border:none; border-radius:8px;">
+        🔁 Translate
+    </button>
+
+    <textarea id="outputText" placeholder="Translation result..." 
+    style="width:100%; height:70px; padding:10px; border-radius:8px; margin-top:10px;"></textarea>
+</div>
+
+<script>
+async function translateText() {
+    let text = document.getElementById("inputText").value.trim();
+    let mode = document.getElementById("language").value;
+
+    if (!text) {
+        alert("Please enter text");
+        return;
+    }
+
+    let source = mode === "mr-en" ? "mr" : "en";
+    let target = mode === "mr-en" ? "en" : "mr";
+
+    let url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${source}|${target}`;
+
+    try {
+        let response = await fetch(url);
+        let data = await response.json();
+        document.getElementById("outputText").value = data.responseData.translatedText;
+    } catch (err) {
+        alert("Translation failed!");
+    }
+}
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+    
 <input id="search" placeholder="Search Name, EPIC, AC No, Part No, Address, Booth, Message...">
 <div id="list"></div>
 
