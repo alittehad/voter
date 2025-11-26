@@ -60,26 +60,25 @@ input, textarea, select {
 <body>
 
 <div class="lang-switch">
-  <select id="lang">
-    <option value="mr">🇮🇳 मराठी (Marathi)</option>
-    <option value="en">🇮🇳 English</option>
-  </select>
+  <select id="lang">
+    <option value="mr">🇮🇳 मराठी (Marathi)</option>
+    <option value="en">🇮🇳 English</option>
+  </select>
 </div>
 
 <div id="translateArea">
-    <h2 class="label" data-mr="🗳 मतदार यादी पूर्वावलोकन" data-en="🗳 Voter List Preview">🗳 मतदार यादी पूर्वावलोकन</h2>
-    <label class="label" data-mr="मतदाता शोधा" data-en="Search Voter:">मतदाता शोधा</label>
+    <h2 class="label" data-mr="🗳 मतदार यादी पूर्वावलोकन" data-en="🗳 Voter List Preview">🗳 मतदार यादी पूर्वावलोकन</h2>
+    <label class="label" data-mr="मतदाता शोधा" data-en="Search Voter:">मतदाता शोधा</label>
 </div>
 
-<input id="search" class="label" 
-       data-mr="नाव, EPIC, AC क्र., भाग क्र., पत्ता शोधा" 
-       data-en="Search Name, EPIC, AC No, Part No, Address, Booth, Message..."
-       placeholder="नाव, EPIC, AC क्र., भाग क्र., पत्ता शोधा">
-
+<input id="search" class="label" 
+       data-mr="नाव, EPIC, AC क्र., भाग क्र., पत्ता शोधा" 
+       data-en="Search Name, EPIC, AC No, Part No, Address, Booth, Message..."
+       placeholder="नाव, EPIC, AC क्र., भाग क्र., पत्ता शोधा">
 <div id="list"></div>
 
 <div id="popup">
-    <div class="card" id="cardBox">
+    <div class="card" id="cardBox">
         <h3 id="pName"></h3>
         <p><b class="label" data-mr="🆔 EPIC क्रमांक:" data-en="🆔 EPIC:">🆔 EPIC क्रमांक:</b> <span id="pEpic"></span></p>
         <p><b class="label" data-mr="🏛 विधानसभा:" data-en="🏛 AC No:">🏛 विधानसभा:</b> <span id="pAc"></span></p>
@@ -89,82 +88,87 @@ input, textarea, select {
         <p><b class="label" data-mr="🔗 संबंध:" data-en="🔗 Relation:">🔗 संबंध:</b> <span id="pRelation"></span> (<span id="pRelationType"></span>)</p>
         <p><b class="label" data-mr="आयु/लिंग:" data-en="Age/Gender:">आयु/लिंग:</b> <span id="pAge"></span> / <span id="pGender"></span></p>
 
-        <img id="voterImage" style="display:none; margin-top:10px;">
+        <img id="voterImage" style="display:none; margin-top:10px;">
 
-        <label class="label" data-mr="📝 संदेश:" data-en="📝 Sender Message:"><b>📝 संदेश:</b></label>
-        <input id="senderNote" placeholder="संदेश टाका / Type message here">
+        <label class="label" data-mr="📝 संदेश:" data-en="📝 Sender Message:"><b>📝 संदेश:</b></label>
+        <input id="senderNote" placeholder="संदेश टाका / Type message here">
 
-        <button class="btn color-btn" onclick="highlightItem()">🎨 हायलाइट / Highlight</button>
-        <button class="btn" onclick="printDetails()">🖨 छापा / Print</button>
-        <button class="btn" onclick="sendWhatsApp()">📩 WhatsApp</button>
-        <button class="btn close-btn" onclick="closePopup()">❌ बंद करा / Close</button>
-    </div>
+        <button class="btn color-btn" onclick="highlightItem()">🎨 हायलाइट / Highlight</button>
+        <button class="btn" onclick="printDetails()">🖨 छापा / Print</button>
+        <button class="btn" onclick="sendWhatsApp()">📩 WhatsApp</button>
+        <button class="btn close-btn" onclick="closePopup()">❌ बंद करा / Close</button>
+    </div>
 </div>
 
 <script>
-// --- SAMPLE LOCAL JSON DATA ---
-// Isme aap 20,000+ voters JSON load kar sakte ho
+// --- LOCAL JSON DATA ---
 const voterData = {
-  "general_info": {
-    "date": "20-11-2025",
-    "corporation": "Vasai Virar Municipal Corporation",
-    "ward_no": "8 - Ward 8",
-    "list_part_no": "272",
-    "list_part_name": "1 - Dhanivgaonba-Hachapadadhanivaharwate"
-  },
-  "voters": [ /* aapka voter JSON data */ ]
+  "general_info": {
+    "date": "20-11-2025",
+    "corporation": "Vasai Virar Municipal Corporation",
+    "ward_no": "8 - Ward 8",
+    "list_part_no": "272",
+    "list_part_name": "1 - Dhanivgaonba-Hachapadadhanivaharwate"
+  },
+  "voters": [
+    {"serial_no":1,"epic_no":"RBG4942918","sl_no_in_part":"131/272/1","voter_full_name":"Ansari saddam hussain","relation_name":"Ansari abubakar","relation_type":"Father's Name","house_number":"NA","age":30,"gender":"Male"},
+    {"serial_no":2,"epic_no":"MRL2020212","sl_no_in_part":"131/272/2","voter_full_name":"Arya jagjivan pardeshi","relation_name":"Arya pardeshi","relation_type":"Father's Name","house_number":"NA","age":53,"gender":"Male"},
+    {"serial_no":3,"epic_no":"MRL2022762","sl_no_in_part":"131/272/3","voter_full_name":"Arya malti devi jagjivan","relation_name":"Arya jagjivan","relation_type":"Husband's Name","house_number":"NA","age":47,"gender":"Female"}
+    // Add more voters...
+  ]
 };
+// --- END JSON ---
 
 let voters = voterData.voters;
 let generalInfo = voterData.general_info;
-let selected = null, activeListItem = null;
+let selected=null, activeListItem=null;
 
-// Show filtered list only
+// Show list (for search results)
 function showList(data){
-    const box = document.getElementById("list");
-    box.innerHTML = "";
-    if(data.length===0){
-        box.innerHTML='<div style="text-align:center;padding:20px;color:red;">कोई मतदाता नहीं मिला (No voters found).</div>';
-        return;
-    }
-    // Render only 50 items max (pagination optional)
-    data.slice(0,50).forEach(v=>{
-        const div=document.createElement("div");
-        div.className="list-item";
-        div.innerHTML=`<b>${(v.voter_full_name||"").toLowerCase()}</b><br>
-                       🆔 ${(v.epic_no||"").toLowerCase()} | 🏛 AC:${generalInfo.list_part_no.split('/')[0]||"NA"} | 📍 Part:${generalInfo.list_part_no||"NA"}`;
-        div.onclick=()=>{ activeListItem=div; openPopup(v); };
-        box.appendChild(div);
-    });
+    const box = document.getElementById("list");
+    box.innerHTML = "";
+    if(data.length===0){
+        box.innerHTML = '<div style="text-align:center; padding:20px; color:red;">कोई मतदाता नहीं मिला (No voters found)</div>';
+        return;
+    }
+    data.forEach(v=>{
+        const div = document.createElement("div");
+        div.className="list-item";
+        const [ac, part, serial] = (v.sl_no_in_part||"").split('/');
+        div.innerHTML = `<b>${(v.voter_full_name||"").toLowerCase()}</b><br>
+                        🆔 ${(v.epic_no||"").toLowerCase()} | 🏛 AC:${ac||"NA"} | 📍 Part:${part||"NA"}`;
+        div.onclick=()=>{ activeListItem=div; openPopup(v); };
+        box.appendChild(div);
+    });
 }
 
-// Open popup/card
+// Open popup card
 function openPopup(v){
-    selected=v;
-    const acNo=v.sl_no_in_part.split('/')[0] || generalInfo.list_part_no.split('/')[0];
-    const partNo=generalInfo.list_part_no;
-    const votingAddress=generalInfo.list_part_name;
+    selected=v;
+    const [ac, part, serial] = (v.sl_no_in_part||"").split('/');
+    const votingAddress = generalInfo.list_part_name;
 
-    document.getElementById("pName").innerText=(v.voter_full_name||"").toLowerCase();
-    document.getElementById("pEpic").innerText=(v.epic_no||"").toLowerCase();
-    document.getElementById("pAc").innerText=acNo;
-    document.getElementById("pPart").innerText=partNo;
-    document.getElementById("pAddress").innerText=(v.house_number||"NA").toLowerCase();
-    document.getElementById("pVoteAddress").innerText=(votingAddress||"NA").toLowerCase();
-    document.getElementById("pRelation").innerText=(v.relation_name||"NA").toLowerCase();
-    document.getElementById("pRelationType").innerText=(v.relation_type||"NA").toLowerCase();
-    document.getElementById("pAge").innerText=v.age||"NA";
-    document.getElementById("pGender").innerText=v.gender||"NA";
-    document.getElementById("senderNote").value="कोई संदेश नहीं (No message)";
-    document.getElementById("voterImage").style.display="none";
+    document.getElementById("pName").innerText=(v.voter_full_name||"").toLowerCase();
+    document.getElementById("pEpic").innerText=(v.epic_no||"").toLowerCase();
+    document.getElementById("pAc").innerText=ac||"NA";
+    document.getElementById("pPart").innerText=part||"NA";
+    document.getElementById("pAddress").innerText=(v.house_number||"NA").toLowerCase();
+    document.getElementById("pVoteAddress").innerText=(votingAddress||"NA").toLowerCase();
+    document.getElementById("pRelation").innerText=(v.relation_name||"NA").toLowerCase();
+    document.getElementById("pRelationType").innerText=(v.relation_type||"NA").toLowerCase();
+    document.getElementById("pAge").innerText=v.age||"NA";
+    document.getElementById("pGender").innerText=v.gender||"NA";
 
-    document.getElementById("popup").style.display="flex";
+    document.getElementById("senderNote").value="कोई संदेश नहीं (No message)";
+    document.getElementById("voterImage").style.display="none";
+
+    document.getElementById("popup").style.display="flex";
 }
 
 // Highlight
 function highlightItem(){
-    if(activeListItem) activeListItem.classList.toggle("highlight");
-    document.getElementById("cardBox").classList.toggle("highlight");
+    if(activeListItem) activeListItem.classList.toggle("highlight");
+    document.getElementById("cardBox").classList.toggle("highlight");
 }
 
 // Close popup
@@ -175,50 +179,54 @@ function printDetails(){ window.print(); }
 
 // WhatsApp
 function sendWhatsApp(){
-    if(!selected) return;
-    const acNo=selected.sl_no_in_part.split('/')[0] || generalInfo.list_part_no.split('/')[0];
-    const partNo=generalInfo.list_part_no;
-    const votingAddress=generalInfo.list_part_name;
-    const senderMessage=document.getElementById("senderNote").value;
+    if(!selected) return;
+    const [ac, part, serial] = (selected.sl_no_in_part||"").split('/');
+    const votingAddress = generalInfo.list_part_name;
+    const senderMessage = document.getElementById("senderNote").value;
 
-    const msg=`👤 Name: ${(selected.voter_full_name||"").toLowerCase()}
+    const msg=`👤 Name: ${(selected.voter_full_name||"").toLowerCase()}
 🆔 EPIC: ${(selected.epic_no||"").toLowerCase()}
 🏠 House No: ${(selected.house_number||"NA").toLowerCase()}
-🏛 AC No: ${acNo}
-📍 Part No: ${partNo}
+🏛 AC No: ${ac||"NA"}
+📍 Part No: ${part||"NA"}
 🗳 Booth: ${votingAddress}
 🔗 Relation: ${(selected.relation_name||"NA").toLowerCase()} (${(selected.relation_type||"NA").toLowerCase()})
 📝 Message: ${senderMessage.toLowerCase()}`;
-    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`);
+    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`);
 }
 
-// Search functionality
+// Search
 document.getElementById("search").addEventListener("input", e=>{
-    const t=e.target.value.toLowerCase();
-    const f=voters.filter(v=>
-        (v.voter_full_name||"").toLowerCase().includes(t) ||
-        (v.epic_no||"").toLowerCase().includes(t) ||
-        (v.relation_name||"").toLowerCase().includes(t) ||
-        (v.sl_no_in_part+"").includes(t) ||
-        (v.house_number||"").toLowerCase().includes(t) ||
-        (generalInfo.list_part_name||"").toLowerCase().includes(t) ||
-        (generalInfo.list_part_no+"").includes(t)
-    );
-    showList(f);
+    const t=e.target.value.toLowerCase();
+    const f=voters.filter(v=>{
+        const [ac, part, serial] = (v.sl_no_in_part||"").split('/');
+        return (v.voter_full_name||"").toLowerCase().includes(t) ||
+               (v.epic_no||"").toLowerCase().includes(t) ||
+               (v.relation_name||"").toLowerCase().includes(t) ||
+               (v.house_number||"").toLowerCase().includes(t) ||
+               (ac||"").includes(t) ||
+               (part||"").includes(t) ||
+               (serial||"").includes(t) ||
+               (generalInfo.list_part_name||"").toLowerCase().includes(t);
+    });
+    showList(f);
 });
 
-// Language switching
+// Language switch
 function applyLanguage(lang){
-    document.querySelectorAll(".label").forEach(el=>{
-        const attr=(lang==="mr")?el.dataset.mr:el.dataset.en;
-        if(attr!==undefined){
-            if(el.tagName==="INPUT" || el.tagName==="TEXTAREA") el.placeholder=attr;
-            else el.innerText=attr;
-        }
-    });
+    document.querySelectorAll(".label").forEach(el=>{
+        const attr = (lang==="mr")? el.dataset.mr : el.dataset.en;
+        if(attr!==undefined){
+            if(el.tagName==="INPUT" || el.tagName==="TEXTAREA") el.placeholder=attr;
+            else el.innerText=attr;
+        }
+    });
 }
 document.getElementById("lang").addEventListener("change", function(){ applyLanguage(this.value); });
-applyLanguage("mr"); // Default Marathi
+applyLanguage("mr"); // default Marathi
+
+// Initial display
+showList(voters);
 </script>
 </body>
 </html>
