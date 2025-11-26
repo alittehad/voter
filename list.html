@@ -76,15 +76,15 @@ input, textarea {
 <div id="popup">
     <div class="card" id="cardBox">
         <h3 id="pName"></h3>
-        <p><b>🆔 EPIC:</b> <span id="pEpic"></span></p>
-        <p><b>🏛 AC No:</b> <span id="pAc"></span></p>
-        <p><b>📍 Part No:</b> <span id="pPart"></span></p>
-        <p><b>🏠 Address:</b> <span id="pAddress"></span></p>
-        <p><b>🗳 Booth:</b> <span id="pVoteAddress"></span></p>
+        <p><b class="label">🆔 EPIC:</b> <span id="pEpic"></span></p>
+        <p><b class="label">🏛 AC No:</b> <span id="pAc"></span></p>
+        <p><b class="label">📍 Part No:</b> <span id="pPart"></span></p>
+        <p><b class="label">🏠 Address:</b> <span id="pAddress"></span></p>
+        <p><b class="label">🗳 Booth:</b> <span id="pVoteAddress"></span></p>
 
         <img id="voterImage" style="display:none; margin-top:10px;">
 
-        <label><b>📝 Sender Message:</b></label>
+        <label class="label"><b>📝 Sender Message:</b></label>
         <input id="senderNote" placeholder="Type message here">
 
         <button class="btn color-btn" onclick="highlightItem()">🎨 Highlight</button>
@@ -131,11 +131,17 @@ function showList(data){
 function openPopup(v){
     selected=v;
     document.getElementById("pName").innerText=v.Name;
+    document.getElementById("pEpic").previousElementSibling.textContent="🆔 EPIC:";
     document.getElementById("pEpic").innerText=v.EPIC;
+    document.getElementById("pAc").previousElementSibling.textContent="🏛 AC No:";
     document.getElementById("pAc").innerText=v.AcNo;
+    document.getElementById("pPart").previousElementSibling.textContent="📍 Part No:";
     document.getElementById("pPart").innerText=v.PartNo;
+    document.getElementById("pAddress").previousElementSibling.textContent="🏠 Address:";
     document.getElementById("pAddress").innerText=v.Address||"";
+    document.getElementById("pVoteAddress").previousElementSibling.textContent="🗳 Booth:";
     document.getElementById("pVoteAddress").innerText=v.VotingAddress||"";
+    document.getElementById("senderNote").previousElementSibling.textContent="📝 Sender Message:";
     document.getElementById("senderNote").value=v.SenderNote||globalSenderNote;
 
     const img=document.getElementById("voterImage");
@@ -182,7 +188,7 @@ document.getElementById("search").addEventListener("input", e=>{
     showList(f);
 });
 
-// 🌐 Translation - ONLY fixed headings and labels
+// 🌐 Translation for labels only
 async function translateText(texts, from, to){
     try{
         let res = await fetch("https://libretranslate.de/translate", {
@@ -192,19 +198,17 @@ async function translateText(texts, from, to){
         });
         let data = await res.json();
         return data.translatedText.split("\n");
-    }catch(e){
-        console.error("Translation failed!",e);
-        alert("Translation failed!");
-        return texts;
-    }
+    }catch(e){ console.error("Translation failed!",e); alert("Translation failed!"); return texts; }
 }
 
 async function translatePage(from,to){
-    const area=document.getElementById("translateArea");
-    const nodes=Array.from(area.querySelectorAll("*")).filter(el=>el.childNodes.length===1 && el.childNodes[0].nodeType===3);
-    const texts=nodes.map(el=>el.textContent.trim());
-    const translated=await translateText(texts,from,to);
-    nodes.forEach((el,i)=>{ el.textContent=translated[i]; });
+    const labels = Array.from(document.querySelectorAll(".label"));
+    const texts = labels.map(l=>l.textContent.replace(/[:\u{1F300}-\u{1F6FF}]/gu,"").trim());
+    const translated = await translateText(texts, from, to);
+    labels.forEach((l,i)=>{ 
+        const emoji = l.textContent.match(/[\u{1F300}-\u{1F6FF}]/gu) || "";
+        l.textContent = emoji + " " + translated[i] + ":"; 
+    });
 }
 
 // Dropdown listener
