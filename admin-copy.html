@@ -1,42 +1,97 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Super Admin Dashboard</title>
-<script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-auth.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-firestore.js"></script>
-<script src="https://cdn.tailwindcss.com"></script>
+<title>Voter List</title>
+
 <style>
-  .btn-3d {
-    background: linear-gradient(145deg, #4ade80, #16a34a);
-    color: white;
-    font-weight: bold;
-    padding: 8px 16px;
-    border-radius: 8px;
-    box-shadow: 0 4px #15803d;
-    transition: 0.2s;
-  }
-  .btn-3d:active {
-    box-shadow: 0 2px #15803d;
-    transform: translateY(2px);
-  }
+body { font-family: Arial; margin:0; padding:10px; background:#f1f1f1; }
+h2 { text-align:center; margin-bottom:15px; }
+
+/* Search Box */
+#searchBox {
+  width:100%; padding:10px; border:2px solid #999; border-radius:6px;
+  font-size:18px; margin-bottom:15px;
+}
+
+/* Result List */
+.result-item {
+  padding:10px; margin:5px 0; background:white;
+  border-radius:6px; border-left:5px solid #007bff;
+  cursor:pointer;
+}
+
+/* Card */
+#card {
+  display:none; background:white; padding:15px;
+  border-radius:10px; box-shadow:0 0 10px rgba(0,0,0,0.2);
+}
+
+.color-btn {
+  width:30px; height:30px; border-radius:6px;
+  border:none; margin-right:8px; cursor:pointer;
+}
+
+#msg {
+  width:100%; height:80px; padding:8px;
+  border:2px solid #aaa; border-radius:6px;
+}
+
+.btn-small {
+  padding:8px 15px; border:none; border-radius:6px;
+  margin-right:10px; cursor:pointer; color:white;
+}
+.btn-save { background:#28a745; }
+.btn-del { background:#dc3545; }
+.btn-print { background:#007bff; }
+.btn-whatsapp { background:#25d366; }
+
+.voter-color-tag {
+  width:20px; height:20px; border-radius:4px; display:inline-block;
+}
 </style>
 </head>
-<body class="bg-gray-100 p-4">
+<body>
 
-<div class="max-w-3xl mx-auto bg-white p-6 rounded-xl shadow-lg">
-<h2 class="text-2xl font-bold mb-4 text-center">Super Admin Dashboard</h2>
+<h2>Voter Search</h2>
 
-<div id="dashboard" class="space-y-4"></div>
+<input type="text" id="searchBox" placeholder="Type 1 letter to search..." />
+
+<div id="results"></div>
+
+<div id="card">
+  <h3 id="vname"></h3>
+  <p><b>EPIC:</b> <span id="vepic"></span></p>
+  <p><b>Area:</b> <span id="varea"></span></p>
+  <p><b>Saved Color:</b> <span class="voter-color-tag" id="colortag"></span></p>
+
+  <hr>
+
+  <p><b>Change Color:</b></p>
+  <button class="color-btn" style="background:#ff4444" onclick="saveColor('#ff4444')"></button>
+  <button class="color-btn" style="background:#44cc44" onclick="saveColor('#44cc44')"></button>
+  <button class="color-btn" style="background:#4477ff" onclick="saveColor('#4477ff')"></button>
+
+  <hr>
+
+  <p><b>Sender Message</b></p>
+  <textarea id="msg"></textarea>
+  <br><br>
+  <button class="btn-small btn-save" onclick="saveMessage()">Save</button>
+  <button class="btn-small btn-del" onclick="deleteMessage()">Delete</button>
+
+  <hr>
+  <button class="btn-small btn-print" onclick="printCard()">Print</button>
+  <button class="btn-small btn-whatsapp" onclick="sendWhatsApp()">Send</button>
 </div>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js";
-import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-auth.js";
-import { getFirestore, collection, getDocs, updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-firestore.js";
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
+<script>
+/* ---------------------- Firebase Config ------------------------ */
 const firebaseConfig = {
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
   authDomain: "voter-25c94.firebaseapp.com",
@@ -47,56 +102,125 @@ const firebaseConfig = {
   appId: "1:297773534400:web:3722c487b8c83e9b787125"
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
-const provider = new GoogleAuthProvider();
+firebase.initializeApp(firebaseConfig);
 
-const dashboard = document.getElementById("dashboard");
+const db = firebase.database();
 
-async function loadDashboard() {
-  const userCredential = await signInWithPopup(auth, provider);
-  const user = userCredential.user;
+/* --------- Load CSV from Google Sheet -------- */
+let voters = [];
 
-  if(user.email !== "ngogrant454@gmail.com") {
-    alert("You are not Super Admin!");
-    return;
-  }
-
-  const querySnapshot = await getDocs(collection(db, "registrations"));
-  dashboard.innerHTML = "";
-
-  querySnapshot.forEach(docSnap => {
-    const data = docSnap.data();
-    const div = document.createElement("div");
-    div.className = "flex justify-between items-center bg-gray-100 p-3 rounded-md shadow";
-
-    let statusHtml = "";
-    if(data.status === "pending"){
-      statusHtml = `<button class="btn-3d text-sm" onclick="approve('${docSnap.id}')">Approve</button>`;
-    } else {
-      statusHtml = `<span class="font-medium text-green-600">Approved</span>`;
-    }
-
-    div.innerHTML = `
-      <div>
-        <p><strong>${data.name}</strong> (${data.role})</p>
-        <p>${data.address} | ${data.mobile}</p>
-      </div>
-      <div>${statusHtml}</div>
-    `;
-
-    dashboard.appendChild(div);
+fetch("YOUR_SHEET_CSV_LINK_HERE")
+  .then(res => res.text())
+  .then(data => {
+    let rows = data.split("\n");
+    rows.forEach(row => {
+      let col = row.split(",");
+      voters.push({
+        epic: col[0],
+        name: col[1],
+        area: col[2]
+      });
+    });
   });
+
+/* ------------------ Search ------------------ */
+document.getElementById("searchBox").addEventListener("input", function() {
+  let q = this.value.toLowerCase();
+  let html = "";
+
+  if (q.length >= 1) {
+    voters.forEach(v => {
+      if (v.name.toLowerCase().includes(q) || v.epic.toLowerCase().includes(q)) {
+        html += `
+          <div class="result-item" onclick="openCard('${v.epic}')">
+            <b>${v.name}</b> (${v.epic})
+          </div>`;
+      }
+    });
+  }
+  document.getElementById("results").innerHTML = html;
+});
+
+/* ----------------- Open Card ------------------ */
+function openCard(epic) {
+  let v = voters.find(x => x.epic === epic);
+
+  document.getElementById("vname").innerText = v.name;
+  document.getElementById("vepic").innerText = v.epic;
+  document.getElementById("varea").innerText = v.area;
+
+  // load saved color
+  db.ref("voters/" + epic + "/color").once("value", snap => {
+    let color = snap.val() || "#ffffff";
+    document.getElementById("colortag").style.background = color;
+  });
+
+  // load saved message
+  db.ref("voters/" + epic + "/message").once("value", snap => {
+    document.getElementById("msg").value = snap.val() || "";
+  });
+
+  document.getElementById("card").style.display = "block";
 }
 
-window.approve = async (id) => {
-  await updateDoc(doc(db, "registrations", id), { status: "approved" });
-  alert("User approved!");
-  loadDashboard();
+/* ----------------- Save Color ------------------ */
+function saveColor(color) {
+  let epic = document.getElementById("vepic").innerText;
+
+  db.ref("voters/" + epic + "/color").set(color);
+  document.getElementById("colortag").style.background = color;
 }
 
-loadDashboard();
+/* ----------------- Save Message ------------------ */
+function saveMessage() {
+  let epic = document.getElementById("vepic").innerText;
+  let message = document.getElementById("msg").value;
+
+  db.ref("voters/" + epic + "/message").set(message);
+  alert("Message Saved!");
+}
+
+/* ---------------- Delete Message ---------------- */
+function deleteMessage() {
+  let epic = document.getElementById("vepic").innerText;
+
+  db.ref("voters/" + epic + "/message").remove();
+  document.getElementById("msg").value = "";
+}
+
+/* --------------------- Print --------------------- */
+function printCard() {
+  let name = document.getElementById("vname").innerText;
+  let epic = document.getElementById("vepic").innerText;
+  let area = document.getElementById("varea").innerText;
+  let msg = document.getElementById("msg").value;
+
+  let text = `
+Name: ${name}
+EPIC: ${epic}
+Area: ${area}
+
+Message:
+${msg}
+`;
+
+  let win = window.open("", "", "width=400,height=600");
+  win.document.write("<pre>" + text + "</pre>");
+  win.print();
+}
+
+/* ------------------ WhatsApp Send ----------------- */
+function sendWhatsApp() {
+  let name = document.getElementById("vname").innerText;
+  let epic = document.getElementById("vepic").innerText;
+  let area = document.getElementById("varea").innerText;
+  let msg = document.getElementById("msg").value;
+
+  let text = `*Voter Details*\nName: ${name}\nEPIC: ${epic}\nArea: ${area}\n\n*Message:*\n${msg}`;
+  let url = "https://wa.me/?text=" + encodeURIComponent(text);
+
+  window.open(url, "_blank");
+}
 </script>
 </body>
 </html>
