@@ -8,40 +8,40 @@
 body { font-family: Arial; margin:0; padding:10px; background:#f3f3f3; }
 h2 { text-align:center; margin-bottom:10px; font-size:16px; text-transform: lowercase; }
 input, textarea, select {
-    width:100%; padding:8px; margin-bottom:8px;
-    border-radius:6px; border:1px solid #777; font-size:14px;
-    text-transform: lowercase;
+    width:100%; padding:8px; margin-bottom:8px;
+    border-radius:6px; border:1px solid #777; font-size:14px;
+    text-transform: lowercase;
 }
 .list-item{
-    padding:6px 8px; background:white;
-    border:1px solid #aaa; margin-bottom:4px;
-    border-radius:6px; cursor:pointer;
-    transition:.2s; font-size:12px;
-    text-transform: lowercase; line-height:1.3em;
-    word-break: break-word;
+    padding:6px 8px; background:white;
+    border:1px solid #aaa; margin-bottom:4px;
+    border-radius:6px; cursor:pointer;
+    transition:.2s; font-size:12px;
+    text-transform: lowercase; line-height:1.3em;
+    word-break: break-word;
 }
 .highlight { background: #ffe08a !important; border-color:#d6a300 !important; }
 .list-item:hover{ transform:scale(1.03); box-shadow:0 0 6px gray; }
 
 #popup{
-    position:fixed;top:0;left:0;width:100%;height:100%;
-    background:rgba(0,0,0,0.7);display:none;
-    justify-content:center;align-items:flex-start;
-    padding:20px;overflow-y:auto;
+    position:fixed;top:0;left:0;width:100%;height:100%;
+    background:rgba(0,0,0,0.7);display:none;
+    justify-content:center;align-items:flex-start;
+    padding:20px;overflow-y:auto;
 }
 .card{
-    width:95%;max-width:420px;background:white;
-    border:3px solid black;border-radius:12px;padding:15px;
-    font-size:13px; text-transform: lowercase;
+    width:95%;max-width:420px;background:white;
+    border:3px solid black;border-radius:12px;padding:15px;
+    font-size:13px; text-transform: lowercase;
 }
 .card img{
-    width:100%;max-height:180px;object-fit:contain;
-    border-radius:10px;margin-bottom:8px;
+    width:100%;max-height:180px;object-fit:contain;
+    border-radius:10px;margin-bottom:8px;
 }
 .btn{
-    padding:10px;width:100%;margin-top:8px;background:#008cff;
-    color:white;border:none;font-size:14px;cursor:pointer;
-    border-radius:8px;box-shadow:0 3px 0 #003f7f;
+    padding:10px;width:100%;margin-top:8px;background:#008cff;
+    color:white;border:none;font-size:14px;cursor:pointer;
+    border-radius:8px;box-shadow:0 3px 0 #003f7f;
 }
 .btn:active{ transform:translateY(3px); }
 .close-btn{ background:red;box-shadow:0 3px 0 #7a0000; }
@@ -49,9 +49,9 @@ input, textarea, select {
 
 /* PRINT */
 @media print{
-    body *{ visibility:hidden; }
-    #popup, #popup *{ visibility:visible; }
-    .btn{ display:none !important; }
+    body *{ visibility:hidden; }
+    #popup, #popup *{ visibility:visible; }
+    .btn{ display:none !important; }
 }
 .lang-switch { text-align:center; margin-bottom:10px; }
 .lang-switch select { padding:6px 10px; font-size:14px; border-radius:6px; border:1px solid #007bff; }
@@ -60,99 +60,116 @@ input, textarea, select {
 <body>
 
 <div class="lang-switch">
-  <select id="lang">
-    <option value="mr">🇮🇳 मराठी (Marathi)</option>
-    <option value="en">🇮🇳 English</option>
-  </select>
+  <select id="lang">
+    <option value="mr">🇮🇳 मराठी (Marathi)</option>
+    <option value="en">🇮🇳 English</option>
+  </select>
 </div>
 
 <div id="translateArea">
-    <h2 class="label" data-mr="🗳 मतदार यादी पूर्वावलोकन" data-en="🗳 Voter List Preview">🗳 मतदार यादी पूर्वावलोकन</h2>
-    <label class="label" data-mr="मतदाता शोधा" data-en="Search Voter:">मतदाता शोधा</label>
+    <h2 class="label" data-mr="🗳 मतदार यादी पूर्वावलोकन" data-en="🗳 Voter List Preview">🗳 मतदार यादी पूर्वावलोकन</h2>
+    <label class="label" data-mr="मतदाता शोधा" data-en="Search Voter:">मतदाता शोधा</label>
 </div>
 
-<input id="search" class="label" 
-       data-mr="नाव, EPIC, AC क्र., भाग क्र., पत्ता शोधा" 
-       data-en="Search Name, EPIC, AC No, Part No, Address, Booth, Message..."
-       placeholder="नाव, EPIC, AC क्र., भाग क्र., पत्ता शोधा">
+<input id="search" class="label" 
+       data-mr="नाव, EPIC, AC क्र., भाग क्र., पत्ता शोधा" 
+       data-en="Search Name, EPIC, AC No, Part No, Address, Booth, Message..."
+       placeholder="नाव, EPIC, AC क्र., भाग क्र., पत्ता शोधा">
 <div id="list"></div>
 
 <div id="popup">
-    <div class="card" id="cardBox">
-        <h3 id="pName"></h3>
-        <p><b class="label" data-mr="🆔 EPIC क्रमांक:" data-en="🆔 EPIC:">🆔 EPIC क्रमांक:</b> <span id="pEpic"></span></p>
-        <p><b class="label" data-mr="🏛 विधानसभा:" data-en="🏛 AC No:">🏛 विधानसभा:</b> <span id="pAc"></span></p>
-        <p><b class="label" data-mr="📍 भाग क्रमांक:" data-en="📍 Part No:">📍 भाग क्रमांक:</b> <span id="pPart"></span></p>
-        <p><b class="label" data-mr="🏠 पत्ता:" data-en="🏠 Address:">🏠 पत्ता:</b> <span id="pAddress"></span></p>
-        <p><b class="label" data-mr="🗳 मतदान केंद्र:" data-en="🗳 Booth:">🗳 मतदान केंद्र:</b> <span id="pVoteAddress"></span></p>
+    <div class="card" id="cardBox">
+        <h3 id="pName"></h3>
+        <p><b class="label" data-mr="🆔 EPIC क्रमांक:" data-en="🆔 EPIC:">🆔 EPIC क्रमांक:</b> <span id="pEpic"></span></p>
+        <p><b class="label" data-mr="🏛 विधानसभा:" data-en="🏛 AC No:">🏛 विधानसभा:</b> <span id="pAc"></span></p>
+        <p><b class="label" data-mr="📍 भाग क्रमांक:" data-en="📍 Part No:">📍 भाग क्रमांक:</b> <span id="pPart"></span></p>
+        <p><b class="label" data-mr="🏠 पत्ता:" data-en="🏠 Address:">🏠 पत्ता:</b> <span id="pAddress"></span></p>
+        <p><b class="label" data-mr="🗳 मतदान केंद्र:" data-en="🗳 Booth:">🗳 मतदान केंद्र:</b> <span id="pVoteAddress"></span></p>
 
-        <img id="voterImage" style="display:none; margin-top:10px;">
+        <img id="voterImage" style="display:none; margin-top:10px;">
 
-        <label class="label" data-mr="📝 संदेश:" data-en="📝 Sender Message:"><b>📝 संदेश:</b></label>
-        <input id="senderNote" placeholder="संदेश टाका / Type message here">
+        <label class="label" data-mr="📝 संदेश:" data-en="📝 Sender Message:"><b>📝 संदेश:</b></label>
+        <input id="senderNote" placeholder="संदेश टाका / Type message here">
 
-        <button class="btn color-btn" onclick="highlightItem()">🎨 हायलाइट / Highlight</button>
-        <button class="btn" onclick="printDetails()">🖨 छापा / Print</button>
-        <button class="btn" onclick="sendWhatsApp()">📩 WhatsApp</button>
-        <button class="btn close-btn" onclick="closePopup()">❌ बंद करा / Close</button>
-    </div>
+        <button class="btn color-btn" onclick="highlightItem()">🎨 हायलाइट / Highlight</button>
+        <button class="btn" onclick="printDetails()">🖨 छापा / Print</button>
+        <button class="btn" onclick="sendWhatsApp()">📩 WhatsApp</button>
+        <button class="btn close-btn" onclick="closePopup()">❌ बंद करा / Close</button>
+    </div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase.js"></script>
 <script>
 // Firebase config
 firebase.initializeApp({
-  apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
-  authDomain: "voter-25c94.firebaseapp.com",
-  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com/",
-  projectId: "voter-25c94",
-  storageBucket: "voter-25c94.appspot.com"
+  apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
+  authDomain: "voter-25c94.firebaseapp.com",
+  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com/",
+  projectId: "voter-25c94",
+  storageBucket: "voter-25c94.appspot.com"
 });
 
 let voters={}, selected=null, globalSenderNote="", activeListItem=null;
+const listEl = document.getElementById("list");
 
-// Load voters
-firebase.database().ref("/").once("value").then(snap=>{
-    globalSenderNote = snap.val().GlobalSenderNote || "";
-    voters = snap.val().Voters || {};
-    showList(voters);
-});
+// Function to load voters with error handling
+function loadVoters(){
+    // Show a loading message
+    listEl.innerHTML = '<div style="text-align:center; padding:20px; color:#555;">Loading voter data...</div>';
+
+    firebase.database().ref("/").once("value")
+    .then(snap => {
+        globalSenderNote = snap.val().GlobalSenderNote || "";
+        voters = snap.val().Voters || {};
+
+        if (Object.keys(voters).length === 0) {
+            // Display message if no data is found
+            listEl.innerHTML = '<div style="text-align:center; padding:20px; color:red;">मतदाता सूची खाली है। कृपया डेटाबेस में "Voters" नोड की जाँच करें।</div>';
+        } else {
+            showList(voters);
+        }
+    })
+    .catch(error => {
+        console.error("Firebase Database Error:", error);
+        // Display a detailed error message to the user
+        listEl.innerHTML = `<div style="text-align:center; padding:20px; color:red;">डेटा लोड करने में त्रुटि: ${error.message}। कृपया अपने Firebase के नियम और कनेक्शन विवरण की जाँच करें।</div>`;
+    });
+}
 
 // Show list
 function showList(data){
-    const box = document.getElementById("list");
-    box.innerHTML = "";
-    Object.values(data).forEach(v=>{
-        const div = document.createElement("div");
-        div.className = "list-item";
-        div.innerHTML = `<b>${(v.Name||"").toLowerCase()}</b><br>🆔 ${(v.EPIC||"").toLowerCase()} | 🏛 AC:${v.AcNo} | 📍 Part:${v.PartNo}`;
-        div.onclick = ()=>{ activeListItem=div; openPopup(v); };
-        box.appendChild(div);
-    });
+    listEl.innerHTML = ""; // Clear the loading/error message
+    Object.values(data).forEach(v=>{
+        const div = document.createElement("div");
+        div.className = "list-item";
+        div.innerHTML = `<b>${(v.Name||"").toLowerCase()}</b><br>🆔 ${(v.EPIC||"").toLowerCase()} | 🏛 AC:${v.AcNo} | 📍 Part:${v.PartNo}`;
+        div.onclick = ()=>{ activeListItem=div; openPopup(v); };
+        listEl.appendChild(div);
+    });
 }
 
 // Open popup
 function openPopup(v){
-    selected=v;
-    document.getElementById("pName").innerText=(v.Name||"").toLowerCase();
-    document.getElementById("pEpic").innerText=(v.EPIC||"").toLowerCase();
-    document.getElementById("pAc").innerText=v.AcNo;
-    document.getElementById("pPart").innerText=v.PartNo;
-    document.getElementById("pAddress").innerText=(v.Address||"").toLowerCase();
-    document.getElementById("pVoteAddress").innerText=(v.VotingAddress||"").toLowerCase();
-    document.getElementById("senderNote").value=(v.SenderNote||globalSenderNote).toLowerCase();
+    selected=v;
+    document.getElementById("pName").innerText=(v.Name||"").toLowerCase();
+    document.getElementById("pEpic").innerText=(v.EPIC||"").toLowerCase();
+    document.getElementById("pAc").innerText=v.AcNo;
+    document.getElementById("pPart").innerText=v.PartNo;
+    document.getElementById("pAddress").innerText=(v.Address||"").toLowerCase();
+    document.getElementById("pVoteAddress").innerText=(v.VotingAddress||"").toLowerCase();
+    document.getElementById("senderNote").value=(v.SenderNote||globalSenderNote).toLowerCase();
 
-    const img=document.getElementById("voterImage");
-    if(v.ImageURL){ img.src=v.ImageURL; img.style.display="block"; }
-    else img.style.display="none";
+    const img=document.getElementById("voterImage");
+    if(v.ImageURL){ img.src=v.ImageURL; img.style.display="block"; }
+    else img.style.display="none";
 
-    document.getElementById("popup").style.display="flex";
+    document.getElementById("popup").style.display="flex";
 }
 
 // Highlight
 function highlightItem(){
-    if(activeListItem) activeListItem.classList.toggle("highlight");
-    document.getElementById("cardBox").classList.toggle("highlight");
+    if(activeListItem) activeListItem.classList.toggle("highlight");
+    document.getElementById("cardBox").classList.toggle("highlight");
 }
 
 // Close popup
@@ -163,44 +180,47 @@ function printDetails(){ window.print(); }
 
 // WhatsApp
 function sendWhatsApp(){
-    if(!selected) return;
-    const msg=`👤 Name: ${(selected.Name||"").toLowerCase()}
+    if(!selected) return;
+    const msg=`👤 Name: ${(selected.Name||"").toLowerCase()}
 🆔 EPIC: ${(selected.EPIC||"").toLowerCase()}
 🏠 Address: ${(selected.Address||"").toLowerCase()}
 📍 Booth: ${(selected.VotingAddress||"").toLowerCase()}
 📝 Message: ${(document.getElementById("senderNote").value||"").toLowerCase()}`;
-    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`);
+    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`);
 }
 
 // Search
 document.getElementById("search").addEventListener("input", e=>{
-    const t=e.target.value.toLowerCase();
-    const f=Object.values(voters).filter(v=>
-        (v.Name||"").toLowerCase().includes(t) ||
-        (v.EPIC||"").toLowerCase().includes(t) ||
-        (v.AcNo+"").includes(t) ||
-        (v.PartNo+"").includes(t) ||
-        (v.Address||"").toLowerCase().includes(t) ||
-        (v.VotingAddress||"").toLowerCase().includes(t) ||
-        (v.SenderNote||"").toLowerCase().includes(t)
-    );
-    showList(f);
+    const t=e.target.value.toLowerCase();
+    const f=Object.values(voters).filter(v=>
+        (v.Name||"").toLowerCase().includes(t) ||
+        (v.EPIC||"").toLowerCase().includes(t) ||
+        (v.AcNo+"").includes(t) ||
+        (v.PartNo+"").includes(t) ||
+        (v.Address||"").toLowerCase().includes(t) ||
+        (v.VotingAddress||"").toLowerCase().includes(t) ||
+        (v.SenderNote||"").toLowerCase().includes(t)
+    );
+    showList(f);
 });
 
 // Language switching
 function applyLanguage(lang) {
-  document.querySelectorAll(".label").forEach(el => {
-    const attr = (lang === "mr") ? el.dataset.mr : el.dataset.en;
-    if (attr !== undefined) {
-      if (el.tagName === "INPUT" || el.tagName === "TEXTAREA") el.placeholder = attr;
-      else el.innerText = attr;
-    }
-  });
+  document.querySelectorAll(".label").forEach(el => {
+    const attr = (lang === "mr") ? el.dataset.mr : el.dataset.en;
+    if (attr !== undefined) {
+      if (el.tagName === "INPUT" || el.tagName === "TEXTAREA") el.placeholder = attr;
+      else el.innerText = attr;
+    }
+  });
 }
 document.getElementById("lang").addEventListener("change", function () {
-  applyLanguage(this.value);
+  applyLanguage(this.value);
 });
-applyLanguage("mr");
+
+// Initial calls
+loadVoters(); // Start loading data
+applyLanguage("mr"); // Apply default language
 </script>
 </body>
 </html>
