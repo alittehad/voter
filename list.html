@@ -24,7 +24,7 @@ input, textarea {
     position:fixed;top:0;left:0;width:100%;height:100%;
     background:rgba(0,0,0,0.7);display:none;
     justify-content:center;align-items:flex-start;
-    padding:20px;overflow-y:auto;
+    padding:20px;overflow-y:auto; z-index:10;
 }
 .card{
     width:95%;max-width:420px;background:white;
@@ -42,7 +42,7 @@ input, textarea {
 .btn:active{ transform:translateY(4px); }
 .close-btn{ background:red;box-shadow:0 4px 0 #7a0000; }
 .color-btn{ background:#ffa600; box-shadow:0 4px 0 #b36b00; }
-
+/* PRINT */
 @media print{
     body *{ visibility:hidden; }
     #popup, #popup *{ visibility:visible; }
@@ -54,9 +54,9 @@ input, textarea {
 
 <h2>🗳 Voter List Preview</h2>
 
-<!-- Translation Dropdown -->
-<div style="text-align:center; margin-bottom:15px;">
-    <select id="translateMenu" style="padding:10px; font-size:16px; border-radius:8px; border:2px solid #007bff; width:90%; max-width:350px;">
+<!-- TRANSLATION DROPDOWN -->
+<div style="text-align:center; margin-bottom:15px; position:relative; z-index:1;">
+    <select id="translateMenu" style="padding:10px; font-size:16px; border-radius:8px; border:2px solid #007bff; width:90%; max-width:350px; cursor:pointer;">
         <option value="" selected>🌐 भाषा चुनें / Select Language</option>
         <option value="mr-en">Marathi → English</option>
         <option value="en-mr">English → Marathi</option>
@@ -66,6 +66,7 @@ input, textarea {
 <input id="search" placeholder="Search Name, EPIC, AC No, Part No, Address, Booth, Message...">
 <div id="list"></div>
 
+<!-- Popup -->
 <div id="popup">
     <div class="card" id="cardBox">
         <h3 id="pName"></h3>
@@ -76,7 +77,6 @@ input, textarea {
         <p><b>🗳 Booth:</b> <span id="pVoteAddress"></span></p>
 
         <img id="voterImage" style="display:none; margin-top:10px;">
-
         <label><b>📝 Sender Message:</b></label>
         <input id="senderNote" placeholder="Type message here">
 
@@ -114,9 +114,8 @@ function showList(data){
     Object.values(data).forEach(v=>{
         const div = document.createElement("div");
         div.className = "list-item";
-        // HTML preserved
         div.innerHTML = `<b>${v.Name}</b><br>🆔 ${v.EPIC} | 🏛 AC:${v.AcNo} | 📍 Part:${v.PartNo}`;
-        div.onclick = () => { activeListItem = div; openPopup(v); };
+        div.onclick = () => { activeListItem=div; openPopup(v); };
         box.appendChild(div);
     });
 }
@@ -131,21 +130,24 @@ function openPopup(v){
     document.getElementById("pAddress").innerText = v.Address || "";
     document.getElementById("pVoteAddress").innerText = v.VotingAddress || "";
     document.getElementById("senderNote").value = v.SenderNote || globalSenderNote;
-
     const img = document.getElementById("voterImage");
-    if(v.ImageURL){ img.src = v.ImageURL; img.style.display="block"; }
-    else { img.style.display="none"; }
-
-    document.getElementById("popup").style.display = "flex";
+    if(v.ImageURL){ img.src=v.ImageURL; img.style.display="block"; } else img.style.display="none";
+    document.getElementById("popup").style.display="flex";
 }
 
-// Highlight list + card
+// Highlight
 function highlightItem(){
     if(activeListItem) activeListItem.classList.toggle("highlight");
     document.getElementById("cardBox").classList.toggle("highlight");
 }
-function closePopup(){ document.getElementById("popup").style.display = "none"; }
+
+// Close popup
+function closePopup(){ document.getElementById("popup").style.display="none"; }
+
+// Print
 function printDetails(){ window.print(); }
+
+// WhatsApp
 function sendWhatsApp(){
     const msg = `👤 Name: ${selected.Name}\n🆔 EPIC: ${selected.EPIC}\n🏠 Address: ${selected.Address}\n📍 Booth: ${selected.VotingAddress}\n📝 Message: ${document.getElementById("senderNote").value}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`);
@@ -154,51 +156,47 @@ function sendWhatsApp(){
 // Search
 document.getElementById("search").addEventListener("input", e=>{
     const t = e.target.value.toLowerCase();
-    const f = Object.values(voters).filter(v =>
-        (v.Name || "").toLowerCase().includes(t) ||
-        (v.EPIC || "").toLowerCase().includes(t) ||
+    const f = Object.values(voters).filter(v=>
+        (v.Name||"").toLowerCase().includes(t) ||
+        (v.EPIC||"").toLowerCase().includes(t) ||
         (v.AcNo+"").includes(t) ||
         (v.PartNo+"").includes(t) ||
-        (v.Address || "").toLowerCase().includes(t) ||
-        (v.VotingAddress || "").toLowerCase().includes(t) ||
-        (v.SenderNote || "").toLowerCase().includes(t)
+        (v.Address||"").toLowerCase().includes(t) ||
+        (v.VotingAddress||"").toLowerCase().includes(t) ||
+        (v.SenderNote||"").toLowerCase().includes(t)
     );
     showList(f);
 });
 
-// ------------------------
-// Translation preserving HTML
-// ------------------------
-async function translateTextNode(node, from, to){
-    if(!node || !node.nodeValue) return;
-    const text = node.nodeValue.trim();
-    if(text.length < 2) return;
+// Translation using LibreTranslate
+async function translatePage(from, to){
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
+    let nodes=[], texts=[];
+    while(walker.nextNode()){
+        let n = walker.currentNode, t=n.textContent.trim();
+        if(t.length>1){ nodes.push(n); texts.push(t); }
+    }
+    if(texts.length===0) return;
     try{
         let res = await fetch("https://libretranslate.de/translate", {
             method:"POST",
-            body: JSON.stringify({q:text, source:from, target:to, format:"text"}),
+            body:JSON.stringify({q:texts.join("\n"), source:from, target:to, format:"text"}),
             headers:{"Content-Type":"application/json"}
         });
         let data = await res.json();
-        node.nodeValue = data.translatedText || node.nodeValue;
-    }catch(e){ console.error("Translation failed:", e); }
+        let translated = data.translatedText.split("\n");
+        translated.forEach((t,i)=>{ nodes[i].textContent=t; });
+    } catch(e){ alert("Translation failed!"); console.error(e); }
 }
 
-async function translatePage(from, to){
-    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
-    let node;
-    while(node = walker.nextNode()){
-        await translateTextNode(node, from, to);
-    }
-}
-
-// Dropdown trigger
+// Dropdown listener
 document.getElementById("translateMenu").addEventListener("change", function(){
-    const val = this.value;
+    let val = this.value;
     if(val==="mr-en") translatePage("mr","en");
     if(val==="en-mr") translatePage("en","mr");
     this.value="";
 });
 </script>
+
 </body>
 </html>
