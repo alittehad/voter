@@ -1,50 +1,50 @@
 <!DOCTYPE html>
-<html lang="mr">
+<html lang="en">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Voter List Preview (Local Data)</title>
+<title>Voter List Preview</title>
 <style>
 body { font-family: Arial; margin:0; padding:10px; background:#f3f3f3; }
-h2 { text-align:center; margin-bottom:10px; font-size:16px; text-transform: lowercase; }
-input, textarea, select {
+h2 { text-align:center; margin-bottom:10px; font-size:16px; }
+input, textarea {
     width:100%; padding:8px; margin-bottom:8px;
     border-radius:6px; border:1px solid #777; font-size:14px;
-    text-transform: lowercase;
 }
 .list-item{
     padding:6px 8px; background:white;
     border:1px solid #aaa; margin-bottom:4px;
     border-radius:6px; cursor:pointer;
     transition:.2s; font-size:12px;
-    text-transform: lowercase; line-height:1.3em;
-    word-break: break-word;
+    line-height:1.3em; word-break: break-word;
 }
 .highlight { background: #ffe08a !important; border-color:#d6a300 !important; }
 .list-item:hover{ transform:scale(1.03); box-shadow:0 0 6px gray; }
 
+#list { max-height:70vh; overflow-y:auto; }
+
 #popup{
-    position:fixed;top:0;left:0;width:100%;height:100%;
-    background:rgba(0,0,0,0.7);display:none;
-    justify-content:center;align-items:flex-start;
-    padding:20px;overflow-y:auto;
+    position:fixed; top:0; left:0; width:100%; height:100%;
+    background:rgba(0,0,0,0.7); display:none;
+    justify-content:center; align-items:flex-start;
+    padding:20px; overflow-y:auto;
 }
 .card{
-    width:95%;max-width:420px;background:white;
-    border:3px solid black;border-radius:12px;padding:15px;
-    font-size:13px; text-transform: lowercase;
+    width:95%; max-width:420px; background:white;
+    border:3px solid black; border-radius:12px; padding:15px;
+    font-size:13px; max-height:90vh; overflow-y:auto;
 }
 .card img{
-    width:100%;max-height:180px;object-fit:contain;
-    border-radius:10px;margin-bottom:8px;
+    width:100%; max-height:180px; object-fit:contain;
+    border-radius:10px; margin-bottom:8px;
 }
 .btn{
-    padding:10px;width:100%;margin-top:8px;background:#008cff;
-    color:white;border:none;font-size:14px;cursor:pointer;
-    border-radius:8px;box-shadow:0 3px 0 #003f7f;
+    padding:10px; width:100%; margin-top:8px; background:#008cff;
+    color:white; border:none; font-size:14px; cursor:pointer;
+    border-radius:8px; box-shadow:0 3px 0 #003f7f;
 }
 .btn:active{ transform:translateY(3px); }
-.close-btn{ background:red;box-shadow:0 3px 0 #7a0000; }
+.close-btn{ background:red; box-shadow:0 3px 0 #7a0000; }
 .color-btn{ background:#ffa600; box-shadow:0 3px 0 #b36b00; }
 
 /* PRINT */
@@ -53,179 +53,161 @@ input, textarea, select {
     #popup, #popup *{ visibility:visible; }
     .btn{ display:none !important; }
 }
-.lang-switch { text-align:center; margin-bottom:10px; }
-.lang-switch select { padding:6px 10px; font-size:14px; border-radius:6px; border:1px solid #007bff; }
 </style>
 </head>
 <body>
 
-<div class="lang-switch">
-  <select id="lang">
-    <option value="mr">🇮🇳 मराठी (Marathi)</option>
-    <option value="en">🇮🇳 English</option>
-  </select>
-</div>
-
-<div id="translateArea">
-    <h2 class="label" data-mr="🗳 मतदार यादी पूर्वावलोकन" data-en="🗳 Voter List Preview">🗳 मतदार यादी पूर्वावलोकन</h2>
-    <label class="label" data-mr="मतदाता शोधा" data-en="Search Voter:">मतदाता शोधा</label>
-</div>
-
-<input id="search" class="label" 
-       data-mr="नाव, EPIC, AC क्र., भाग क्र., पत्ता शोधा" 
-       data-en="Search Name, EPIC, AC No, Part No, Address, Booth, Message..."
-       placeholder="नाव, EPIC, AC क्र., भाग क्र., पत्ता शोधा">
+<h2>🗳 Voter List Preview</h2>
+<label>Search Voter:</label>
+<input id="search" placeholder="Search Name, EPIC, AC No, Part No, Address...">
 <div id="list"></div>
 
 <div id="popup">
-    <div class="card" id="cardBox">
+    <div class="card" id="cardBox">
         <h3 id="pName"></h3>
-        <p><b class="label" data-mr="🆔 EPIC क्रमांक:" data-en="🆔 EPIC:">🆔 EPIC क्रमांक:</b> <span id="pEpic"></span></p>
-        <p><b class="label" data-mr="🏛 विधानसभा:" data-en="🏛 AC No:">🏛 विधानसभा:</b> <span id="pAc"></span></p>
-        <p><b class="label" data-mr="📍 भाग क्रमांक:" data-en="📍 Part No:">📍 भाग क्रमांक:</b> <span id="pPart"></span></p>
-        <p><b class="label" data-mr="🏠 पता:" data-en="🏠 Address:">🏠 पता:</b> <span id="pAddress"></span></p>
-        <p><b class="label" data-mr="🗳 मतदान केंद्र:" data-en="🗳 Booth:">🗳 मतदान केंद्र:</b> <span id="pVoteAddress"></span></p>
-        <p><b class="label" data-mr="🔗 संबंध:" data-en="🔗 Relation:">🔗 संबंध:</b> <span id="pRelation"></span> (<span id="pRelationType"></span>)</p>
-        <p><b class="label" data-mr="आयु/लिंग:" data-en="Age/Gender:">आयु/लिंग:</b> <span id="pAge"></span> / <span id="pGender"></span></p>
+        <p><b>🆔 EPIC:</b> <span id="pEpic"></span></p>
+        <p><b>🏛 AC No:</b> <span id="pAc"></span></p>
+        <p><b>📍 Part No:</b> <span id="pPart"></span></p>
+        <p><b>🏠 Address:</b> <span id="pAddress"></span></p>
+        <p><b>🗳 Booth:</b> <span id="pVoteAddress"></span></p>
+        <p><b>🔗 Relation:</b> <span id="pRelation"></span> (<span id="pRelationType"></span>)</p>
+        <p><b>Age/Gender:</b> <span id="pAge"></span> / <span id="pGender"></span></p>
 
-        <img id="voterImage" style="display:none; margin-top:10px;">
+        <img id="voterImage" style="display:none; margin-top:10px;">
 
-        <label class="label" data-mr="📝 संदेश:" data-en="📝 Sender Message:"><b>📝 संदेश:</b></label>
-        <input id="senderNote" placeholder="संदेश टाका / Type message here">
+        <label><b>📝 Sender Message:</b></label>
+        <input id="senderNote" placeholder="Type message here">
 
-        <button class="btn color-btn" onclick="highlightItem()">🎨 हायलाइट / Highlight</button>
-        <button class="btn" onclick="printDetails()">🖨 छापा / Print</button>
-        <button class="btn" onclick="sendWhatsApp()">📩 WhatsApp</button>
-        <button class="btn close-btn" onclick="closePopup()">❌ बंद करा / Close</button>
-    </div>
+        <button class="btn color-btn" onclick="highlightItem(this)">🎨 Highlight</button>
+        <button class="btn" onclick="printDetails()">🖨 Print</button>
+        <button class="btn" onclick="sendWhatsApp()">📩 WhatsApp</button>
+        <button class="btn close-btn" onclick="closePopup()">❌ Close</button>
+    </div>
 </div>
 
 <script>
 // --- LOCAL JSON DATA ---
 const voterData = {
-  "general_info": {
-    "date": "20-11-2025",
-    "corporation": "Vasai Virar Municipal Corporation",
-    "ward_no": "8 - Ward 8",
-    "list_part_no": "272",
-    "list_part_name": "1 - Dhanivgaonba-Hachapadadhanivaharwate"
-  },
-  "voters": [
-    {"serial_no":1,"epic_no":"RBG4942918","sl_no_in_part":"131/272/1","voter_full_name":"Ansari saddam hussain","relation_name":"Ansari abubakar","relation_type":"Father's Name","house_number":"NA","age":30,"gender":"Male"},
-    {"serial_no":2,"epic_no":"MRL2020212","sl_no_in_part":"131/272/2","voter_full_name":"Arya jagjivan pardeshi","relation_name":"Arya pardeshi","relation_type":"Father's Name","house_number":"NA","age":53,"gender":"Male"},
-    {"serial_no":3,"epic_no":"MRL2022762","sl_no_in_part":"131/272/3","voter_full_name":"Arya malti devi jagjivan","relation_name":"Arya jagjivan","relation_type":"Husband's Name","house_number":"NA","age":47,"gender":"Female"}
-    // Add more voters...
-  ]
+  "general_info": {
+    "date": "20-11-2025",
+    "corporation": "Vasai Virar Municipal Corporation",
+    "ward_no": "8 - Ward 8",
+    "list_part_no": "272",
+    "list_part_name": "1 - Dhanivgaonba-Hachapadadhanivaharwate"
+  },
+  "voters": [
+    {"serial_no":1,"epic_no":"RBG4942918","sl_no_in_part":"131/272/1","voter_full_name":"Ansari Saddam Hussain","relation_name":"Ansari Abubakar","relation_type":"Father's Name","house_number":"NA","age":30,"gender":"Male"},
+    {"serial_no":2,"epic_no":"MRL2020212","sl_no_in_part":"131/272/2","voter_full_name":"Arya Jagjivan Pardeshi","relation_name":"Arya Pardeshi","relation_type":"Father's Name","house_number":"NA","age":53,"gender":"Male"},
+    {"serial_no":3,"epic_no":"MRL2022762","sl_no_in_part":"131/272/3","voter_full_name":"Arya Malti Devi Jagjivan","relation_name":"Arya Jagjivan","relation_type":"Husband's Name","house_number":"NA","age":47,"gender":"Female"}
+    // Add more voters...
+  ]
 };
 // --- END JSON ---
 
 let voters = voterData.voters;
 let generalInfo = voterData.general_info;
-let selected=null, activeListItem=null;
 
-// Show list (for search results)
+// --- Show list ---
 function showList(data){
-    const box = document.getElementById("list");
-    box.innerHTML = "";
-    if(data.length===0){
-        box.innerHTML = '<div style="text-align:center; padding:20px; color:red;">कोई मतदाता नहीं मिला (No voters found)</div>';
-        return;
-    }
-    data.forEach(v=>{
-        const div = document.createElement("div");
-        div.className="list-item";
-        const [ac, part, serial] = (v.sl_no_in_part||"").split('/');
-        div.innerHTML = `<b>${(v.voter_full_name||"").toLowerCase()}</b><br>
-                        🆔 ${(v.epic_no||"").toLowerCase()} | 🏛 AC:${ac||"NA"} | 📍 Part:${part||"NA"}`;
-        div.onclick=()=>{ activeListItem=div; openPopup(v); };
-        box.appendChild(div);
-    });
+    const box = document.getElementById("list");
+    box.innerHTML = "";
+    if(data.length===0){
+        box.innerHTML = '<div style="text-align:center; padding:20px; color:red;">No voters found</div>';
+        return;
+    }
+    data.forEach(v=>{
+        const div = document.createElement("div");
+        div.className="list-item";
+        const parts = (v.sl_no_in_part||"NA/NA/NA").split('/');
+        div.innerHTML = `<b>${v.voter_full_name}</b><br>
+                          🆔 ${v.epic_no} | 🏛 AC:${parts[0]} | 📍 Part:${parts[1]}`;
+        div.onclick=()=> openPopup(v);
+        box.appendChild(div);
+    });
 }
 
-// Open popup card
+// --- Open Popup ---
 function openPopup(v){
-    selected=v;
-    const [ac, part, serial] = (v.sl_no_in_part||"").split('/');
-    const votingAddress = generalInfo.list_part_name;
+    const parts = (v.sl_no_in_part||"NA/NA/NA").split('/');
+    const votingAddress = generalInfo.list_part_name;
 
-    document.getElementById("pName").innerText=(v.voter_full_name||"").toLowerCase();
-    document.getElementById("pEpic").innerText=(v.epic_no||"").toLowerCase();
-    document.getElementById("pAc").innerText=ac||"NA";
-    document.getElementById("pPart").innerText=part||"NA";
-    document.getElementById("pAddress").innerText=(v.house_number||"NA").toLowerCase();
-    document.getElementById("pVoteAddress").innerText=(votingAddress||"NA").toLowerCase();
-    document.getElementById("pRelation").innerText=(v.relation_name||"NA").toLowerCase();
-    document.getElementById("pRelationType").innerText=(v.relation_type||"NA").toLowerCase();
-    document.getElementById("pAge").innerText=v.age||"NA";
-    document.getElementById("pGender").innerText=v.gender||"NA";
+    document.getElementById("pName").innerText=v.voter_full_name;
+    document.getElementById("pEpic").innerText=v.epic_no;
+    document.getElementById("pAc").innerText=parts[0];
+    document.getElementById("pPart").innerText=parts[1];
+    document.getElementById("pAddress").innerText=v.house_number||"NA";
+    document.getElementById("pVoteAddress").innerText=votingAddress;
+    document.getElementById("pRelation").innerText=v.relation_name||"NA";
+    document.getElementById("pRelationType").innerText=v.relation_type||"NA";
+    document.getElementById("pAge").innerText=v.age||"NA";
+    document.getElementById("pGender").innerText=v.gender||"NA";
 
-    document.getElementById("senderNote").value="कोई संदेश नहीं (No message)";
-    document.getElementById("voterImage").style.display="none";
+    document.getElementById("senderNote").value="No message";
 
-    document.getElementById("popup").style.display="flex";
+    document.getElementById("voterImage").style.display = v.image? "block" : "none";
+    if(v.image) document.getElementById("voterImage").src=v.image;
+
+    document.getElementById("popup").style.display="flex";
 }
 
-// Highlight
-function highlightItem(){
-    if(activeListItem) activeListItem.classList.toggle("highlight");
-    document.getElementById("cardBox").classList.toggle("highlight");
+// --- Highlight multiple items ---
+function highlightItem(btn){
+    const card = btn.closest(".card");
+    card.classList.toggle("highlight");
 }
 
-// Close popup
+// --- Close Popup ---
 function closePopup(){ document.getElementById("popup").style.display="none"; }
 
-// Print
+// --- Print ---
 function printDetails(){ window.print(); }
 
-// WhatsApp
+// --- WhatsApp ---
 function sendWhatsApp(){
-    if(!selected) return;
-    const [ac, part, serial] = (selected.sl_no_in_part||"").split('/');
-    const votingAddress = generalInfo.list_part_name;
-    const senderMessage = document.getElementById("senderNote").value;
+    const card = document.getElementById("cardBox");
+    const name = document.getElementById("pName").innerText;
+    const epic = document.getElementById("pEpic").innerText;
+    const ac = document.getElementById("pAc").innerText;
+    const part = document.getElementById("pPart").innerText;
+    const house = document.getElementById("pAddress").innerText;
+    const booth = document.getElementById("pVoteAddress").innerText;
+    const relation = document.getElementById("pRelation").innerText;
+    const relationType = document.getElementById("pRelationType").innerText;
+    const age = document.getElementById("pAge").innerText;
+    const gender = document.getElementById("pGender").innerText;
+    const message = document.getElementById("senderNote").value;
 
-    const msg=`👤 Name: ${(selected.voter_full_name||"").toLowerCase()}
-🆔 EPIC: ${(selected.epic_no||"").toLowerCase()}
-🏠 House No: ${(selected.house_number||"NA").toLowerCase()}
-🏛 AC No: ${ac||"NA"}
-📍 Part No: ${part||"NA"}
-🗳 Booth: ${votingAddress}
-🔗 Relation: ${(selected.relation_name||"NA").toLowerCase()} (${(selected.relation_type||"NA").toLowerCase()})
-📝 Message: ${senderMessage.toLowerCase()}`;
-    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`);
+    const msg=`👤 Name: ${name}
+🆔 EPIC: ${epic}
+🏠 House No: ${house}
+🏛 AC No: ${ac}
+📍 Part No: ${part}
+🗳 Booth: ${booth}
+🔗 Relation: ${relation} (${relationType})
+📝 Message: ${message}`;
+
+    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`);
 }
 
-// Search
+// --- Search with debounce ---
+let searchTimeout = null;
 document.getElementById("search").addEventListener("input", e=>{
-    const t=e.target.value.toLowerCase();
-    const f=voters.filter(v=>{
-        const [ac, part, serial] = (v.sl_no_in_part||"").split('/');
-        return (v.voter_full_name||"").toLowerCase().includes(t) ||
-               (v.epic_no||"").toLowerCase().includes(t) ||
-               (v.relation_name||"").toLowerCase().includes(t) ||
-               (v.house_number||"").toLowerCase().includes(t) ||
-               (ac||"").includes(t) ||
-               (part||"").includes(t) ||
-               (serial||"").includes(t) ||
-               (generalInfo.list_part_name||"").toLowerCase().includes(t);
-    });
-    showList(f);
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(()=>{
+        const t=e.target.value.toLowerCase();
+        const filtered = voters.filter(v=>{
+            const parts = (v.sl_no_in_part||"NA/NA/NA").split('/');
+            return (v.voter_full_name||"").toLowerCase().includes(t) ||
+                   (v.epic_no||"").toLowerCase().includes(t) ||
+                   (v.relation_name||"").toLowerCase().includes(t) ||
+                   (v.house_number||"NA").toLowerCase().includes(t) ||
+                   parts.some(p => p.toLowerCase().includes(t));
+        });
+        showList(filtered);
+    }, 200); // 200ms debounce
 });
 
-// Language switch
-function applyLanguage(lang){
-    document.querySelectorAll(".label").forEach(el=>{
-        const attr = (lang==="mr")? el.dataset.mr : el.dataset.en;
-        if(attr!==undefined){
-            if(el.tagName==="INPUT" || el.tagName==="TEXTAREA") el.placeholder=attr;
-            else el.innerText=attr;
-        }
-    });
-}
-document.getElementById("lang").addEventListener("change", function(){ applyLanguage(this.value); });
-applyLanguage("mr"); // default Marathi
-
-// Initial display
+// --- Initial display ---
 showList(voters);
 </script>
 </body>
