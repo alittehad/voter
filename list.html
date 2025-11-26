@@ -9,23 +9,6 @@
 body { font-family: Arial; margin:0; padding:10px; background:#f3f3f3; }
 h2 { text-align:center; margin-bottom:15px; }
 
-.translate-box {
-    display:flex;
-    gap:10px;
-    margin-bottom:15px;
-}
-.translate-btn {
-    flex:1;
-    padding:10px;
-    background:#007bff;
-    color:white;
-    border:none;
-    border-radius:8px;
-    cursor:pointer;
-    font-size:16px;
-}
-.translate-btn:active { transform:scale(0.97); }
-
 input {
     width:100%; padding:10px; margin-bottom:12px;
     border-radius:8px; border:2px solid #777; font-size:16px;
@@ -66,7 +49,6 @@ input {
 .close-btn{ background:red;box-shadow:0 4px 0 #7a0000; }
 .color-btn{ background:#ffa600; box-shadow:0 4px 0 #b36b00; }
 
-/* PRINT */
 @media print{
     body *{ visibility:hidden; }
     #popup, #popup *{ visibility:visible; }
@@ -78,12 +60,21 @@ input {
 
 <h2>🗳 Voter List Preview</h2>
 
-<!-- 🌐 FULL PAGE TRANSLATE BUTTONS -->
-<div class="translate-box">
-    <button class="translate-btn" onclick="translatePage('mr','en')">Marathi → English</button>
-    <button class="translate-btn" onclick="translatePage('en','mr')">English → Marathi</button>
+<!-- 🌐 TRANSLATION DROPDOWN MENU -->
+<div style="text-align:center; margin-bottom:15px;">
+    <select id="translateMenu" style="
+        padding:10px; 
+        font-size:16px; 
+        border-radius:8px; 
+        border:2px solid #007bff;
+        width:90%;
+        max-width:350px;">
+        
+        <option value="" selected>🌐 भाषा चुनें / Select Language</option>
+        <option value="mr-en">Marathi → English</option>
+        <option value="en-mr">English → Marathi</option>
+    </select>
 </div>
-
 
 <input id="search" placeholder="Search Name, EPIC, AC No, Part No, Address, Booth, Message...">
 <div id="list"></div>
@@ -109,7 +100,6 @@ input {
         <button class="btn close-btn" onclick="closePopup()">❌ Close</button>
     </div>
 </div>
-
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase.js"></script>
 
@@ -143,8 +133,8 @@ function showList(data){
             `${v.Name} ${v.EPIC} ${v.AcNo} ${v.PartNo} ${v.Address} ${v.VotingAddress}`
         );
 
-        div.innerHTML = `<b class="t">${v.Name}</b><br>🆔 <span class="t">${v.EPIC}</span> | 
-        🏛 AC:<span class="t">${v.AcNo}</span> | 📍 Part:<span class="t">${v.PartNo}</span>`;
+        div.innerHTML = `<b>${v.Name}</b><br>🆔 ${v.EPIC} | 
+        🏛 AC:${v.AcNo} | 📍 Part:${v.PartNo}`;
 
         div.onclick = () => {
             activeListItem = div; 
@@ -194,27 +184,55 @@ function sendWhatsApp(){
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`);
 }
 
+// 🔥 SUPER-FAST FULL PAGE TRANSLATION
+async function translatePage(from, to) {
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
 
-// FULL PAGE TRANSLATION
-async function translatePage(from, to){
-    const elements = document.querySelectorAll(".t, b.t");
+    let nodes = [];
+    let texts = [];
 
-    for (let el of elements) {
-        let text = el.innerText.trim();
-        if (!text) continue;
+    while (walker.nextNode()) {
+        let n = walker.currentNode;
+        let t = n.textContent.trim();
 
-        let url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${from}|${to}`;
-
-        try {
-            let res = await fetch(url);
-            let data = await res.json();
-            el.innerText = data.responseData.translatedText;
-        } catch {
-            console.log("Error in translation");
+        if (t.length > 0 && !/^\s*$/.test(t)) {
+            nodes.push(n);
+            texts.push(t);
         }
+    }
+
+    if (texts.length === 0) return;
+
+    let url = "https://translate.googleapis.com/translate_a/single?client=gtx&sl="
+              + from + "&tl=" + to + "&dt=t&q=" + encodeURIComponent(texts.join(" ||| "));
+
+    try {
+        let res = await fetch(url);
+        let data = await res.json();
+
+        let translated = data[0]
+            .map(a => a[0])
+            .join("")
+            .split(" ||| ");
+
+        translated.forEach((t, i) => {
+            nodes[i].textContent = t || nodes[i].textContent;
+        });
+
+    } catch (e) {
+        console.error("Translation failed:", e);
     }
 }
 
+// ⭐ Dropdown translator trigger
+document.getElementById("translateMenu").addEventListener("change", function() {
+    let val = this.value;
+
+    if (val === "mr-en") translatePage("mr", "en");
+    else if (val === "en-mr") translatePage("en", "mr");
+
+    this.value = ""; 
+});
 
 // Search
 document.getElementById("search").addEventListener("input", e=>{
