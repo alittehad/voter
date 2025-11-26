@@ -56,7 +56,8 @@ h2 { text-align:center; margin-bottom:15px; }
 
 <h2>Voter Search</h2>
 
-<input type="text" id="searchBox" placeholder="Type 1 letter to search..." />
+<!-- Search disabled initially -->
+<input type="text" id="searchBox" placeholder="Type 1 letter to search..." disabled />
 
 <div id="results"></div>
 
@@ -103,25 +104,24 @@ const firebaseConfig = {
 };
 
 firebase.initializeApp(firebaseConfig);
-
 const db = firebase.database();
 
-/* --------- Load CSV from Google Sheet -------- */
+/* ---------------- Fetch voters from Firebase ---------------- */
 let voters = [];
 
-fetch("YOUR_SHEET_CSV_LINK_HERE")
-  .then(res => res.text())
-  .then(data => {
-    let rows = data.split("\n");
-    rows.forEach(row => {
-      let col = row.split(",");
-      voters.push({
-        epic: col[0],
-        name: col[1],
-        area: col[2]
-      });
-    });
-  });
+db.ref("voters").once("value").then(snap => {
+    let data = snap.val() || {};
+
+    voters = Object.keys(data).map(epic => ({
+        epic: epic,
+        name: data[epic].voter_full_name || "",
+        area: data[epic].house_number || "",
+    }));
+
+    // ENABLE search box after loading data
+    document.getElementById("searchBox").disabled = false;
+    document.getElementById("searchBox").placeholder = "Search voter...";
+});
 
 /* ------------------ Search ------------------ */
 document.getElementById("searchBox").addEventListener("input", function() {
@@ -166,7 +166,6 @@ function openCard(epic) {
 /* ----------------- Save Color ------------------ */
 function saveColor(color) {
   let epic = document.getElementById("vepic").innerText;
-
   db.ref("voters/" + epic + "/color").set(color);
   document.getElementById("colortag").style.background = color;
 }
@@ -204,9 +203,9 @@ Message:
 ${msg}
 `;
 
-  let win = window.open("", "", "width=400,height=600");
-  win.document.write("<pre>" + text + "</pre>");
-  win.print();
+  let w = window.open("", "", "width=400,height=600");
+  w.document.write("<pre>" + text + "</pre>");
+  w.print();
 }
 
 /* ------------------ WhatsApp Send ----------------- */
@@ -222,5 +221,6 @@ function sendWhatsApp() {
   window.open(url, "_blank");
 }
 </script>
+
 </body>
 </html>
