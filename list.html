@@ -4,53 +4,54 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Voter List</title>
+
 <style>
 body { font-family: Arial; margin:0; padding:10px; background:#f1f1f1; }
 h2 { text-align:center; margin-bottom:15px; }
 
 /* Search Box */
 #searchBox {
-  width:100%; padding:10px; border:2px solid #999; border-radius:6px;
-  font-size:18px; margin-bottom:15px;
+  width:100%; padding:10px; border:2px solid #999; border-radius:6px;
+  font-size:18px; margin-bottom:15px;
 }
 
 /* Result List */
 .result-item {
-  padding:10px; margin:5px 0; background:white;
-  border-radius:6px; border-left:5px solid #007bff;
-  cursor:pointer;
-  display:flex; justify-content:space-between; align-items:center;
+  padding:10px; margin:5px 0; background:white;
+  border-radius:6px; border-left:5px solid #007bff;
+  cursor:pointer;
+  display:flex; justify-content:space-between; align-items:center;
 }
 
 /* Card Popup */
 #card {
-  display:none; position:fixed; top:0; left:0; width:100%; height:100%;
-  background:rgba(0,0,0,0.7); justify-content:center; align-items:flex-start;
-  padding:20px; overflow-y:auto;
+  display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+  background:rgba(0,0,0,0.7); justify-content:center; align-items:flex-start;
+  padding:20px; overflow-y:auto;
 }
 .card-content{
-  background:white; padding:15px; border-radius:10px; max-width:450px; width:95%;
-  position:relative;
+  background:white; padding:15px; border-radius:10px; max-width:450px; width:95%;
+  position:relative;
 }
 
 .close-btn{
-  position:absolute; top:10px; right:10px; background:red; border:none;
-  color:white; padding:5px 10px; border-radius:5px; cursor:pointer;
+  position:absolute; top:10px; right:10px; background:red; border:none;
+  color:white; padding:5px 10px; border-radius:5px; cursor:pointer;
 }
 
 .color-btn {
-  width:30px; height:30px; border-radius:6px;
-  border:none; margin-right:8px; cursor:pointer;
+  width:30px; height:30px; border-radius:6px;
+  border:none; margin-right:8px; cursor:pointer;
 }
 
 #msg {
-  width:100%; height:80px; padding:8px;
-  border:2px solid #aaa; border-radius:6px;
+  width:100%; height:80px; padding:8px;
+  border:2px solid #aaa; border-radius:6px;
 }
 
 .btn-small {
-  padding:8px 15px; border:none; border-radius:6px;
-  margin-right:10px; cursor:pointer; color:white;
+  padding:8px 15px; border:none; border-radius:6px;
+  margin-right:10px; cursor:pointer; color:white;
 }
 .btn-save { background:#28a745; }
 .btn-del { background:#dc3545; }
@@ -58,47 +59,83 @@ h2 { text-align:center; margin-bottom:15px; }
 .btn-whatsapp { background:#25d366; }
 
 .voter-color-tag {
-  width:20px; height:20px; border-radius:4px; display:inline-block;
+  width:20px; height:20px; border-radius:4px; display:inline-block;
 }
 
-/* Added CSS for Marquee */
+/* Marquee */
 .marquee-container {
-    padding: 5px 0;
-    margin-bottom: 10px;
-    background: #007bff; /* Dark blue background for contrast */
-    border-radius: 5px;
-    overflow: hidden;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    padding: 5px 0;
+    margin-bottom: 10px;
+    background: #007bff;
+    border-radius: 5px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
 }
 .marquee-text {
-    color: #ffffff; /* White text */
-    font-size: 20px;
-    font-weight: bold;
-    text-shadow: 2px 2px 4px #000000; /* Simple 3D effect using text shadow */
-    white-space: nowrap;
+    color: #ffffff;
+    font-size: 20px;
+    font-weight: bold;
+    text-shadow: 2px 2px 4px #000000;
+    white-space: nowrap;
 }
 
-/* 🌟 CSS for Colorful Notice Box 🌟 */
+/* Notice Box */
 #noticeBox {
     padding: 10px;
     margin-bottom: 15px;
     border-radius: 8px;
-    /* Colorful Gradient Background */
-    background: linear-gradient(90deg, #ff7e5f, #feb47b); 
+    background: linear-gradient(90deg, #ff7e5f, #feb47b);
     color: white;
     font-weight: bold;
     text-align: center;
-    box-shadow: 0 4px 8px rgba(255, 126, 95, 0.4); /* Shadow matching the color */
+    box-shadow: 0 4px 8px rgba(255, 126, 95, 0.4);
     border: 1px solid #ff7e5f;
+}
+
+/* ⭐ Score Notice Bar ⭐ */
+#scoreNotice {
+    width: 100%;
+    background: linear-gradient(90deg, #ff6a00, #ee0979);
+    padding: 10px 0;
+    color: white;
+    font-size: 20px;
+    font-weight: bold;
+    text-align: center;
+    border-radius: 6px;
+    margin-bottom: 10px;
+    box-shadow: 0 4px 8px rgba(255, 50, 100, 0.4);
+    letter-spacing: 1px;
+    position: relative;
+    overflow: hidden;
+}
+#scoreNotice::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 50%;
+    height: 100%;
+    background: rgba(255,255,255,0.3);
+    transform: skewX(-20deg);
+    animation: shine 2.8s infinite;
+}
+@keyframes shine {
+    0% { left: -100%; }
+    100% { left: 120%; }
 }
 </style>
 </head>
 <body>
 
+<!-- ⭐ NEW SCORE BAR ⭐ -->
+<div id="scoreNotice">
+   ⚡ LIVE NOTICE: Data Updated Daily – Voter Records Auto-Sync Enabled ⚡
+</div>
+
 <div class="marquee-container">
-    <marquee class="marquee-text" direction="left" scrollamount="6">
-        ✨ VOTER SEARCH SYSTEM - FAST AND RELIABLE DATA ACCESS ✨
-    </marquee>
+    <marquee class="marquee-text" direction="left" scrollamount="6">
+        ✨ VOTER SEARCH SYSTEM - FAST AND RELIABLE DATA ACCESS ✨
+    </marquee>
 </div>
 
 <div id="noticeBox">
@@ -110,34 +147,33 @@ h2 { text-align:center; margin-bottom:15px; }
 <div id="results"></div>
 
 <div id="card">
-  <div class="card-content">
-    <button class="close-btn" onclick="closeCard()">X</button>
-    <h3 id="vname"></h3>
-    <p><b>EPIC:</b> <span id="vepic"></span></p>
-    <p><b>Serial/Part:</b> <span id="vserial"></span></p>
-    <p><b>Address:</b> <span id="varea"></span></p>
-    <p><b>Relation:</b> <span id="vrelation"></span></p>
-    <p><b>Age/Gender:</b> <span id="vage"></span> / <span id="vgender"></span></p>
-    <p><b>Saved Color:</b> <span class="voter-color-tag" id="colortag"></span></p>
+  <div class="card-content">
+    <button class="close-btn" onclick="closeCard()">X</button>
+    <h3 id="vname"></h3>
+    <p><b>EPIC:</b> <span id="vepic"></span></p>
+    <p><b>Serial/Part:</b> <span id="vserial"></span></p>
+    <p><b>Address:</b> <span id="varea"></span></p>
+    <p><b>Relation:</b> <span id="vrelation"></span></p>
+    <p><b>Age/Gender:</b> <span id="vage"></span> / <span id="vgender"></span></p>
+    <p><b>Saved Color:</b> <span class="voter-color-tag" id="colortag"></span></p>
 
-    <hr>
-    <p><b>Change Color:</b></p>
-    <button class="color-btn" style="background:#ff4444" onclick="saveColor('#ff4444')"></button>
-    <button class="color-btn" style="background:#44cc44" onclick="saveColor('#44cc44')"></button>
-    <button class="color-btn" style="background:#4477ff" onclick="saveColor('#4477ff')"></button>
+    <hr>
+    <p><b>Change Color:</b></p>
+    <button class="color-btn" style="background:#ff4444" onclick="saveColor('#ff4444')"></button>
+    <button class="color-btn" style="background:#44cc44" onclick="saveColor('#44cc44')"></button>
+    <button class="color-btn" style="background:#4477ff" onclick="saveColor('#4477ff')"></button>
 
-    <hr>
-    <p><b>Sender Message:</b></p>
-    <textarea id="msg"></textarea>
+    <hr>
+    <p><b>Sender Message:</b></p>
+    <textarea id="msg"></textarea>
 
+    <button class="btn-small btn-save" onclick="saveMessage()">Save</button>
+    <button class="btn-small btn-del" onclick="deleteMessage()">Delete</button>
 
-    <button class="btn-small btn-save" onclick="saveMessage()">Save</button>
-    <button class="btn-small btn-del" onclick="deleteMessage()">Delete</button>
-
-    <hr>
-    <button class="btn-small btn-print" onclick="printCard()">Print</button>
-    <button class="btn-small btn-whatsapp" onclick="sendWhatsApp()">Send</button>
-  </div>
+    <hr>
+    <button class="btn-small btn-print" onclick="printCard()">Print</button>
+    <button class="btn-small btn-whatsapp" onclick="sendWhatsApp()">Send</button>
+  </div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
@@ -146,13 +182,13 @@ h2 { text-align:center; margin-bottom:15px; }
 <script>
 // Firebase config
 const firebaseConfig = {
-  apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
-  authDomain: "voter-25c94.firebaseapp.com",
-  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
-  projectId: "voter-25c94",
-  storageBucket: "voter-25c94.appspot.com",
-  messagingSenderId: "297773534400",
-  appId: "1:297773534400:web:3722c487b8c83e9b787125"
+  apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
+  authDomain: "voter-25c94.firebaseapp.com",
+  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
+  projectId: "voter-25c94",
+  storageBucket: "voter-25c94.appspot.com",
+  messagingSenderId: "297773534400",
+  appId: "1:297773534400:web:3722c487b8c83e9b787125"
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
@@ -160,97 +196,95 @@ const db = firebase.database();
 let voters = [];
 let activeVoter = null;
 
-// Load voters from Firebase
+// Load voters
 db.ref("voters").once("value").then(snap => {
-    const data = snap.val() || {};
-    voters = Object.keys(data).map(key => ({
-        key: key,
-        epic_no: data[key].epic_no || key,
-        voter_full_name: data[key].voter_full_name || "",
-        sl_no_in_part: data[key].sl_no_in_part || "",
-        house_number: data[key].house_number || "",
-        relation_name: data[key].relation_name || "",
-        relation_type: data[key].relation_type || "",
-        age: data[key].age || "",
-        gender: data[key].gender || "",
-        color: data[key].color || "#ffffff",
-        message: data[key].message || ""
-    }));
-    renderResults();
+    const data = snap.val() || {};
+    voters = Object.keys(data).map(key => ({
+        key: key,
+        epic_no: data[key].epic_no || key,
+        voter_full_name: data[key].voter_full_name || "",
+        sl_no_in_part: data[key].sl_no_in_part || "",
+        house_number: data[key].house_number || "",
+        relation_name: data[key].relation_name || "",
+        relation_type: data[key].relation_type || "",
+        age: data[key].age || "",
+        gender: data[key].gender || "",
+        color: data[key].color || "#ffffff",
+        message: data[key].message || ""
+    }));
+    renderResults();
 });
 
-// Render search results
+// Search render
 function renderResults() {
-  const q = document.getElementById("searchBox").value.toLowerCase();
-  let html = "";
-  if (q.length >= 1) {
-    voters.forEach(v => {
-      if (v.voter_full_name.toLowerCase().includes(q) || v.epic_no.toLowerCase().includes(q)) {
-        html += `<div class="result-item" onclick="openCard('${v.key}')">
-                   <span><b>${v.voter_full_name}</b> (${v.epic_no})</span>
-                   <span class="voter-color-tag" style="background:${v.color}"></span>
-                 </div>`;
-      }
-    });
-  }
-  document.getElementById("results").innerHTML = html;
+  const q = document.getElementById("searchBox").value.toLowerCase();
+  let html = "";
+  if (q.length >= 1) {
+    voters.forEach(v => {
+      if (v.voter_full_name.toLowerCase().includes(q) || v.epic_no.toLowerCase().includes(q)) {
+        html += `<div class="result-item" onclick="openCard('${v.key}')">
+                   <span><b>${v.voter_full_name}</b> (${v.epic_no})</span>
+                   <span class="voter-color-tag" style="background:${v.color}"></span>
+                 </div>`;
+      }
+    });
+  }
+  document.getElementById("results").innerHTML = html;
 }
-
-// Search input
 document.getElementById("searchBox").addEventListener("input", renderResults);
 
-// Open card popup
+// Open card
 function openCard(key){
-    activeVoter = voters.find(v=>v.key===key);
-    if(!activeVoter) return;
+    activeVoter = voters.find(v=>v.key===key);
+    if(!activeVoter) return;
 
-    document.getElementById("vname").innerText = activeVoter.voter_full_name;
-    document.getElementById("vepic").innerText = activeVoter.epic_no;
-    document.getElementById("vserial").innerText = activeVoter.sl_no_in_part;
-    document.getElementById("varea").innerText = activeVoter.house_number;
-    document.getElementById("vrelation").innerText = `${activeVoter.relation_name} (${activeVoter.relation_type})`;
-    document.getElementById("vage").innerText = activeVoter.age;
-    document.getElementById("vgender").innerText = activeVoter.gender;
+    document.getElementById("vname").innerText = activeVoter.voter_full_name;
+    document.getElementById("vepic").innerText = activeVoter.epic_no;
+    document.getElementById("vserial").innerText = activeVoter.sl_no_in_part;
+    document.getElementById("varea").innerText = activeVoter.house_number;
+    document.getElementById("vrelation").innerText = `${activeVoter.relation_name} (${activeVoter.relation_type})`;
+    document.getElementById("vage").innerText = activeVoter.age;
+    document.getElementById("vgender").innerText = activeVoter.gender;
 
-    document.getElementById("colortag").style.background = activeVoter.color;
-    document.getElementById("msg").value = activeVoter.message;
+    document.getElementById("colortag").style.background = activeVoter.color;
+    document.getElementById("msg").value = activeVoter.message;
 
-    document.getElementById("card").style.display = "flex";
+    document.getElementById("card").style.display = "flex";
 }
 
 // Close card
 function closeCard(){
-    document.getElementById("card").style.display = "none";
+    document.getElementById("card").style.display = "none";
 }
 
 // Save color
 function saveColor(c){
-    if(!activeVoter) return;
-    activeVoter.color = c;
-    db.ref("voters/"+activeVoter.key+"/color").set(c);
-    document.getElementById("colortag").style.background = c;
-    renderResults(); // update color in list
+    if(!activeVoter) return;
+    activeVoter.color = c;
+    db.ref("voters/"+activeVoter.key+"/color").set(c);
+    document.getElementById("colortag").style.background = c;
+    renderResults();
 }
 
 // Save message
 function saveMessage(){
-    if(!activeVoter) return;
-    activeVoter.message = document.getElementById("msg").value;
-    db.ref("voters/"+activeVoter.key+"/message").set(activeVoter.message);
-    alert("Message saved!");
+    if(!activeVoter) return;
+    activeVoter.message = document.getElementById("msg").value;
+    db.ref("voters/"+activeVoter.key+"/message").set(activeVoter.message);
+    alert("Message saved!");
 }
 
 // Delete message
 function deleteMessage(){
-    if(!activeVoter) return;
-    db.ref("voters/"+activeVoter.key+"/message").remove();
-    document.getElementById("msg").value = "";
+    if(!activeVoter) return;
+    db.ref("voters/"+activeVoter.key+"/message").remove();
+    document.getElementById("msg").value = "";
 }
 
 // Print
 function printCard(){
-    if(!activeVoter) return;
-    let text = `
+    if(!activeVoter) return;
+    let text = `
 Name: ${activeVoter.voter_full_name}
 EPIC: ${activeVoter.epic_no}
 Serial/Part: ${activeVoter.sl_no_in_part}
@@ -261,18 +295,19 @@ Age/Gender: ${activeVoter.age} / ${activeVoter.gender}
 Message:
 ${activeVoter.message}
 `;
-    let w = window.open("", "", "width=400,height=600");
-    w.document.write("<pre>"+text+"</pre>");
-    w.print();
+    let w = window.open("", "", "width=400,height=600");
+    w.document.write("<pre>"+text+"</pre>");
+    w.print();
 }
 
-// WhatsApp send
+// WhatsApp
 function sendWhatsApp(){
-    if(!activeVoter) return;
-    let text = `*Voter Details*\nName: ${activeVoter.voter_full_name}\nEPIC: ${activeVoter.epic_no}\nSerial/Part: ${activeVoter.sl_no_in_part}\nAddress: ${activeVoter.house_number}\nRelation: ${activeVoter.relation_name} (${activeVoter.relation_type})\nAge/Gender: ${activeVoter.age} / ${activeVoter.gender}\n\nMessage:\n${activeVoter.message}`;
-    let url = "https://wa.me/?text=" + encodeURIComponent(text);
-    window.open(url, "_blank");
+    if(!activeVoter) return;
+    let text = `*Voter Details*\nName: ${activeVoter.voter_full_name}\nEPIC: ${activeVoter.epic_no}\nSerial/Part: ${activeVoter.sl_no_in_part}\nAddress: ${activeVoter.house_number}\nRelation: ${activeVoter.relation_name} (${activeVoter.relation_type})\nAge/Gender: ${activeVoter.age} / ${activeVoter.gender}\n\nMessage:\n${activeVoter.message}`;
+    let url = "https://wa.me/?text=" + encodeURIComponent(text);
+    window.open(url, "_blank");
 }
 </script>
+
 </body>
 </html>
