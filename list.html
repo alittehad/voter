@@ -60,15 +60,37 @@ h2 { text-align:center; margin-bottom:15px; }
 .voter-color-tag {
   width:20px; height:20px; border-radius:4px; display:inline-block;
 }
+
+/* Added CSS for Marquee */
+.marquee-container {
+    padding: 5px 0;
+    margin-bottom: 10px;
+    background: #007bff; /* Dark blue background for contrast */
+    border-radius: 5px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+}
+.marquee-text {
+    color: #ffffff; /* White text */
+    font-size: 20px;
+    font-weight: bold;
+    text-shadow: 2px 2px 4px #000000; /* Simple 3D effect using text shadow */
+    white-space: nowrap;
+}
 </style>
 </head>
 <body>
+
+<div class="marquee-container">
+    <marquee class="marquee-text" direction="left" scrollamount="6">
+        ✨ VOTER SEARCH SYSTEM - FAST AND RELIABLE DATA ACCESS ✨
+    </marquee>
+</div>
 
 <h2>Voter Search</h2>
 <input type="text" id="searchBox" placeholder="Type 1 letter to search..." />
 <div id="results"></div>
 
-<!-- Card Popup -->
 <div id="card">
   <div class="card-content">
     <button class="close-btn" onclick="closeCard()">X</button>
@@ -88,7 +110,9 @@ h2 { text-align:center; margin-bottom:15px; }
 
     <hr>
     <p><b>Sender Message:</b></p>
-    <textarea id="msg"></textarea><br><br>
+    <textarea id="msg"></textarea>
+
+
     <button class="btn-small btn-save" onclick="saveMessage()">Save</button>
     <button class="btn-small btn-del" onclick="deleteMessage()">Delete</button>
 
@@ -98,7 +122,6 @@ h2 { text-align:center; margin-bottom:15px; }
   </div>
 </div>
 
-<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
