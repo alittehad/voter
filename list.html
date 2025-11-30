@@ -201,18 +201,24 @@ db.ref("voters").once("value").then(snap => {
     const data = snap.val() || {};
     voters = Object.keys(data).map(key => ({
      voters = Object.keys(data).map(key => ({
+       
+       
+       
+voters = Object.keys(data).map(key => ({
         key: key,
-        epic_no: data[key].VoterID || data[key].epic_no || key,
-        voter_full_name: data[key].VoterName || data[key].voter_full_name || "",
-        sl_no_in_part: data[key].PartNo || data[key].sl_no_in_part || "",
-        relation_name: data[key].FatherHusbandName || data[key].relation_name || "",
-        relation_type: data[key].RelationType || data[key].relation_type || "",
-        house_number: data[key].HouseNo || data[key].house_number || "",
-        age: data[key].Age || data[key].age || "",
-        gender: data[key].Gender || data[key].gender || "",
+        epic_no: data[key].EPIC_NO || key,
+        voter_full_name: data[key].VoterName || "",
+        sl_no_in_part: data[key].PartNo || "",
+        serial_no: data[key].SerialNo || "",
+        relation_name: data[key].RelationName || "",
+        relation_type: data[key].RelationType || "",
+        house_number: data[key].HouseNo || "",
+        age: data[key].Age || "",
+        gender: data[key].Gender || "",
         color: data[key].color || "#ffffff",
         message: data[key].message || ""
 }));
+
 
 
 // Search render
