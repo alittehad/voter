@@ -197,14 +197,11 @@ let voters = [];
 let activeVoter = null;
 
 // Load voters
+// Load voters
 db.ref("voters").once("value").then(snap => {
     const data = snap.val() || {};
+
     voters = Object.keys(data).map(key => ({
-     voters = Object.keys(data).map(key => ({
-       
-       
-       
-voters = Object.keys(data).map(key => ({
         key: key,
         epic_no: data[key].EPIC_NO || key,
         voter_full_name: data[key].VoterName || "",
@@ -217,7 +214,11 @@ voters = Object.keys(data).map(key => ({
         gender: data[key].Gender || "",
         color: data[key].color || "#ffffff",
         message: data[key].message || ""
-}));
+    }));
+
+    console.log("Voters Loaded:", voters.length);
+});
+
 
 
 
