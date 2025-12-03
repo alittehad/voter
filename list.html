@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Voter Search & Card</title>
+<title>Voter Search & WhatsApp Send</title>
 <style>
 body { font-family: Arial; margin:0; padding:15px; background:#f1f1f1; }
 h2 { text-align:center; margin-bottom:15px; }
@@ -62,7 +62,7 @@ h2 { text-align:center; margin-bottom:15px; }
         <div id="popupContent"></div>
         <p><b>Your Message:</b></p>
         <textarea id="senderMsg" placeholder="Type your message here..."></textarea><br>
-        <button class="btn btn-send" onclick="sendMessage()">Send</button>
+        <button class="btn btn-send" onclick="sendMessage()">Send WhatsApp</button>
         <button class="btn btn-print" onclick="printCard()">Print</button>
         <button class="btn btn-download" onclick="downloadPDF()">Download PDF</button>
     </div>
@@ -102,7 +102,8 @@ db.ref("voters").once("value").then(snapshot => {
         relation_name: data[key].RelationName || "",
         relation_type: data[key].RelationType || "",
         age: data[key].Age || "",
-        gender: data[key].Gender || ""
+        gender: data[key].Gender || "",
+        phone: data[key].Phone || "919999999999" // Placeholder number
     }));
 
     document.getElementById("searchInput").addEventListener("keyup", ()=>{
@@ -149,12 +150,27 @@ function openPopup(v){
 }
 function closePopup(){ document.getElementById("popup").style.display="none"; activeVoter=null; }
 
-// Send Message
+// Send message via WhatsApp including voter info + sender message
 function sendMessage(){
-    const msg = document.getElementById("senderMsg").value.trim();
     if(!activeVoter) return alert("No voter selected!");
+    const msg = document.getElementById("senderMsg").value.trim();
     if(!msg) return alert("Type a message first!");
-    alert(`Message to ${activeVoter.voter_full_name}:\n\n${msg}`);
+
+    const text = encodeURIComponent(
+`Voter Info:
+Name: ${activeVoter.voter_full_name}
+EPIC: ${activeVoter.epic_no}
+Part/Serial: ${activeVoter.sl_no_in_part}
+Address: ${activeVoter.address || "—"}
+Relation: ${activeVoter.relation_type} : ${activeVoter.relation_name || "NA"}
+Age/Gender: ${activeVoter.age || "—"} / ${activeVoter.gender || "—"}
+
+Message from Sender:
+${msg}`
+    );
+
+    // Open WhatsApp instantly
+    window.location.href = `https://wa.me/${activeVoter.phone}?text=${text}`;
 }
 
 // Print only card content
