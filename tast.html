@@ -104,9 +104,7 @@ db.ref("voters").once("value").then(snapshot => {
         age: data[key].Age || "",
         gender: data[key].Gender || ""
     }));
-    console.log("Voters Loaded:", voters.length);
 
-    // 🔹 Attach search event only after voters loaded
     document.getElementById("searchInput").addEventListener("keyup", ()=>{
         const q = document.getElementById("searchInput").value.toLowerCase().trim();
         if(!q){ document.getElementById("voterList").innerHTML=""; return; }
@@ -141,10 +139,10 @@ function openPopup(v){
     document.getElementById("popupContent").innerHTML = `
         <h3>${v.voter_full_name}</h3>
         <b>EPIC:</b> ${v.epic_no}<br>
-        <b>Part/Serial:</b> ${v.sl_no_in_part}<br><br>
-        <b>Address:</b><br>${v.address || "—"}<br><br>
-        <b>Relation:</b> ${v.relation_type} : ${v.relation_name}<br><br>
-        <b>Age/Gender:</b> ${v.age} / ${v.gender}<br>
+        <b>Part/Serial:</b> ${v.sl_no_in_part}<br>
+        <b>Address:</b><br>${v.address || "—"}<br>
+        <b>Relation:</b> ${v.relation_type} : ${v.relation_name || "NA"}<br>
+        <b>Age/Gender:</b> ${v.age || "—"} / ${v.gender || "—"}<br>
     `;
     document.getElementById("senderMsg").value = "";
     document.getElementById("popup").style.display = "flex";
@@ -159,20 +157,20 @@ function sendMessage(){
     alert(`Message to ${activeVoter.voter_full_name}:\n\n${msg}`);
 }
 
-// Print
+// Print only card content
 function printCard(){
     if(!activeVoter) return;
-    const content = document.getElementById("popupBoxContent").innerHTML;
+    const content = document.getElementById("popupContent").innerHTML;
     const win = window.open("", "Print", "height=600,width=400");
-    win.document.write(content);
+    win.document.write(`<html><head><title>Voter Card</title></head><body>${content}</body></html>`);
     win.document.close();
     win.print();
 }
 
-// Download PDF
+// Download PDF only card content
 function downloadPDF(){
     if(!activeVoter) return;
-    const element = document.getElementById("popupBoxContent");
+    const element = document.getElementById("popupContent");
     html2pdf().set({
         margin:0.2,
         filename:`${activeVoter.voter_full_name}_VoterCard.pdf`,
@@ -182,6 +180,5 @@ function downloadPDF(){
     }).from(element).save();
 }
 </script>
-
 </body>
 </html>
