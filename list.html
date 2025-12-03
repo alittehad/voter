@@ -102,8 +102,7 @@ db.ref("voters").once("value").then(snapshot => {
         relation_name: data[key].RelationName || "",
         relation_type: data[key].RelationType || "",
         age: data[key].Age || "",
-        gender: data[key].Gender || "",
-        phone: data[key].Phone || "919999999999" // Placeholder number
+        gender: data[key].Gender || ""
     }));
 
     document.getElementById("searchInput").addEventListener("keyup", ()=>{
@@ -150,14 +149,15 @@ function openPopup(v){
 }
 function closePopup(){ document.getElementById("popup").style.display="none"; activeVoter=null; }
 
-// Send message via WhatsApp including voter info + sender message
+// Send message via WhatsApp WITHOUT phone number
 function sendMessage(){
     if(!activeVoter) return alert("No voter selected!");
     const msg = document.getElementById("senderMsg").value.trim();
     if(!msg) return alert("Type a message first!");
 
     const text = encodeURIComponent(
-`Voter Info:
+`VOTER CARD DETAILS
+--------------------------
 Name: ${activeVoter.voter_full_name}
 EPIC: ${activeVoter.epic_no}
 Part/Serial: ${activeVoter.sl_no_in_part}
@@ -165,12 +165,12 @@ Address: ${activeVoter.address || "—"}
 Relation: ${activeVoter.relation_type} : ${activeVoter.relation_name || "NA"}
 Age/Gender: ${activeVoter.age || "—"} / ${activeVoter.gender || "—"}
 
-Message from Sender:
+Your Message:
 ${msg}`
     );
 
-    // Open WhatsApp instantly
-    window.location.href = `https://wa.me/${activeVoter.phone}?text=${text}`;
+    // Open WhatsApp without number
+    window.location.href = `https://wa.me/?text=${text}`;
 }
 
 // Print only card content
