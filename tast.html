@@ -67,70 +67,75 @@ h2 { text-align:center; margin-bottom:15px; }
     </div>
 </div>
 
-<!-- html2pdf.js library for download PDF -->
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <script>
-/* ------------ FIREBASE DATA LOAD ------------- */
-const firebaseURL = "https://voter-25c94-default-rtdb.firebaseio.com/voters.json";
+// Firebase Config
+const firebaseConfig = {
+  apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
+  authDomain: "voter-25c94.firebaseapp.com",
+  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
+  projectId: "voter-25c94",
+  storageBucket: "voter-25c94.appspot.com",
+  messagingSenderId: "297773534400",
+  appId: "1:297773534400:web:3722c487b8c83e9b787125"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
 let voters = [];
 let activeVoter = null;
 
-fetch(firebaseURL)
-.then(res => res.json())
-.then(data => {
-    if(!data) return;
+// Load voters from Firebase
+db.ref("voters").once("value").then(snapshot => {
+    const data = snapshot.val() || {};
     voters = Object.keys(data).map(key => ({
         key: key,
         epic_no: data[key].EPIC_NO || key,
         voter_full_name: data[key].VoterName || "",
         sl_no_in_part: data[key].PartNo || "",
         serial_no: data[key].SerialNo || "",
-        address: (data[key].HouseNo === "NA" ? "" : data[key].HouseNo) || data[key].Address || "",
+        address: (data[key].HouseNo && data[key].HouseNo!=="NA") ? data[key].HouseNo : (data[key].Address || ""),
         relation_name: data[key].RelationName || "",
         relation_type: data[key].RelationType || "",
         age: data[key].Age || "",
         gender: data[key].Gender || ""
     }));
+    console.log("Voters Loaded:", voters.length);
 });
 
-/* ------------ DISPLAY LIST ------------- */
-function displayList(list) {
+// Display List
+function displayList(list){
     const box = document.getElementById("voterList");
     box.innerHTML = "";
-
     list.forEach(v => {
         const div = document.createElement("div");
         div.className = "voter-card";
-        div.innerHTML = `
-            <b>${v.voter_full_name}</b> - ${v.epic_no} <br>
-            ${v.address || "—"} <br>
-            ${v.age} / ${v.gender}
-        `;
-        div.onclick = () => openPopup(v);
+        div.innerHTML = `<b>${v.voter_full_name}</b> - ${v.epic_no}<br>${v.address || "—"}<br>${v.age} / ${v.gender}`;
+        div.onclick = ()=>openPopup(v);
         box.appendChild(div);
     });
 }
 
-/* ------------ SEARCH ------------- */
-document.getElementById("searchInput").addEventListener("keyup", () => {
-    const q = document.getElementById("searchInput").value.toLowerCase();
-    if(q.length < 1) return document.getElementById("voterList").innerHTML = "";
+// Search
+document.getElementById("searchInput").addEventListener("keyup", ()=>{
+    const q = document.getElementById("searchInput").value.toLowerCase().trim();
+    if(!q){ document.getElementById("voterList").innerHTML=""; return; }
 
-    const filtered = voters.filter(v =>
-        (v.voter_full_name || "").toLowerCase().includes(q) ||
-        (v.epic_no || "").toLowerCase().includes(q) ||
-        (v.address || "").toLowerCase().includes(q) ||
-        (v.age || "").toLowerCase().includes(q) ||
-        (v.gender || "").toLowerCase().includes(q)
+    const filtered = voters.filter(v=>
+        (v.voter_full_name||"").toLowerCase().includes(q) ||
+        (v.epic_no||"").toLowerCase().includes(q) ||
+        (v.address||"").toLowerCase().includes(q) ||
+        (v.age||"").toLowerCase().includes(q) ||
+        (v.gender||"").toLowerCase().includes(q)
     );
-
     displayList(filtered);
 });
 
-/* ------------ POPUP ------------- */
-function openPopup(v) {
+// Popup Card
+function openPopup(v){
     activeVoter = v;
     document.getElementById("popupContent").innerHTML = `
         <h3>${v.voter_full_name}</h3>
@@ -143,24 +148,18 @@ function openPopup(v) {
     document.getElementById("senderMsg").value = "";
     document.getElementById("popup").style.display = "flex";
 }
+function closePopup(){ document.getElementById("popup").style.display="none"; activeVoter=null; }
 
-function closePopup() {
-    document.getElementById("popup").style.display = "none";
-    activeVoter = null;
-}
-
-/* ------------ SEND MESSAGE ------------- */
-function sendMessage() {
+// Send Message
+function sendMessage(){
     const msg = document.getElementById("senderMsg").value.trim();
     if(!activeVoter) return alert("No voter selected!");
     if(!msg) return alert("Type a message first!");
-
     alert(`Message to ${activeVoter.voter_full_name}:\n\n${msg}`);
-    // यहाँ Firebase / WhatsApp integration add कर सकते हैं
 }
 
-/* ------------ PRINT CARD ------------- */
-function printCard() {
+// Print
+function printCard(){
     if(!activeVoter) return;
     const content = document.getElementById("popupBoxContent").innerHTML;
     const win = window.open("", "Print", "height=600,width=400");
@@ -169,20 +168,12 @@ function printCard() {
     win.print();
 }
 
-/* ------------ DOWNLOAD PDF ------------- */
-function downloadPDF() {
+// Download PDF
+function downloadPDF(){
     if(!activeVoter) return;
     const element = document.getElementById("popupBoxContent");
-    const opt = {
-        margin:       0.2,
-        filename:     `${activeVoter.voter_full_name}_VoterCard.pdf`,
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2 },
-        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
-    };
-    html2pdf().set(opt).from(element).save();
+    html2pdf().set({ margin:0.2, filename:`${activeVoter.voter_full_name}_VoterCard.pdf`, image:{type:'jpeg',quality:0.98}, html2canvas:{scale:2}, jsPDF:{unit:'in',format:'letter',orientation:'portrait'} }).from(element).save();
 }
 </script>
-
 </body>
 </html>
