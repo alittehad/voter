@@ -6,230 +6,140 @@
 <title>Voter List</title>
 
 <style>
-body { font-family: Arial; margin:0; padding:10px; background:#f1f1f1; }
-h2 { text-align:center; margin-bottom:15px; }
+    body { font-family: Arial; margin:0; padding:15px; background:#f1f1f1; }
 
-/* Search Box */
-#searchBox {
-  width:100%; padding:10px; border:2px solid #999; border-radius:6px;
-  font-size:18px; margin-bottom:15px;
-}
+    .search-box {
+        width:100%; padding:12px; font-size:18px;
+        border:2px solid #444; border-radius:6px;
+    }
 
-/* Result List */
-.result-item {
-  padding:10px; margin:5px 0; background:white;
-  border-radius:6px; border-left:5px solid #007bff;
-  cursor:pointer;
-  display:flex; justify-content:space-between; align-items:center;
-}
+    .voter-card {
+        background:white; padding:15px; margin-top:10px;
+        border-radius:8px; box-shadow:0 0 4px #aaa;
+        cursor:pointer;
+    }
 
-/* Card Popup */
-#card {
-  display:none; position:fixed; top:0; left:0; width:100%; height:100%;
-  background:rgba(0,0,0,0.7); justify-content:center; align-items:flex-start;
-  padding:20px; overflow-y:auto;
-}
-.card-content{
-  background:white; padding:15px; border-radius:10px; max-width:450px; width:95%;
-  position:relative;
-}
+    .popup {
+        position:fixed; top:0; left:0; right:0; bottom:0;
+        background:rgba(0,0,0,0.6); display:none;
+        align-items:center; justify-content:center;
+    }
 
-.close-btn{
-  position:absolute; top:10px; right:10px; background:red; border:none;
-  color:white; padding:5px 10px; border-radius:5px; cursor:pointer;
-}
+    .popup-box {
+        background:white; padding:20px; width:90%;
+        max-width:420px; border-radius:10px;
+        box-shadow:0 0 10px black;
+    }
 
-.color-btn {
-  width:30px; height:30px; border-radius:6px;
-  border:none; margin-right:8px; cursor:pointer;
-}
-
-#msg {
-  width:100%; height:80px; padding:8px;
-  border:2px solid #aaa; border-radius:6px;
-}
-
-.btn-small {
-  padding:8px 15px; border:none; border-radius:6px;
-  margin-right:10px; cursor:pointer; color:white;
-}
-.btn-save { background:#28a745; }
-.btn-del { background:#dc3545; }
-.btn-print { background:#007bff; }
-.btn-whatsapp { background:#25d366; }
-
-/* Notice Box */
-#noticeBox {
-    padding: 10px;
-    margin-bottom: 15px;
-    border-radius: 8px;
-    background: linear-gradient(90deg, #ff7e5f, #feb47b);
-    color: white;
-    font-weight: bold;
-    text-align: center;
-    box-shadow: 0 4px 8px rgba(255, 126, 95, 0.4);
-    border: 1px solid #ff7e5f;
-}
+    .close-btn {
+        background:red; color:white; padding:8px 14px;
+        border:0; border-radius:6px; float:right;
+    }
 </style>
+
 </head>
 <body>
 
-<div id="noticeBox">
-    🔴 Important Notice: Data updated as of 27/11/2025. Please verify details.
+<h2>📋 Voter List</h2>
+
+<input type="text" id="searchInput" class="search-box" placeholder="Search by Name / EPIC / Address">
+
+<div id="voterList"></div>
+
+<!-- POPUP -->
+<div id="popup" class="popup">
+    <div class="popup-box">
+        <button class="close-btn" onclick="closePopup()">Close</button>
+        <div id="popupContent"></div>
+    </div>
 </div>
-
-<h2>Voter Search</h2>
-<input type="text" id="searchBox" placeholder="Type 1 letter to search..." />
-<div id="results"></div>
-
-<div id="card">
-  <div class="card-content">
-    <button class="close-btn" onclick="closeCard()">X</button>
-    <h3 id="vname"></h3>
-    <p><b>EPIC:</b> <span id="vepic"></span></p>
-    <p><b>Serial/Part:</b> <span id="vserial"></span></p>
-    <p><b>Address:</b> <span id="varea"></span></p>
-    <p><b>Relation:</b> <span id="vrelation"></span></p>
-    <p><b>Age/Gender:</b> <span id="vage"></span> / <span id="vgender"></span></p>
-
-    <hr>
-    <p><b>Color:</b></p>
-    <button class="color-btn" style="background:#ff4444" onclick="saveColor('#ff4444')"></button>
-    <button class="color-btn" style="background:#44cc44" onclick="saveColor('#44cc44')"></button>
-    <button class="color-btn" style="background:#4477ff" onclick="saveColor('#4477ff')"></button>
-
-    <hr>
-    <p><b>Message:</b></p>
-    <textarea id="msg"></textarea>
-
-    <button class="btn-small btn-save" onclick="saveMessage()">Save</button>
-    <button class="btn-small btn-del" onclick="deleteMessage()">Delete</button>
-
-    <hr>
-    <button class="btn-small btn-print" onclick="printCard()">Print</button>
-    <button class="btn-small btn-whatsapp" onclick="sendWhatsApp()">Send</button>
-  </div>
-</div>
-
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
 <script>
-// Firebase config
-const firebaseConfig = {
-  apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
-  authDomain: "voter-25c94.firebaseapp.com",
-  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
-  projectId: "voter-25c94",
-  storageBucket: "voter-25c94.appspot.com",
-  messagingSenderId: "297773534400",
-  appId: "1:297773534400:web:3722c487b8c83e9b787125"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
+/* ------------ FIREBASE DATA LOAD ------------- */
+const firebaseURL = "https://YOUR-PROJECT-ID.firebaseio.com/voters.json";
 
 let voters = [];
-let activeVoter = null;
 
-// ⭐ Load voters properly
-db.ref("voters").once("value").then(snap => {
-    const data = snap.val() || {};
+fetch(firebaseURL)
+    .then(res => res.json())
+    .then(data => {
+        if (!data) return;
 
-    voters = Object.keys(data).map(key => {
-        let house = data[key].HouseNo || data[key].Address || "";
-
-        // Remove useless NA
-        if (house === "NA" || house === "N/A" || house === "-") house = "";
-
-        return {
+        voters = Object.keys(data).map(key => ({
             key: key,
             epic_no: data[key].EPIC_NO || key,
             voter_full_name: data[key].VoterName || "",
             sl_no_in_part: data[key].PartNo || "",
             serial_no: data[key].SerialNo || "",
-            house_number: house,
+
+            // ⭐ Correct Address Handling
+            address:
+                (data[key].HouseNo === "NA" ? "" : data[key].HouseNo) ||
+                data[key].Address ||
+                "",
+
             relation_name: data[key].RelationName || "",
             relation_type: data[key].RelationType || "",
             age: data[key].Age || "",
             gender: data[key].Gender || ""
-        };
+        }));
+
+        displayList(voters);
     });
-});
 
-// SEARCH Function
-document.getElementById("searchBox").addEventListener("input", function() {
-    let text = this.value.toLowerCase();
-    let resultsDiv = document.getElementById("results");
-    resultsDiv.innerHTML = "";
 
-    if (text.length === 0) return;
+/* ------------ DISPLAY LIST ------------- */
+function displayList(list) {
+    const box = document.getElementById("voterList");
+    box.innerHTML = "";
 
-    let filtered = voters.filter(v =>
-        v.voter_full_name.toLowerCase().includes(text) ||
-        v.epic_no.toLowerCase().includes(text)
+    list.forEach(v => {
+        const div = document.createElement("div");
+        div.className = "voter-card";
+        div.innerHTML = `
+            <b>${v.voter_full_name}</b><br>
+            EPIC: ${v.epic_no}<br>
+            Part/Serial: ${v.sl_no_in_part}<br>
+            Gender: ${v.gender}
+        `;
+        div.onclick = () => openPopup(v);
+        box.appendChild(div);
+    });
+}
+
+/* ------------ SEARCH ------------- */
+document.getElementById("searchInput").addEventListener("keyup", () => {
+    const q = document.getElementById("searchInput").value.toLowerCase();
+
+    const filtered = voters.filter(v =>
+        v.voter_full_name.toLowerCase().includes(q) ||
+        v.epic_no.toLowerCase().includes(q) ||
+        v.address.toLowerCase().includes(q)
     );
 
-    filtered.forEach(v => {
-        let div = document.createElement("div");
-        div.className = "result-item";
-        div.innerHTML = `
-            <span>${v.voter_full_name}</span>
-            <small>${v.epic_no}</small>
-        `;
-        div.onclick = () => openCard(v);
-        resultsDiv.appendChild(div);
-    });
+    displayList(filtered);
 });
 
-// OPEN CARD
-function openCard(v) {
-    activeVoter = v;
-    document.getElementById("vname").innerText = v.voter_full_name;
-    document.getElementById("vepic").innerText = v.epic_no;
-    document.getElementById("vserial").innerText = v.sl_no_in_part;
-    document.getElementById("varea").innerText = v.house_number;
-    document.getElementById("vrelation").innerText = v.relation_type + " : " + v.relation_name;
-    document.getElementById("vage").innerText = v.age;
-    document.getElementById("vgender").innerText = v.gender;
+/* ------------ POPUP ------------- */
+function openPopup(v) {
+    document.getElementById("popupContent").innerHTML = `
+        <h3>${v.voter_full_name}</h3>
 
-    db.ref("messages/" + v.key).once("value").then(s => {
-        document.getElementById("msg").value = s.val() || "";
-    });
+        <b>EPIC:</b> ${v.epic_no}<br>
+        <b>Part/Serial:</b> ${v.sl_no_in_part}<br><br>
 
-    document.getElementById("card").style.display = "flex";
+        <b>Address:</b><br>${v.address || "—"}<br><br>
+
+        <b>Relation:</b> ${v.relation_type} : ${v.relation_name}<br><br>
+
+        <b>Age/Gender:</b> ${v.age} / ${v.gender}<br>
+    `;
+    document.getElementById("popup").style.display = "flex";
 }
 
-function closeCard() {
-    document.getElementById("card").style.display = "none";
+function closePopup() {
+    document.getElementById("popup").style.display = "none";
 }
-
-function saveColor(color) {
-    db.ref("colors/" + activeVoter.key).set(color);
-    alert("Color Saved");
-}
-
-function saveMessage() {
-    let txt = document.getElementById("msg").value;
-    db.ref("messages/" + activeVoter.key).set(txt);
-    alert("Saved");
-}
-
-function deleteMessage() {
-    db.ref("messages/" + activeVoter.key).remove();
-    document.getElementById("msg").value = "";
-    alert("Deleted");
-}
-
-function printCard() {
-    window.print();
-}
-
-function sendWhatsApp() {
-    let msg = document.getElementById("msg").value;
-    let link = "https://wa.me/?text=" + encodeURIComponent(msg);
-    window.open(link, "_blank");
-}
-
 </script>
 
 </body>
