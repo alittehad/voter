@@ -14,6 +14,12 @@ h2 { text-align:center; margin-bottom:15px; }
     border:2px solid #444; border-radius:6px; margin-bottom:10px;
 }
 
+.voter-card {
+    background:white; padding:12px; margin:5px 0;
+    border-radius:6px; cursor:pointer; border-left:4px solid #007bff;
+    box-shadow:0 0 3px #aaa;
+}
+
 .popup {
     position:fixed; top:0; left:0; right:0; bottom:0;
     background:rgba(0,0,0,0.6); display:none;
@@ -33,9 +39,10 @@ h2 { text-align:center; margin-bottom:15px; }
     cursor:pointer;
 }
 
-.btn { padding:8px 15px; border:none; border-radius:6px; cursor:pointer; margin-right:10px; color:white; }
+.btn { padding:8px 15px; border:none; border-radius:6px; cursor:pointer; margin-right:10px; color:white; margin-top:8px; }
 .btn-print { background:#007bff; }
 .btn-send { background:#25d366; }
+.btn-download { background:#ff9800; }
 
 #senderMsg { width:100%; height:80px; margin-top:10px; padding:8px; border-radius:6px; border:2px solid #aaa; }
 </style>
@@ -43,19 +50,25 @@ h2 { text-align:center; margin-bottom:15px; }
 <body>
 
 <h2>🔍 Voter Search</h2>
-<input type="text" id="searchInput" class="search-box" placeholder="Search by Name / EPIC / Address">
+<input type="text" id="searchInput" class="search-box" placeholder="Search by Name / EPIC / Address / Age / Gender">
+
+<div id="voterList"></div>
 
 <!-- POPUP CARD -->
 <div id="popup" class="popup">
-    <div class="popup-box">
+    <div class="popup-box" id="popupBoxContent">
         <button class="close-btn" onclick="closePopup()">Close</button>
         <div id="popupContent"></div>
         <p><b>Your Message:</b></p>
         <textarea id="senderMsg" placeholder="Type your message here..."></textarea><br>
         <button class="btn btn-send" onclick="sendMessage()">Send</button>
         <button class="btn btn-print" onclick="printCard()">Print</button>
+        <button class="btn btn-download" onclick="downloadPDF()">Download PDF</button>
     </div>
 </div>
+
+<!-- html2pdf.js library for download PDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <script>
 /* ------------ FIREBASE DATA LOAD ------------- */
@@ -82,12 +95,30 @@ fetch(firebaseURL)
     }));
 });
 
+/* ------------ DISPLAY LIST ------------- */
+function displayList(list) {
+    const box = document.getElementById("voterList");
+    box.innerHTML = "";
+
+    list.forEach(v => {
+        const div = document.createElement("div");
+        div.className = "voter-card";
+        div.innerHTML = `
+            <b>${v.voter_full_name}</b> - ${v.epic_no} <br>
+            ${v.address || "—"} <br>
+            ${v.age} / ${v.gender}
+        `;
+        div.onclick = () => openPopup(v);
+        box.appendChild(div);
+    });
+}
+
 /* ------------ SEARCH ------------- */
 document.getElementById("searchInput").addEventListener("keyup", () => {
     const q = document.getElementById("searchInput").value.toLowerCase();
-    if(q.length < 1) return; // खाली search box पर popup न खुले
+    if(q.length < 1) return document.getElementById("voterList").innerHTML = "";
 
-    const voter = voters.find(v =>
+    const filtered = voters.filter(v =>
         (v.voter_full_name || "").toLowerCase().includes(q) ||
         (v.epic_no || "").toLowerCase().includes(q) ||
         (v.address || "").toLowerCase().includes(q) ||
@@ -95,7 +126,7 @@ document.getElementById("searchInput").addEventListener("keyup", () => {
         (v.gender || "").toLowerCase().includes(q)
     );
 
-    if(voter) openPopup(voter);
+    displayList(filtered);
 });
 
 /* ------------ POPUP ------------- */
@@ -109,7 +140,7 @@ function openPopup(v) {
         <b>Relation:</b> ${v.relation_type} : ${v.relation_name}<br><br>
         <b>Age/Gender:</b> ${v.age} / ${v.gender}<br>
     `;
-    document.getElementById("senderMsg").value = ""; // message clear
+    document.getElementById("senderMsg").value = "";
     document.getElementById("popup").style.display = "flex";
 }
 
@@ -124,28 +155,32 @@ function sendMessage() {
     if(!activeVoter) return alert("No voter selected!");
     if(!msg) return alert("Type a message first!");
 
-    // For demo: alert instead of actual sending
     alert(`Message to ${activeVoter.voter_full_name}:\n\n${msg}`);
-
-    // Firebase / WhatsApp integration can be added here
+    // यहाँ Firebase / WhatsApp integration add कर सकते हैं
 }
 
 /* ------------ PRINT CARD ------------- */
 function printCard() {
     if(!activeVoter) return;
-    const content = `
-        <h2>${activeVoter.voter_full_name}</h2>
-        <b>EPIC:</b> ${activeVoter.epic_no}<br>
-        <b>Part/Serial:</b> ${activeVoter.sl_no_in_part}<br>
-        <b>Address:</b><br>${activeVoter.address || "—"}<br>
-        <b>Relation:</b> ${activeVoter.relation_type} : ${activeVoter.relation_name}<br>
-        <b>Age/Gender:</b> ${activeVoter.age} / ${activeVoter.gender}<br><br>
-        <b>Sender Message:</b><br>${document.getElementById("senderMsg").value || "—"}
-    `;
+    const content = document.getElementById("popupBoxContent").innerHTML;
     const win = window.open("", "Print", "height=600,width=400");
     win.document.write(content);
     win.document.close();
     win.print();
+}
+
+/* ------------ DOWNLOAD PDF ------------- */
+function downloadPDF() {
+    if(!activeVoter) return;
+    const element = document.getElementById("popupBoxContent");
+    const opt = {
+        margin:       0.2,
+        filename:     `${activeVoter.voter_full_name}_VoterCard.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2 },
+        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+    };
+    html2pdf().set(opt).from(element).save();
 }
 </script>
 
