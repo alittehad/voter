@@ -51,7 +51,8 @@ h2 { text-align:center; margin-bottom:15px; }
 <body>
 
 <h2>🔍 Voter Search</h2>
-<input type="text" id="searchInput" class="search-box" placeholder="Search by Name / EPIC / Address / Age / Gender">
+<input type="text" id="searchInput" class="search-box" placeholder="Search by Name / EPIC / Part / Serial / Address / Ward / Age / Gender">
+
 <div id="voterList"></div>
 
 <!-- POPUP CARD -->
@@ -112,50 +113,51 @@ db.ref("voters").once("value").then(snapshot => {
         const q = document.getElementById("searchInput").value.toLowerCase().trim();
         if(!q){ document.getElementById("voterList").innerHTML=""; return; }
 
-        const filtered = voters.filter(v=>
-            (v.voter_full_name||"").toLowerCase().includes(q) ||
-            (v.epic_no||"").toLowerCase().includes(q) ||
-            (v.address||"").toLowerCase().includes(q) ||
-            (v.age||"").toLowerCase().includes(q) ||
-            (v.gender||"").toLowerCase().includes(q) ||
-            (v.ward||"").toLowerCase().includes(q)
+        const filtered = voters.filter(v =>
+            (v.voter_full_name || "").toLowerCase().includes(q) ||
+            (v.epic_no || "").toLowerCase().includes(q) ||
+            (v.sl_no_in_part || "").toLowerCase().includes(q) ||
+            (v.serial_no || "").toLowerCase().includes(q) ||
+            (v.address || "").toLowerCase().includes(q) ||
+            (v.ward || "").toLowerCase().includes(q) ||
+            (v.age || "").toLowerCase().includes(q) ||
+            (v.gender || "").toLowerCase().includes(q)
         );
         displayList(filtered);
     });
 });
 
+// Display List
 function displayList(list){
     const box = document.getElementById("voterList");
     box.innerHTML = "";
     list.forEach(v => {
         const div = document.createElement("div");
         div.className = "voter-card";
-        div.innerHTML = `<b>${v.voter_full_name}</b> - ${v.epic_no}<br>${v.address || "—"}<br>${v.age} / ${v.gender} / Ward: ${v.ward}`;
+        div.innerHTML = `<b>${v.voter_full_name}</b> - ${v.epic_no}<br>${v.address || "—"}<br>${v.age} / ${v.gender}<br>Ward: ${v.ward || "—"}`;
         div.onclick = ()=>openPopup(v);
         box.appendChild(div);
     });
 }
 
+// Popup Card
 function openPopup(v){
     activeVoter = v;
     document.getElementById("popupContent").innerHTML = `
         <h3>${v.voter_full_name}</h3>
         <b>EPIC:</b> ${v.epic_no}<br>
-        <b>Part/Serial:</b> ${v.sl_no_in_part}<br>
+        <b>Part/Serial:</b> ${v.sl_no_in_part || v.serial_no}<br>
         <b>Address:</b><br>${v.address || "—"}<br>
-        <b>Ward:</b> ${v.ward || "NA"}<br>
+        <b>Ward:</b> ${v.ward || "—"}<br>
         <b>Relation:</b> ${v.relation_type} : ${v.relation_name || "NA"}<br>
         <b>Age/Gender:</b> ${v.age || "—"} / ${v.gender || "—"}<br>
     `;
     document.getElementById("senderMsg").value = "";
     document.getElementById("popup").style.display = "flex";
 }
+function closePopup(){ document.getElementById("popup").style.display="none"; activeVoter=null; }
 
-function closePopup(){ 
-    document.getElementById("popup").style.display="none"; 
-    activeVoter=null; 
-}
-
+// Send message via WhatsApp WITHOUT phone number
 function sendMessage(){
     if(!activeVoter) return alert("No voter selected!");
     const msg = document.getElementById("senderMsg").value.trim();
@@ -166,9 +168,9 @@ function sendMessage(){
 --------------------------
 Name: ${activeVoter.voter_full_name}
 EPIC: ${activeVoter.epic_no}
-Part/Serial: ${activeVoter.sl_no_in_part}
+Part/Serial: ${activeVoter.sl_no_in_part || activeVoter.serial_no}
 Address: ${activeVoter.address || "—"}
-Ward: ${activeVoter.ward || "NA"}
+Ward: ${activeVoter.ward || "—"}
 Relation: ${activeVoter.relation_type} : ${activeVoter.relation_name || "NA"}
 Age/Gender: ${activeVoter.age || "—"} / ${activeVoter.gender || "—"}
 
@@ -176,9 +178,11 @@ Your Message:
 ${msg}`
     );
 
-    window.open(`https://wa.me/?text=${text}`, "_blank");
+    // Open WhatsApp without number
+    window.location.href = `https://wa.me/?text=${text}`;
 }
 
+// Print only card content
 function printCard(){
     if(!activeVoter) return;
     const content = document.getElementById("popupContent").innerHTML;
@@ -188,6 +192,7 @@ function printCard(){
     win.print();
 }
 
+// Download PDF only card content
 function downloadPDF(){
     if(!activeVoter) return;
     const element = document.getElementById("popupContent");
