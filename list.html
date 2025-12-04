@@ -1,175 +1,313 @@
-/********** CONFIG **********/
-var CSV_FILE_NAME = "voters.csv"; 
-var FIREBASE_MAIN_URL = "https://voter-25c94-default-rtdb.firebaseio.com/voters/";
-var BATCH_SIZE = 30;   
-var SLEEP_MS = 3000;   
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voter List</title>
 
-/********** MASTER FUNCTION **********/
-function RunLargeVoterUpload() {
-  var ss = SpreadsheetApp.getActive();
-  var sheet1 = ss.getSheetByName("Sheet1");
-  var sheet2 = ss.getSheetByName("Sheet2");
+<style>
+body { font-family: Arial; margin:0; padding:10px; background:#f1f1f1; }
+h2 { text-align:center; margin-bottom:15px; }
 
-  if (!sheet1 || !sheet2) {
-    Logger.log("❌ Sheet1 or Sheet2 missing!");
-    return;
-  }
+/* Search Box */
+#searchBox {
+  width:100%; padding:10px; border:2px solid #999; border-radius:6px;
+  font-size:18px; margin-bottom:15px;
+}
 
-  // 1️⃣ Load CSV → Sheet1
-  var csvData = loadCSVfromDrive(CSV_FILE_NAME);
-  var rows = Utilities.parseCsv(csvData);
+/* Result List */
+.result-item {
+  padding:10px; margin:5px 0; background:white;
+  border-radius:6px; border-left:5px solid #007bff;
+  cursor:pointer;
+  display:flex; justify-content:space-between; align-items:center;
+}
 
-  // Check and preserve Address/Ward columns
-  var header = ["SerialNo","EPIC_NO","PartNo","VoterName","RelationName","RelationType","HouseNo","Age","Gender","Address","WardNo"];
-  if(sheet1.getLastRow()===0) sheet1.getRange(1,1,1,header.length).setValues([header]);
-  var existingData = sheet1.getRange(2,1,sheet1.getLastRow()-1,sheet1.getLastColumn()).getValues() || [];
-  
-  sheet1.clear(); // clear old data
-  sheet1.getRange(1,1,1,header.length).setValues([header]);
-  sheet1.getRange(2,1,rows.length,rows[0].length).setValues(rows);
+/* Card Popup */
+#card {
+  display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+  background:rgba(0,0,0,0.7); justify-content:center; align-items:flex-start;
+  padding:20px; overflow-y:auto;
+}
+.card-content{
+  background:white; padding:15px; border-radius:10px; max-width:450px; width:95%;
+  position:relative;
+}
 
-  Logger.log("✔ CSV loaded to Sheet1: " + rows.length + " rows");
+.close-btn{
+  position:absolute; top:10px; right:10px; background:red; border:none;
+  color:white; padding:5px 10px; border-radius:5px; cursor:pointer;
+}
 
-  // 2️⃣ Load Sheet2 → PartNo range → Address + Ward mapping
-  var addrData = sheet2.getDataRange().getValues();
-  var rangeMap = []; // {start, end, AreaName, WardNo}
+.color-btn {
+  width:30px; height:30px; border-radius:6px;
+  border:none; margin-right:8px; cursor:pointer;
+}
 
-  for(var i=1;i<addrData.length;i++){
-    var startPart = String(addrData[i][0]||"").trim();
-    var endPart = String(addrData[i][1]||"").trim();
-    var area = String(addrData[i][2]||"").trim();
-    var ward = String(addrData[i][3]||"").trim();
-    if(startPart && endPart && area){
-      rangeMap.push({start:startPart, end:endPart, AreaName:area, WardNo:ward});
-    }
-  }
-  Logger.log("✔ PartNo ranges loaded: "+rangeMap.length);
+#msg {
+  width:100%; height:80px; padding:8px;
+  border:2px solid #aaa; border-radius:6px;
+}
 
-  // 3️⃣ Load existing EPIC from Firebase
-  var existingEPICs = fetchExistingEPICsBatch();
-  Logger.log("✔ Existing EPIC in Firebase: " + Object.keys(existingEPICs).length);
+.btn-small {
+  padding:8px 15px; border:none; border-radius:6px;
+  margin-right:10px; cursor:pointer; color:white;
+}
+.btn-save { background:#28a745; }
+.btn-del { background:#dc3545; }
+.btn-print { background:#007bff; }
+.btn-whatsapp { background:#25d366; }
 
-  // 4️⃣ Process Sheet1 rows + update Address/Ward + upload batch-wise
-  var batch = [];
-  var sheetData = sheet1.getDataRange().getValues();
-  var updatedSheet = [];
-  updatedSheet.push(header);
+.voter-color-tag {
+  width:20px; height:20px; border-radius:4px; display:inline-block;
+}
 
-  var sheetEPICs = {}; // Sheet1 duplicate check
+/* Marquee */
+.marquee-container {
+    padding: 5px 0;
+    margin-bottom: 10px;
+    background: #007bff;
+    border-radius: 5px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+}
+.marquee-text {
+    color: #ffffff;
+    font-size: 20px;
+    font-weight: bold;
+    text-shadow: 2px 2px 4px #000000;
+    white-space: nowrap;
+}
 
-  for(var r=1;r<sheetData.length;r++){
-    var row = sheetData[r];
-    var EPIC = extractEPIC(row[1]);
-    if(!EPIC) continue;
-    if(sheetEPICs[EPIC]) continue; // skip duplicate in sheet
-    sheetEPICs[EPIC] = true;
+/* Notice Box */
+#noticeBox {
+    padding: 10px;
+    margin-bottom: 15px;
+    border-radius: 8px;
+    background: linear-gradient(90deg, #ff7e5f, #feb47b);
+    color: white;
+    font-weight: bold;
+    text-align: center;
+    box-shadow: 0 4px 8px rgba(255, 126, 95, 0.4);
+    border: 1px solid #ff7e5f;
+}
 
-    var PartNo = extractCorrectPartNo(row);
+/* ⭐ Score Notice Bar ⭐ */
+#scoreNotice {
+    width: 100%;
+    background: linear-gradient(90deg, #ff6a00, #ee0979);
+    padding: 10px 0;
+    color: white;
+    font-size: 20px;
+    font-weight: bold;
+    text-align: center;
+    border-radius: 6px;
+    margin-bottom: 10px;
+    box-shadow: 0 4px 8px rgba(255, 50, 100, 0.4);
+    letter-spacing: 1px;
+    position: relative;
+    overflow: hidden;
+}
+#scoreNotice::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 50%;
+    height: 100%;
+    background: rgba(255,255,255,0.3);
+    transform: skewX(-20deg);
+    animation: shine 2.8s infinite;
+}
+@keyframes shine {
+    0% { left: -100%; }
+    100% { left: 120%; }
+}
+</style>
+</head>
+<body>
 
-    // find address/ward from rangeMap
-    var addr = "NA", ward="NA";
-    for(var j=0;j<rangeMap.length;j++){
-      if(isPartNoInRange(PartNo,rangeMap[j].start,rangeMap[j].end)){
-        addr = rangeMap[j].AreaName;
-        ward = rangeMap[j].WardNo || "NA";
-        break;
+<!-- ⭐ NEW SCORE BAR ⭐ -->
+<div id="scoreNotice">
+   ⚡ LIVE NOTICE: Data Updated Daily – Voter Records Auto-Sync Enabled ⚡
+</div>
+
+<div class="marquee-container">
+    <marquee class="marquee-text" direction="left" scrollamount="6">
+        ✨ VOTER SEARCH SYSTEM - FAST AND RELIABLE DATA ACCESS ✨
+    </marquee>
+</div>
+
+<div id="noticeBox">
+    🔴 Important Notice: Data updated as of 27/11/2025. Please verify details.
+</div>
+
+<h2>Voter Search</h2>
+<input type="text" id="searchBox" placeholder="Type 1 letter to search..." />
+<div id="results"></div>
+
+<div id="card">
+  <div class="card-content">
+    <button class="close-btn" onclick="closeCard()">X</button>
+    <h3 id="vname"></h3>
+    <p><b>EPIC:</b> <span id="vepic"></span></p>
+    <p><b>Serial/Part:</b> <span id="vserial"></span></p>
+    <p><b>Address:</b> <span id="varea"></span></p>
+    <p><b>Relation:</b> <span id="vrelation"></span></p>
+    <p><b>Age/Gender:</b> <span id="vage"></span> / <span id="vgender"></span></p>
+    <p><b>Saved Color:</b> <span class="voter-color-tag" id="colortag"></span></p>
+
+    <hr>
+    <p><b>Change Color:</b></p>
+    <button class="color-btn" style="background:#ff4444" onclick="saveColor('#ff4444')"></button>
+    <button class="color-btn" style="background:#44cc44" onclick="saveColor('#44cc44')"></button>
+    <button class="color-btn" style="background:#4477ff" onclick="saveColor('#4477ff')"></button>
+
+    <hr>
+    <p><b>Sender Message:</b></p>
+    <textarea id="msg"></textarea>
+
+    <button class="btn-small btn-save" onclick="saveMessage()">Save</button>
+    <button class="btn-small btn-del" onclick="deleteMessage()">Delete</button>
+
+    <hr>
+    <button class="btn-small btn-print" onclick="printCard()">Print</button>
+    <button class="btn-small btn-whatsapp" onclick="sendWhatsApp()">Send</button>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+<script>
+// Firebase config
+const firebaseConfig = {
+  apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
+  authDomain: "voter-25c94.firebaseapp.com",
+  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
+  projectId: "voter-25c94",
+  storageBucket: "voter-25c94.appspot.com",
+  messagingSenderId: "297773534400",
+  appId: "1:297773534400:web:3722c487b8c83e9b787125"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+let voters = [];
+let activeVoter = null;
+
+// Load voters
+db.ref("voters").once("value").then(snap => {
+    const data = snap.val() || {};
+    voters = Object.keys(data).map(key => ({
+        key: key,
+        epic_no: data[key].epic_no || key,
+        voter_full_name: data[key].voter_full_name || "",
+        sl_no_in_part: data[key].sl_no_in_part || "",
+        house_number: data[key].house_number || "",
+        relation_name: data[key].relation_name || "",
+        relation_type: data[key].relation_type || "",
+        age: data[key].age || "",
+        gender: data[key].gender || "",
+        color: data[key].color || "#ffffff",
+        message: data[key].message || ""
+    }));
+    renderResults();
+});
+
+// Search render
+function renderResults() {
+  const q = document.getElementById("searchBox").value.toLowerCase();
+  let html = "";
+  if (q.length >= 1) {
+    voters.forEach(v => {
+      if (v.voter_full_name.toLowerCase().includes(q) || v.epic_no.toLowerCase().includes(q)) {
+        html += `<div class="result-item" onclick="openCard('${v.key}')">
+                   <span><b>${v.voter_full_name}</b> (${v.epic_no})</span>
+                   <span class="voter-color-tag" style="background:${v.color}"></span>
+                 </div>`;
       }
-    }
-
-    // Update row for Sheet1
-    var newRow = row.slice(0,9);
-    newRow.push(addr);
-    newRow.push(ward);
-    updatedSheet.push(newRow);
-
-    // Skip if already in Firebase
-    if(existingEPICs[EPIC]) continue;
-
-    // Prepare payload
-    var payload = {
-      EPIC_NO: EPIC,
-      PartNo: PartNo,
-      VoterName: String(row[3]||""),
-      RelationName: String(row[4]||""),
-      RelationType: String(row[5]||""),
-      HouseNo: String(row[6]||""),
-      Age: String(row[7]||""),
-      Gender: String(row[8]||""),
-      Address: addr,
-      WardNo: ward
-    };
-
-    batch.push(payload);
-
-    if(batch.length>=BATCH_SIZE || r===sheetData.length-1){
-      uploadBatch(batch);
-      batch=[];
-      Utilities.sleep(SLEEP_MS);
-    }
+    });
   }
+  document.getElementById("results").innerHTML = html;
+}
+document.getElementById("searchBox").addEventListener("input", renderResults);
 
-  // Update Sheet1 with Address/Ward
-  sheet1.clear();
-  sheet1.getRange(1,1,updatedSheet.length,updatedSheet[0].length).setValues(updatedSheet);
+// Open card
+function openCard(key){
+    activeVoter = voters.find(v=>v.key===key);
+    if(!activeVoter) return;
 
-  Logger.log("✔ Completed Upload & Sheet1 updated.");
+    document.getElementById("vname").innerText = activeVoter.voter_full_name;
+    document.getElementById("vepic").innerText = activeVoter.epic_no;
+    document.getElementById("vserial").innerText = activeVoter.sl_no_in_part;
+    document.getElementById("varea").innerText = activeVoter.house_number;
+    document.getElementById("vrelation").innerText = `${activeVoter.relation_name} (${activeVoter.relation_type})`;
+    document.getElementById("vage").innerText = activeVoter.age;
+    document.getElementById("vgender").innerText = activeVoter.gender;
+
+    document.getElementById("colortag").style.background = activeVoter.color;
+    document.getElementById("msg").value = activeVoter.message;
+
+    document.getElementById("card").style.display = "flex";
 }
 
-/********** Load CSV **********/
-function loadCSVfromDrive(fileName){
-  var files = DriveApp.getFilesByName(fileName);
-  if(!files.hasNext()) throw new Error("CSV not found: "+fileName);
-  return files.next().getBlob().getDataAsString("UTF-8");
+// Close card
+function closeCard(){
+    document.getElementById("card").style.display = "none";
 }
 
-/********** Extract EPIC **********/
-function extractEPIC(text){
-  var match = String(text).match(/[A-Z]{3}\d{6,8}/);
-  return match?match[0]:"";
+// Save color
+function saveColor(c){
+    if(!activeVoter) return;
+    activeVoter.color = c;
+    db.ref("voters/"+activeVoter.key+"/color").set(c);
+    document.getElementById("colortag").style.background = c;
+    renderResults();
 }
 
-/********** Extract PartNo **********/
-function extractCorrectPartNo(row){
-  var colPart = String(row[2]||"").trim();
-  var colEPIC = String(row[1]||"").trim();
-  if(colPart.match(/^\d+\/\d+(\/\d+)?$/)) return colPart;
-  var match = colEPIC.match(/\d+\/\d+(\/\d+)?/);
-  if(match) return match[0];
-  return "NA";
+// Save message
+function saveMessage(){
+    if(!activeVoter) return;
+    activeVoter.message = document.getElementById("msg").value;
+    db.ref("voters/"+activeVoter.key+"/message").set(activeVoter.message);
+    alert("Message saved!");
 }
 
-/********** Check if PartNo in range **********/
-function isPartNoInRange(part, start, end){
-  var p = part.split("/"); var s=start.split("/"); var e=end.split("/");
-  if(p.length<2 || s.length<2 || e.length<2) return false;
-  if(p[0]!==s[0] || p[0]!==e[0]) return false; // main number must match
-  var num = parseInt(p[1],10), sNum=parseInt(s[1],10), eNum=parseInt(e[1],10);
-  return num>=sNum && num<=eNum;
+// Delete message
+function deleteMessage(){
+    if(!activeVoter) return;
+    db.ref("voters/"+activeVoter.key+"/message").remove();
+    document.getElementById("msg").value = "";
 }
 
-/********** Fetch existing EPICs **********/
-function fetchExistingEPICsBatch(){
-  var existing={};
-  try{
-    var res = UrlFetchApp.fetch(FIREBASE_MAIN_URL+".json").getContentText();
-    var data = JSON.parse(res)||{};
-    Object.keys(data).forEach(k=>existing[k.trim()]=true);
-  }catch(e){Logger.log("⚠ Error fetching Firebase: "+e);}
-  return existing;
+// Print
+function printCard(){
+    if(!activeVoter) return;
+    let text = `
+Name: ${activeVoter.voter_full_name}
+EPIC: ${activeVoter.epic_no}
+Serial/Part: ${activeVoter.sl_no_in_part}
+Address: ${activeVoter.house_number}
+Relation: ${activeVoter.relation_name} (${activeVoter.relation_type})
+Age/Gender: ${activeVoter.age} / ${activeVoter.gender}
+
+Message:
+${activeVoter.message}
+`;
+    let w = window.open("", "", "width=400,height=600");
+    w.document.write("<pre>"+text+"</pre>");
+    w.print();
 }
 
-/********** Upload batch **********/
-function uploadBatch(batch){
-  batch.forEach(function(payload){
-    var url = FIREBASE_MAIN_URL + payload.EPIC_NO + ".json";
-    try{
-      UrlFetchApp.fetch(url,{
-        method:"put",
-        contentType:"application/json",
-        payload:JSON.stringify(payload)
-      });
-    }catch(e){
-      Logger.log("❌ Error uploading "+payload.EPIC_NO+": "+e);
-    }
-  });
+// WhatsApp
+function sendWhatsApp(){
+    if(!activeVoter) return;
+    let text = `*Voter Details*\nName: ${activeVoter.voter_full_name}\nEPIC: ${activeVoter.epic_no}\nSerial/Part: ${activeVoter.sl_no_in_part}\nAddress: ${activeVoter.house_number}\nRelation: ${activeVoter.relation_name} (${activeVoter.relation_type})\nAge/Gender: ${activeVoter.age} / ${activeVoter.gender}\n\nMessage:\n${activeVoter.message}`;
+    let url = "https://wa.me/?text=" + encodeURIComponent(text);
+    window.open(url, "_blank");
 }
+</script>
+
+</body>
+</html>
