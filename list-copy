@@ -7,6 +7,41 @@
 <style>
 body { font-family: Arial; margin:0; padding:10px; background:#f1f1f1; }
 h2 { text-align:center; margin-bottom:15px; }
+
+.notice-box {
+  background:#fff3cd;
+  border:2px solid #ffcc00;
+  padding:10px;
+  border-radius:8px;
+  font-size:18px;
+  margin-bottom:12px;
+  text-align:center;
+}
+
+.scrolling-text {
+  width:100%;
+  overflow:hidden;
+  white-space:nowrap;
+  box-sizing:border-box;
+  background:#007bff;
+  color:white;
+  padding:8px;
+  border-radius:6px;
+  margin-bottom:12px;
+}
+
+.scrolling-text span {
+  display:inline-block;
+  padding-left:100%;
+  animation: scroll 12s linear infinite;
+  font-size:17px;
+}
+
+@keyframes scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-100%); }
+}
+
 #searchBox { width:100%; padding:10px; border:2px solid #999; border-radius:6px; font-size:18px; margin-bottom:15px; }
 .result-item { padding:10px; margin:5px 0; background:white; border-radius:6px; border-left:5px solid #007bff; cursor:pointer; display:flex; justify-content:space-between; align-items:center; }
 #card { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); justify-content:center; align-items:flex-start; padding:20px; overflow-y:auto; }
@@ -25,9 +60,21 @@ h2 { text-align:center; margin-bottom:15px; }
 <body>
 
 <h2>Voter Search</h2>
+
+<!-- ⭐ Notice Board (Marathi) -->
+<div class="notice-box">
+  कृपया Search Box मध्ये तुमचा EPIC क्रमांक टाइप करा.
+</div>
+
+<!-- ⭐ Scrolling Text -->
+<div class="scrolling-text">
+  <span>सूचना: EPIC नंबर टाइप करताच तुमचे नाव खाली दिसेल...</span>
+</div>
+
 <input type="text" id="searchBox" placeholder="Type 1 letter or EPIC to search..." />
 <div id="results"></div>
 
+<!-- CARD START -->
 <div id="card">
   <div class="card-content">
     <button class="close-btn" onclick="closeCard()">X</button>
@@ -79,7 +126,7 @@ const db = firebase.database();
 let voters = [];
 let activeVoter = null;
 
-// Load voters from Firebase
+// Load voters
 db.ref("voters").once("value").then(snap => {
     const data = snap.val() || {};
     voters = Object.keys(data).map(key => ({
@@ -100,7 +147,7 @@ db.ref("voters").once("value").then(snap => {
     renderResults();
 });
 
-// Search & render
+// Search
 function renderResults() {
   const q = document.getElementById("searchBox").value.toLowerCase();
   let html = "";
@@ -118,7 +165,7 @@ function renderResults() {
 }
 document.getElementById("searchBox").addEventListener("input", renderResults);
 
-// Card functions
+// Card
 function openCard(key){
     activeVoter = voters.find(v=>v.key===key);
     if(!activeVoter) return;
