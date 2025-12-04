@@ -51,7 +51,7 @@ h2 { text-align:center; margin-bottom:15px; }
 <body>
 
 <h2>🔍 Voter Search</h2>
-<input type="text" id="searchInput" class="search-box" placeholder="Search by Name / EPIC / Part / Serial / Address / Ward / Age / Gender">
+<input type="text" id="searchInput" class="search-box" placeholder="Search by Name / EPIC / Part / Ward / Address / Age / Gender">
 
 <div id="voterList"></div>
 
@@ -93,19 +93,19 @@ let activeVoter = null;
 db.ref("voters").once("value").then(snapshot => {
     const data = snapshot.val() || {};
     voters = Object.keys(data).map(key => {
-        const v = data[key];
+        const v = data[key] || {};
         return {
             key: key,
             epic_no: v.EPIC_NO || key,
             voter_full_name: v.VoterName || "",
-            sl_no_in_part: v.PartNo || "",
+            part_no: v.PartNo || "",
             serial_no: v.SerialNo || "",
             address: (v.HouseNo && v.HouseNo!=="NA") ? v.HouseNo : (v.Address || ""),
+            ward: v.WardNo || "",
             relation_name: v.RelationName || "",
             relation_type: v.RelationType || "",
             age: v.Age || "",
-            gender: v.Gender || "",
-            ward: v.WardNo || ""
+            gender: v.Gender || ""
         };
     });
 
@@ -114,14 +114,7 @@ db.ref("voters").once("value").then(snapshot => {
         if(!q){ document.getElementById("voterList").innerHTML=""; return; }
 
         const filtered = voters.filter(v =>
-            (v.voter_full_name || "").toLowerCase().includes(q) ||
-            (v.epic_no || "").toLowerCase().includes(q) ||
-            (v.sl_no_in_part || "").toLowerCase().includes(q) ||
-            (v.serial_no || "").toLowerCase().includes(q) ||
-            (v.address || "").toLowerCase().includes(q) ||
-            (v.ward || "").toLowerCase().includes(q) ||
-            (v.age || "").toLowerCase().includes(q) ||
-            (v.gender || "").toLowerCase().includes(q)
+            Object.values(v).some(val => (val||"").toString().toLowerCase().includes(q))
         );
         displayList(filtered);
     });
@@ -134,7 +127,7 @@ function displayList(list){
     list.forEach(v => {
         const div = document.createElement("div");
         div.className = "voter-card";
-        div.innerHTML = `<b>${v.voter_full_name}</b> - ${v.epic_no}<br>${v.address || "—"}<br>${v.age} / ${v.gender}<br>Ward: ${v.ward || "—"}`;
+        div.innerHTML = `<b>${v.voter_full_name}</b> - ${v.epic_no}<br>Part: ${v.part_no || "—"} / Ward: ${v.ward || "—"}<br>${v.address || "—"}<br>${v.age} / ${v.gender}`;
         div.onclick = ()=>openPopup(v);
         box.appendChild(div);
     });
@@ -146,10 +139,10 @@ function openPopup(v){
     document.getElementById("popupContent").innerHTML = `
         <h3>${v.voter_full_name}</h3>
         <b>EPIC:</b> ${v.epic_no}<br>
-        <b>Part/Serial:</b> ${v.sl_no_in_part || v.serial_no}<br>
-        <b>Address:</b><br>${v.address || "—"}<br>
+        <b>Part/Serial:</b> ${v.part_no || "—"} / ${v.serial_no || "—"}<br>
         <b>Ward:</b> ${v.ward || "—"}<br>
-        <b>Relation:</b> ${v.relation_type} : ${v.relation_name || "NA"}<br>
+        <b>Address:</b><br>${v.address || "—"}<br>
+        <b>Relation:</b> ${v.relation_type || "—"} : ${v.relation_name || "NA"}<br>
         <b>Age/Gender:</b> ${v.age || "—"} / ${v.gender || "—"}<br>
     `;
     document.getElementById("senderMsg").value = "";
@@ -168,10 +161,10 @@ function sendMessage(){
 --------------------------
 Name: ${activeVoter.voter_full_name}
 EPIC: ${activeVoter.epic_no}
-Part/Serial: ${activeVoter.sl_no_in_part || activeVoter.serial_no}
-Address: ${activeVoter.address || "—"}
+Part/Serial: ${activeVoter.part_no || "—"} / ${activeVoter.serial_no || "—"}
 Ward: ${activeVoter.ward || "—"}
-Relation: ${activeVoter.relation_type} : ${activeVoter.relation_name || "NA"}
+Address: ${activeVoter.address || "—"}
+Relation: ${activeVoter.relation_type || "—"} : ${activeVoter.relation_name || "NA"}
 Age/Gender: ${activeVoter.age || "—"} / ${activeVoter.gender || "—"}
 
 Your Message:
