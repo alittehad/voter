@@ -1,202 +1,175 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Voter Search & WhatsApp Send</title>
-<style>
-body { font-family: Arial; margin:0; padding:15px; background:#f1f1f1; }
-h2 { text-align:center; margin-bottom:15px; }
+/********** CONFIG **********/
+var CSV_FILE_NAME = "voters.csv"; 
+var FIREBASE_MAIN_URL = "https://voter-25c94-default-rtdb.firebaseio.com/voters/";
+var BATCH_SIZE = 30;   
+var SLEEP_MS = 3000;   
 
-.search-box {
-    width:100%; padding:12px; font-size:18px;
-    border:2px solid #444; border-radius:6px; margin-bottom:10px;
+/********** MASTER FUNCTION **********/
+function RunLargeVoterUpload() {
+  var ss = SpreadsheetApp.getActive();
+  var sheet1 = ss.getSheetByName("Sheet1");
+  var sheet2 = ss.getSheetByName("Sheet2");
+
+  if (!sheet1 || !sheet2) {
+    Logger.log("❌ Sheet1 or Sheet2 missing!");
+    return;
+  }
+
+  // 1️⃣ Load CSV → Sheet1
+  var csvData = loadCSVfromDrive(CSV_FILE_NAME);
+  var rows = Utilities.parseCsv(csvData);
+
+  // Check and preserve Address/Ward columns
+  var header = ["SerialNo","EPIC_NO","PartNo","VoterName","RelationName","RelationType","HouseNo","Age","Gender","Address","WardNo"];
+  if(sheet1.getLastRow()===0) sheet1.getRange(1,1,1,header.length).setValues([header]);
+  var existingData = sheet1.getRange(2,1,sheet1.getLastRow()-1,sheet1.getLastColumn()).getValues() || [];
+  
+  sheet1.clear(); // clear old data
+  sheet1.getRange(1,1,1,header.length).setValues([header]);
+  sheet1.getRange(2,1,rows.length,rows[0].length).setValues(rows);
+
+  Logger.log("✔ CSV loaded to Sheet1: " + rows.length + " rows");
+
+  // 2️⃣ Load Sheet2 → PartNo range → Address + Ward mapping
+  var addrData = sheet2.getDataRange().getValues();
+  var rangeMap = []; // {start, end, AreaName, WardNo}
+
+  for(var i=1;i<addrData.length;i++){
+    var startPart = String(addrData[i][0]||"").trim();
+    var endPart = String(addrData[i][1]||"").trim();
+    var area = String(addrData[i][2]||"").trim();
+    var ward = String(addrData[i][3]||"").trim();
+    if(startPart && endPart && area){
+      rangeMap.push({start:startPart, end:endPart, AreaName:area, WardNo:ward});
+    }
+  }
+  Logger.log("✔ PartNo ranges loaded: "+rangeMap.length);
+
+  // 3️⃣ Load existing EPIC from Firebase
+  var existingEPICs = fetchExistingEPICsBatch();
+  Logger.log("✔ Existing EPIC in Firebase: " + Object.keys(existingEPICs).length);
+
+  // 4️⃣ Process Sheet1 rows + update Address/Ward + upload batch-wise
+  var batch = [];
+  var sheetData = sheet1.getDataRange().getValues();
+  var updatedSheet = [];
+  updatedSheet.push(header);
+
+  var sheetEPICs = {}; // Sheet1 duplicate check
+
+  for(var r=1;r<sheetData.length;r++){
+    var row = sheetData[r];
+    var EPIC = extractEPIC(row[1]);
+    if(!EPIC) continue;
+    if(sheetEPICs[EPIC]) continue; // skip duplicate in sheet
+    sheetEPICs[EPIC] = true;
+
+    var PartNo = extractCorrectPartNo(row);
+
+    // find address/ward from rangeMap
+    var addr = "NA", ward="NA";
+    for(var j=0;j<rangeMap.length;j++){
+      if(isPartNoInRange(PartNo,rangeMap[j].start,rangeMap[j].end)){
+        addr = rangeMap[j].AreaName;
+        ward = rangeMap[j].WardNo || "NA";
+        break;
+      }
+    }
+
+    // Update row for Sheet1
+    var newRow = row.slice(0,9);
+    newRow.push(addr);
+    newRow.push(ward);
+    updatedSheet.push(newRow);
+
+    // Skip if already in Firebase
+    if(existingEPICs[EPIC]) continue;
+
+    // Prepare payload
+    var payload = {
+      EPIC_NO: EPIC,
+      PartNo: PartNo,
+      VoterName: String(row[3]||""),
+      RelationName: String(row[4]||""),
+      RelationType: String(row[5]||""),
+      HouseNo: String(row[6]||""),
+      Age: String(row[7]||""),
+      Gender: String(row[8]||""),
+      Address: addr,
+      WardNo: ward
+    };
+
+    batch.push(payload);
+
+    if(batch.length>=BATCH_SIZE || r===sheetData.length-1){
+      uploadBatch(batch);
+      batch=[];
+      Utilities.sleep(SLEEP_MS);
+    }
+  }
+
+  // Update Sheet1 with Address/Ward
+  sheet1.clear();
+  sheet1.getRange(1,1,updatedSheet.length,updatedSheet[0].length).setValues(updatedSheet);
+
+  Logger.log("✔ Completed Upload & Sheet1 updated.");
 }
 
-.voter-card {
-    background:white; padding:12px; margin:5px 0;
-    border-radius:6px; cursor:pointer; border-left:4px solid #007bff;
-    box-shadow:0 0 3px #aaa;
+/********** Load CSV **********/
+function loadCSVfromDrive(fileName){
+  var files = DriveApp.getFilesByName(fileName);
+  if(!files.hasNext()) throw new Error("CSV not found: "+fileName);
+  return files.next().getBlob().getDataAsString("UTF-8");
 }
 
-.popup {
-    position:fixed; top:0; left:0; right:0; bottom:0;
-    background:rgba(0,0,0,0.6); display:none;
-    align-items:center; justify-content:center;
+/********** Extract EPIC **********/
+function extractEPIC(text){
+  var match = String(text).match(/[A-Z]{3}\d{6,8}/);
+  return match?match[0]:"";
 }
 
-.popup-box {
-    background:white; padding:20px; width:90%;
-    max-width:450px; border-radius:10px;
-    box-shadow:0 0 10px black;
-    position:relative;
-    max-height:90vh;
-    overflow-y:auto;
+/********** Extract PartNo **********/
+function extractCorrectPartNo(row){
+  var colPart = String(row[2]||"").trim();
+  var colEPIC = String(row[1]||"").trim();
+  if(colPart.match(/^\d+\/\d+(\/\d+)?$/)) return colPart;
+  var match = colEPIC.match(/\d+\/\d+(\/\d+)?/);
+  if(match) return match[0];
+  return "NA";
 }
 
-.close-btn {
-    background:red; color:white; padding:8px 14px;
-    border:0; border-radius:6px; float:right;
-    cursor:pointer;
+/********** Check if PartNo in range **********/
+function isPartNoInRange(part, start, end){
+  var p = part.split("/"); var s=start.split("/"); var e=end.split("/");
+  if(p.length<2 || s.length<2 || e.length<2) return false;
+  if(p[0]!==s[0] || p[0]!==e[0]) return false; // main number must match
+  var num = parseInt(p[1],10), sNum=parseInt(s[1],10), eNum=parseInt(e[1],10);
+  return num>=sNum && num<=eNum;
 }
 
-.btn { padding:8px 15px; border:none; border-radius:6px; cursor:pointer; margin-right:10px; color:white; margin-top:8px; }
-.btn-print { background:#007bff; }
-.btn-send { background:#25d366; }
-.btn-download { background:#ff9800; }
-
-#senderMsg { width:100%; height:80px; margin-top:10px; padding:8px; border-radius:6px; border:2px solid #aaa; }
-</style>
-</head>
-<body>
-
-<h2>🔍 Voter Search</h2>
-<input type="text" id="searchInput" class="search-box" placeholder="Search by Name / EPIC / Part / Ward / Address / Age / Gender">
-
-<div id="voterList"></div>
-
-<!-- POPUP CARD -->
-<div id="popup" class="popup">
-    <div class="popup-box" id="popupBoxContent">
-        <button class="close-btn" onclick="closePopup()">Close</button>
-        <div id="popupContent"></div>
-        <p><b>Your Message:</b></p>
-        <textarea id="senderMsg" placeholder="Type your message here..."></textarea><br>
-        <button class="btn btn-send" onclick="sendMessage()">Send WhatsApp</button>
-        <button class="btn btn-print" onclick="printCard()">Print</button>
-        <button class="btn btn-download" onclick="downloadPDF()">Download PDF</button>
-    </div>
-</div>
-
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-
-<script>
-// Firebase Config
-const firebaseConfig = {
-  apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
-  authDomain: "voter-25c94.firebaseapp.com",
-  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
-  projectId: "voter-25c94",
-  storageBucket: "voter-25c94.appspot.com",
-  messagingSenderId: "297773534400",
-  appId: "1:297773534400:web:3722c487b8c83e9b787125"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-
-let voters = [];
-let activeVoter = null;
-
-// Load voters from Firebase
-db.ref("voters").once("value").then(snapshot => {
-    const data = snapshot.val() || {};
-    voters = Object.keys(data).map(key => {
-        const v = data[key] || {};
-        return {
-            key: key,
-            epic_no: v.EPIC_NO || key,
-            voter_full_name: v.VoterName || "",
-            part_no: v.PartNo || "",
-            serial_no: v.SerialNo || "",
-            address: (v.HouseNo && v.HouseNo!=="NA") ? v.HouseNo : (v.Address || ""),
-            ward: v.WardNo || "",
-            relation_name: v.RelationName || "",
-            relation_type: v.RelationType || "",
-            age: v.Age || "",
-            gender: v.Gender || ""
-        };
-    });
-
-    document.getElementById("searchInput").addEventListener("keyup", ()=>{
-        const q = document.getElementById("searchInput").value.toLowerCase().trim();
-        if(!q){ document.getElementById("voterList").innerHTML=""; return; }
-
-        const filtered = voters.filter(v =>
-            Object.values(v).some(val => (val||"").toString().toLowerCase().includes(q))
-        );
-        displayList(filtered);
-    });
-});
-
-// Display List
-function displayList(list){
-    const box = document.getElementById("voterList");
-    box.innerHTML = "";
-    list.forEach(v => {
-        const div = document.createElement("div");
-        div.className = "voter-card";
-        div.innerHTML = `<b>${v.voter_full_name}</b> - ${v.epic_no}<br>Part: ${v.part_no || "—"} / Ward: ${v.ward || "—"}<br>${v.address || "—"}<br>${v.age} / ${v.gender}`;
-        div.onclick = ()=>openPopup(v);
-        box.appendChild(div);
-    });
+/********** Fetch existing EPICs **********/
+function fetchExistingEPICsBatch(){
+  var existing={};
+  try{
+    var res = UrlFetchApp.fetch(FIREBASE_MAIN_URL+".json").getContentText();
+    var data = JSON.parse(res)||{};
+    Object.keys(data).forEach(k=>existing[k.trim()]=true);
+  }catch(e){Logger.log("⚠ Error fetching Firebase: "+e);}
+  return existing;
 }
 
-// Popup Card
-function openPopup(v){
-    activeVoter = v;
-    document.getElementById("popupContent").innerHTML = `
-        <h3>${v.voter_full_name}</h3>
-        <b>EPIC:</b> ${v.epic_no}<br>
-        <b>Part/Serial:</b> ${v.part_no || "—"} / ${v.serial_no || "—"}<br>
-        <b>Ward:</b> ${v.ward || "—"}<br>
-        <b>Address:</b><br>${v.address || "—"}<br>
-        <b>Relation:</b> ${v.relation_type || "—"} : ${v.relation_name || "NA"}<br>
-        <b>Age/Gender:</b> ${v.age || "—"} / ${v.gender || "—"}<br>
-    `;
-    document.getElementById("senderMsg").value = "";
-    document.getElementById("popup").style.display = "flex";
+/********** Upload batch **********/
+function uploadBatch(batch){
+  batch.forEach(function(payload){
+    var url = FIREBASE_MAIN_URL + payload.EPIC_NO + ".json";
+    try{
+      UrlFetchApp.fetch(url,{
+        method:"put",
+        contentType:"application/json",
+        payload:JSON.stringify(payload)
+      });
+    }catch(e){
+      Logger.log("❌ Error uploading "+payload.EPIC_NO+": "+e);
+    }
+  });
 }
-function closePopup(){ document.getElementById("popup").style.display="none"; activeVoter=null; }
-
-// Send message via WhatsApp WITHOUT phone number
-function sendMessage(){
-    if(!activeVoter) return alert("No voter selected!");
-    const msg = document.getElementById("senderMsg").value.trim();
-    if(!msg) return alert("Type a message first!");
-
-    const text = encodeURIComponent(
-`VOTER CARD DETAILS
---------------------------
-Name: ${activeVoter.voter_full_name}
-EPIC: ${activeVoter.epic_no}
-Part/Serial: ${activeVoter.part_no || "—"} / ${activeVoter.serial_no || "—"}
-Ward: ${activeVoter.ward || "—"}
-Address: ${activeVoter.address || "—"}
-Relation: ${activeVoter.relation_type || "—"} : ${activeVoter.relation_name || "NA"}
-Age/Gender: ${activeVoter.age || "—"} / ${activeVoter.gender || "—"}
-
-Your Message:
-${msg}`
-    );
-
-    // Open WhatsApp without number
-    window.location.href = `https://wa.me/?text=${text}`;
-}
-
-// Print only card content
-function printCard(){
-    if(!activeVoter) return;
-    const content = document.getElementById("popupContent").innerHTML;
-    const win = window.open("", "Print", "height=600,width=400");
-    win.document.write(`<html><head><title>Voter Card</title></head><body>${content}</body></html>`);
-    win.document.close();
-    win.print();
-}
-
-// Download PDF only card content
-function downloadPDF(){
-    if(!activeVoter) return;
-    const element = document.getElementById("popupContent");
-    html2pdf().set({
-        margin:0.2,
-        filename:`${activeVoter.voter_full_name}_VoterCard.pdf`,
-        image:{type:'jpeg',quality:0.98},
-        html2canvas:{scale:2},
-        jsPDF:{unit:'in',format:'letter',orientation:'portrait'}
-    }).from(element).save();
-}
-</script>
-</body>
-</html>
