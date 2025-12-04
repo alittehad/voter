@@ -34,7 +34,9 @@ h2 { text-align:center; margin-bottom:15px; }
     <h3 id="vname"></h3>
     <p><b>EPIC:</b> <span id="vepic"></span></p>
     <p><b>Serial/Part:</b> <span id="vserial"></span></p>
-    <p><b>Address:</b> <span id="varea"></span></p>
+    <p><b>Area:</b> <span id="varea"></span></p>
+    <p><b>House No:</b> <span id="vhouse"></span></p>
+    <p><b>Ward:</b> <span id="vward"></span></p>
     <p><b>Relation:</b> <span id="vrelation"></span></p>
     <p><b>Age/Gender:</b> <span id="vage"></span> / <span id="vgender"></span></p>
     <p><b>Saved Color:</b> <span class="voter-color-tag" id="colortag"></span></p>
@@ -85,7 +87,9 @@ db.ref("voters").once("value").then(snap => {
         epic_no: data[key].EPIC_NO || key,
         voter_full_name: data[key].VoterName || "NA",
         sl_no_in_part: data[key].PartNo || "NA",
-        house_number: data[key].Area || data[key].HouseNo || "NA",
+        area: data[key].Area || "NA",
+        house_no: data[key].HouseNo || "NA",
+        ward: data[key].Ward || "NA",
         relation_name: data[key].RelationName || "NA",
         relation_type: data[key].RelationType || "NA",
         age: data[key].Age || "NA",
@@ -118,10 +122,13 @@ document.getElementById("searchBox").addEventListener("input", renderResults);
 function openCard(key){
     activeVoter = voters.find(v=>v.key===key);
     if(!activeVoter) return;
+
     document.getElementById("vname").innerText = activeVoter.voter_full_name;
     document.getElementById("vepic").innerText = activeVoter.epic_no;
     document.getElementById("vserial").innerText = activeVoter.sl_no_in_part;
-    document.getElementById("varea").innerText = activeVoter.house_number;
+    document.getElementById("varea").innerText = activeVoter.area;
+    document.getElementById("vhouse").innerText = activeVoter.house_no;
+    document.getElementById("vward").innerText = activeVoter.ward;
     document.getElementById("vrelation").innerText = `${activeVoter.relation_name} (${activeVoter.relation_type})`;
     document.getElementById("vage").innerText = activeVoter.age;
     document.getElementById("vgender").innerText = activeVoter.gender;
@@ -134,8 +141,8 @@ function closeCard(){ document.getElementById("card").style.display = "none"; }
 function saveColor(c){ if(!activeVoter) return; activeVoter.color=c; db.ref("voters/"+activeVoter.key+"/color").set(c); document.getElementById("colortag").style.background=c; renderResults(); }
 function saveMessage(){ if(!activeVoter) return; activeVoter.message=document.getElementById("msg").value; db.ref("voters/"+activeVoter.key+"/message").set(activeVoter.message); alert("Message saved!"); }
 function deleteMessage(){ if(!activeVoter) return; db.ref("voters/"+activeVoter.key+"/message").remove(); document.getElementById("msg").value=""; }
-function printCard(){ if(!activeVoter) return; let text=`Name: ${activeVoter.voter_full_name}\nEPIC: ${activeVoter.epic_no}\nSerial/Part: ${activeVoter.sl_no_in_part}\nAddress: ${activeVoter.house_number}\nRelation: ${activeVoter.relation_name} (${activeVoter.relation_type})\nAge/Gender: ${activeVoter.age} / ${activeVoter.gender}\n\nMessage:\n${activeVoter.message}`; let w=window.open("","", "width=400,height=600"); w.document.write("<pre>"+text+"</pre>"); w.print(); }
-function sendWhatsApp(){ if(!activeVoter) return; let text=`*Voter Details*\nName: ${activeVoter.voter_full_name}\nEPIC: ${activeVoter.epic_no}\nSerial/Part: ${activeVoter.sl_no_in_part}\nAddress: ${activeVoter.house_number}\nRelation: ${activeVoter.relation_name} (${activeVoter.relation_type})\nAge/Gender: ${activeVoter.age} / ${activeVoter.gender}\n\nMessage:\n${activeVoter.message}`; let url="https://wa.me/?text="+encodeURIComponent(text); window.open(url,"_blank"); }
+function printCard(){ if(!activeVoter) return; let text=`Name: ${activeVoter.voter_full_name}\nEPIC: ${activeVoter.epic_no}\nSerial/Part: ${activeVoter.sl_no_in_part}\nArea: ${activeVoter.area}\nHouse No: ${activeVoter.house_no}\nWard: ${activeVoter.ward}\nRelation: ${activeVoter.relation_name} (${activeVoter.relation_type})\nAge/Gender: ${activeVoter.age} / ${activeVoter.gender}\n\nMessage:\n${activeVoter.message}`; let w=window.open("","", "width=400,height=600"); w.document.write("<pre>"+text+"</pre>"); w.print(); }
+function sendWhatsApp(){ if(!activeVoter) return; let text=`*Voter Details*\nName: ${activeVoter.voter_full_name}\nEPIC: ${activeVoter.epic_no}\nSerial/Part: ${activeVoter.sl_no_in_part}\nArea: ${activeVoter.area}\nHouse No: ${activeVoter.house_no}\nWard: ${activeVoter.ward}\nRelation: ${activeVoter.relation_name} (${activeVoter.relation_type})\nAge/Gender: ${activeVoter.age} / ${activeVoter.gender}\n\nMessage:\n${activeVoter.message}`; let url="https://wa.me/?text="+encodeURIComponent(text); window.open(url,"_blank"); }
 </script>
 </body>
 </html>
