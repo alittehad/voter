@@ -4,146 +4,28 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Voter List</title>
-
 <style>
 body { font-family: Arial; margin:0; padding:10px; background:#f1f1f1; }
 h2 { text-align:center; margin-bottom:15px; }
-
-/* Search Box */
-#searchBox {
-  width:100%; padding:10px; border:2px solid #999; border-radius:6px;
-  font-size:18px; margin-bottom:15px;
-}
-
-/* Result List */
-.result-item {
-  padding:10px; margin:5px 0; background:white;
-  border-radius:6px; border-left:5px solid #007bff;
-  cursor:pointer;
-  display:flex; justify-content:space-between; align-items:center;
-}
-
-/* Card Popup */
-#card {
-  display:none; position:fixed; top:0; left:0; width:100%; height:100%;
-  background:rgba(0,0,0,0.7); justify-content:center; align-items:flex-start;
-  padding:20px; overflow-y:auto;
-}
-.card-content{
-  background:white; padding:15px; border-radius:10px; max-width:450px; width:95%;
-  position:relative;
-}
-
-.close-btn{
-  position:absolute; top:10px; right:10px; background:red; border:none;
-  color:white; padding:5px 10px; border-radius:5px; cursor:pointer;
-}
-
-.color-btn {
-  width:30px; height:30px; border-radius:6px;
-  border:none; margin-right:8px; cursor:pointer;
-}
-
-#msg {
-  width:100%; height:80px; padding:8px;
-  border:2px solid #aaa; border-radius:6px;
-}
-
-.btn-small {
-  padding:8px 15px; border:none; border-radius:6px;
-  margin-right:10px; cursor:pointer; color:white;
-}
+#searchBox { width:100%; padding:10px; border:2px solid #999; border-radius:6px; font-size:18px; margin-bottom:15px; }
+.result-item { padding:10px; margin:5px 0; background:white; border-radius:6px; border-left:5px solid #007bff; cursor:pointer; display:flex; justify-content:space-between; align-items:center; }
+#card { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); justify-content:center; align-items:flex-start; padding:20px; overflow-y:auto; }
+.card-content{ background:white; padding:15px; border-radius:10px; max-width:450px; width:95%; position:relative; }
+.close-btn{ position:absolute; top:10px; right:10px; background:red; border:none; color:white; padding:5px 10px; border-radius:5px; cursor:pointer; }
+.color-btn { width:30px; height:30px; border-radius:6px; border:none; margin-right:8px; cursor:pointer; }
+#msg { width:100%; height:80px; padding:8px; border:2px solid #aaa; border-radius:6px; }
+.btn-small { padding:8px 15px; border:none; border-radius:6px; margin-right:10px; cursor:pointer; color:white; }
 .btn-save { background:#28a745; }
 .btn-del { background:#dc3545; }
 .btn-print { background:#007bff; }
 .btn-whatsapp { background:#25d366; }
-
-.voter-color-tag {
-  width:20px; height:20px; border-radius:4px; display:inline-block;
-}
-
-/* Marquee */
-.marquee-container {
-    padding: 5px 0;
-    margin-bottom: 10px;
-    background: #007bff;
-    border-radius: 5px;
-    overflow: hidden;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-}
-.marquee-text {
-    color: #ffffff;
-    font-size: 20px;
-    font-weight: bold;
-    text-shadow: 2px 2px 4px #000000;
-    white-space: nowrap;
-}
-
-/* Notice Box */
-#noticeBox {
-    padding: 10px;
-    margin-bottom: 15px;
-    border-radius: 8px;
-    background: linear-gradient(90deg, #ff7e5f, #feb47b);
-    color: white;
-    font-weight: bold;
-    text-align: center;
-    box-shadow: 0 4px 8px rgba(255, 126, 95, 0.4);
-    border: 1px solid #ff7e5f;
-}
-
-/* ⭐ Score Notice Bar ⭐ */
-#scoreNotice {
-    width: 100%;
-    background: linear-gradient(90deg, #ff6a00, #ee0979);
-    padding: 10px 0;
-    color: white;
-    font-size: 20px;
-    font-weight: bold;
-    text-align: center;
-    border-radius: 6px;
-    margin-bottom: 10px;
-    box-shadow: 0 4px 8px rgba(255, 50, 100, 0.4);
-    letter-spacing: 1px;
-    position: relative;
-    overflow: hidden;
-}
-#scoreNotice::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 50%;
-    height: 100%;
-    background: rgba(255,255,255,0.3);
-    transform: skewX(-20deg);
-    animation: shine 2.8s infinite;
-}
-@keyframes shine {
-    0% { left: -100%; }
-    100% { left: 120%; }
-}
+.voter-color-tag { width:20px; height:20px; border-radius:4px; display:inline-block; }
 </style>
 </head>
 <body>
 
-<!-- ⭐ NEW SCORE BAR ⭐ -->
-<div id="scoreNotice">
-   ⚡ LIVE NOTICE: Data Updated Daily – Voter Records Auto-Sync Enabled ⚡
-</div>
-
-<div class="marquee-container">
-    <marquee class="marquee-text" direction="left" scrollamount="6">
-        ✨ VOTER SEARCH SYSTEM - FAST AND RELIABLE DATA ACCESS ✨
-    </marquee>
-</div>
-
-<div id="noticeBox">
-    🔴 Important Notice: Data updated as of 27/11/2025. Please verify details.
-</div>
-
 <h2>Voter Search</h2>
-<input type="text" id="searchBox" placeholder="Type 1 letter to search..." />
+<input type="text" id="searchBox" placeholder="Type 1 letter or EPIC to search..." />
 <div id="results"></div>
 
 <div id="card">
@@ -152,7 +34,9 @@ h2 { text-align:center; margin-bottom:15px; }
     <h3 id="vname"></h3>
     <p><b>EPIC:</b> <span id="vepic"></span></p>
     <p><b>Serial/Part:</b> <span id="vserial"></span></p>
-    <p><b>Address:</b> <span id="varea"></span></p>
+    <p><b>Area:</b> <span id="varea"></span></p>
+    <p><b>House No:</b> <span id="vhouse"></span></p>
+    <p><b>Ward:</b> <span id="vward"></span></p>
     <p><b>Relation:</b> <span id="vrelation"></span></p>
     <p><b>Age/Gender:</b> <span id="vage"></span> / <span id="vgender"></span></p>
     <p><b>Saved Color:</b> <span class="voter-color-tag" id="colortag"></span></p>
@@ -166,7 +50,6 @@ h2 { text-align:center; margin-bottom:15px; }
     <hr>
     <p><b>Sender Message:</b></p>
     <textarea id="msg"></textarea>
-
     <button class="btn-small btn-save" onclick="saveMessage()">Save</button>
     <button class="btn-small btn-del" onclick="deleteMessage()">Delete</button>
 
@@ -196,26 +79,28 @@ const db = firebase.database();
 let voters = [];
 let activeVoter = null;
 
-// Load voters
+// Load voters from Firebase
 db.ref("voters").once("value").then(snap => {
     const data = snap.val() || {};
     voters = Object.keys(data).map(key => ({
         key: key,
-        epic_no: data[key].epic_no || key,
-        voter_full_name: data[key].voter_full_name || "",
-        sl_no_in_part: data[key].sl_no_in_part || "",
-        house_number: data[key].house_number || "",
-        relation_name: data[key].relation_name || "",
-        relation_type: data[key].relation_type || "",
-        age: data[key].age || "",
-        gender: data[key].gender || "",
+        epic_no: data[key].EPIC_NO || key,
+        voter_full_name: data[key].VoterName || "NA",
+        sl_no_in_part: data[key].PartNo || "NA",
+        area: data[key].Area || "NA",
+        house_no: data[key].HouseNo || "NA",
+        ward: data[key].Ward || "NA",
+        relation_name: data[key].RelationName || "NA",
+        relation_type: data[key].RelationType || "NA",
+        age: data[key].Age || "NA",
+        gender: data[key].Gender || "NA",
         color: data[key].color || "#ffffff",
         message: data[key].message || ""
     }));
     renderResults();
 });
 
-// Search render
+// Search & render
 function renderResults() {
   const q = document.getElementById("searchBox").value.toLowerCase();
   let html = "";
@@ -233,7 +118,7 @@ function renderResults() {
 }
 document.getElementById("searchBox").addEventListener("input", renderResults);
 
-// Open card
+// Card functions
 function openCard(key){
     activeVoter = voters.find(v=>v.key===key);
     if(!activeVoter) return;
@@ -241,73 +126,23 @@ function openCard(key){
     document.getElementById("vname").innerText = activeVoter.voter_full_name;
     document.getElementById("vepic").innerText = activeVoter.epic_no;
     document.getElementById("vserial").innerText = activeVoter.sl_no_in_part;
-    document.getElementById("varea").innerText = activeVoter.house_number;
+    document.getElementById("varea").innerText = activeVoter.area;
+    document.getElementById("vhouse").innerText = activeVoter.house_no;
+    document.getElementById("vward").innerText = activeVoter.ward;
     document.getElementById("vrelation").innerText = `${activeVoter.relation_name} (${activeVoter.relation_type})`;
     document.getElementById("vage").innerText = activeVoter.age;
     document.getElementById("vgender").innerText = activeVoter.gender;
-
     document.getElementById("colortag").style.background = activeVoter.color;
     document.getElementById("msg").value = activeVoter.message;
-
     document.getElementById("card").style.display = "flex";
 }
 
-// Close card
-function closeCard(){
-    document.getElementById("card").style.display = "none";
-}
-
-// Save color
-function saveColor(c){
-    if(!activeVoter) return;
-    activeVoter.color = c;
-    db.ref("voters/"+activeVoter.key+"/color").set(c);
-    document.getElementById("colortag").style.background = c;
-    renderResults();
-}
-
-// Save message
-function saveMessage(){
-    if(!activeVoter) return;
-    activeVoter.message = document.getElementById("msg").value;
-    db.ref("voters/"+activeVoter.key+"/message").set(activeVoter.message);
-    alert("Message saved!");
-}
-
-// Delete message
-function deleteMessage(){
-    if(!activeVoter) return;
-    db.ref("voters/"+activeVoter.key+"/message").remove();
-    document.getElementById("msg").value = "";
-}
-
-// Print
-function printCard(){
-    if(!activeVoter) return;
-    let text = `
-Name: ${activeVoter.voter_full_name}
-EPIC: ${activeVoter.epic_no}
-Serial/Part: ${activeVoter.sl_no_in_part}
-Address: ${activeVoter.house_number}
-Relation: ${activeVoter.relation_name} (${activeVoter.relation_type})
-Age/Gender: ${activeVoter.age} / ${activeVoter.gender}
-
-Message:
-${activeVoter.message}
-`;
-    let w = window.open("", "", "width=400,height=600");
-    w.document.write("<pre>"+text+"</pre>");
-    w.print();
-}
-
-// WhatsApp
-function sendWhatsApp(){
-    if(!activeVoter) return;
-    let text = `*Voter Details*\nName: ${activeVoter.voter_full_name}\nEPIC: ${activeVoter.epic_no}\nSerial/Part: ${activeVoter.sl_no_in_part}\nAddress: ${activeVoter.house_number}\nRelation: ${activeVoter.relation_name} (${activeVoter.relation_type})\nAge/Gender: ${activeVoter.age} / ${activeVoter.gender}\n\nMessage:\n${activeVoter.message}`;
-    let url = "https://wa.me/?text=" + encodeURIComponent(text);
-    window.open(url, "_blank");
-}
+function closeCard(){ document.getElementById("card").style.display = "none"; }
+function saveColor(c){ if(!activeVoter) return; activeVoter.color=c; db.ref("voters/"+activeVoter.key+"/color").set(c); document.getElementById("colortag").style.background=c; renderResults(); }
+function saveMessage(){ if(!activeVoter) return; activeVoter.message=document.getElementById("msg").value; db.ref("voters/"+activeVoter.key+"/message").set(activeVoter.message); alert("Message saved!"); }
+function deleteMessage(){ if(!activeVoter) return; db.ref("voters/"+activeVoter.key+"/message").remove(); document.getElementById("msg").value=""; }
+function printCard(){ if(!activeVoter) return; let text=`Name: ${activeVoter.voter_full_name}\nEPIC: ${activeVoter.epic_no}\nSerial/Part: ${activeVoter.sl_no_in_part}\nArea: ${activeVoter.area}\nHouse No: ${activeVoter.house_no}\nWard: ${activeVoter.ward}\nRelation: ${activeVoter.relation_name} (${activeVoter.relation_type})\nAge/Gender: ${activeVoter.age} / ${activeVoter.gender}\n\nMessage:\n${activeVoter.message}`; let w=window.open("","", "width=400,height=600"); w.document.write("<pre>"+text+"</pre>"); w.print(); }
+function sendWhatsApp(){ if(!activeVoter) return; let text=`*Voter Details*\nName: ${activeVoter.voter_full_name}\nEPIC: ${activeVoter.epic_no}\nSerial/Part: ${activeVoter.sl_no_in_part}\nArea: ${activeVoter.area}\nHouse No: ${activeVoter.house_no}\nWard: ${activeVoter.ward}\nRelation: ${activeVoter.relation_name} (${activeVoter.relation_type})\nAge/Gender: ${activeVoter.age} / ${activeVoter.gender}\n\nMessage:\n${activeVoter.message}`; let url="https://wa.me/?text="+encodeURIComponent(text); window.open(url,"_blank"); }
 </script>
-
 </body>
 </html>
