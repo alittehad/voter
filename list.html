@@ -4,77 +4,81 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Voter List</title>
+
 <style>
 body { font-family: Arial; margin:0; padding:10px; background:#f1f1f1; }
-h2 { text-align:center; margin-bottom:15px; }
 
-.notice-box {
-  background:#fff3cd;
-  border:2px solid #ffcc00;
-  padding:10px;
-  border-radius:8px;
-  font-size:18px;
-  margin-bottom:12px;
-  text-align:center;
-}
-
-.scrolling-text {
+/* 🔥 scrolling text */
+#scrollText {
   width:100%;
+  background:#ffeb3b;
+  padding:8px;
+  font-size:18px;
+  font-weight:bold;
   overflow:hidden;
   white-space:nowrap;
   box-sizing:border-box;
-  background:#007bff;
-  color:white;
-  padding:8px;
-  border-radius:6px;
-  margin-bottom:12px;
 }
-
-.scrolling-text span {
+#scrollText span {
   display:inline-block;
   padding-left:100%;
   animation: scroll 12s linear infinite;
-  font-size:17px;
 }
-
 @keyframes scroll {
   0% { transform: translateX(0); }
   100% { transform: translateX(-100%); }
 }
 
+/* Notice box */
+.notice-box {
+  background:#fff3cd;
+  padding:10px;
+  border-left:6px solid #ff9800;
+  border-radius:6px;
+  margin:12px 0;
+  font-size:17px;
+}
+
+/* UI */
+h2 { text-align:center; margin-bottom:15px; }
 #searchBox { width:100%; padding:10px; border:2px solid #999; border-radius:6px; font-size:18px; margin-bottom:15px; }
 .result-item { padding:10px; margin:5px 0; background:white; border-radius:6px; border-left:5px solid #007bff; cursor:pointer; display:flex; justify-content:space-between; align-items:center; }
+
 #card { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); justify-content:center; align-items:flex-start; padding:20px; overflow-y:auto; }
+
 .card-content{ background:white; padding:15px; border-radius:10px; max-width:450px; width:95%; position:relative; }
 .close-btn{ position:absolute; top:10px; right:10px; background:red; border:none; color:white; padding:5px 10px; border-radius:5px; cursor:pointer; }
+
 .color-btn { width:30px; height:30px; border-radius:6px; border:none; margin-right:8px; cursor:pointer; }
+
 #msg { width:100%; height:80px; padding:8px; border:2px solid #aaa; border-radius:6px; }
+
 .btn-small { padding:8px 15px; border:none; border-radius:6px; margin-right:10px; cursor:pointer; color:white; }
 .btn-save { background:#28a745; }
 .btn-del { background:#dc3545; }
 .btn-print { background:#007bff; }
 .btn-whatsapp { background:#25d366; }
+.btn-download { background:#6a1b9a; }   /* NEW BUTTON */
+
 .voter-color-tag { width:20px; height:20px; border-radius:4px; display:inline-block; }
 </style>
 </head>
 <body>
 
-<h2>Voter Search</h2>
+<!-- 🔥 Scrolling Text -->
+<div id="scrollText"><span>कृपया Search Box मध्ये आपला EPIC क्रमांक टाइप करा…</span></div>
 
-<!-- ⭐ Notice Board (Marathi) -->
+<!-- 🔥 Notice Box -->
 <div class="notice-box">
-  कृपया Search Box मध्ये तुमचा EPIC क्रमांक टाइप करा.
+<b>सूचना:</b> शोधण्यासाठी Search Box मध्ये आपले नाव किंवा EPIC क्रमांक टाइप करा.
 </div>
 
-<!-- ⭐ Scrolling Text -->
-<div class="scrolling-text">
-  <span>सूचना: EPIC नंबर टाइप करताच तुमचे नाव खाली दिसेल...</span>
-</div>
+<h2>Voter Search</h2>
 
 <input type="text" id="searchBox" placeholder="Type 1 letter or EPIC to search..." />
 <div id="results"></div>
 
-<!-- CARD START -->
+<!-- CARD -->
 <div id="card">
   <div class="card-content">
     <button class="close-btn" onclick="closeCard()">X</button>
@@ -103,6 +107,7 @@ h2 { text-align:center; margin-bottom:15px; }
     <hr>
     <button class="btn-small btn-print" onclick="printCard()">Print</button>
     <button class="btn-small btn-whatsapp" onclick="sendWhatsApp()">Send</button>
+    <button class="btn-small btn-download" onclick="downloadPDF()">Download</button> <!-- NEW -->
   </div>
 </div>
 
@@ -110,7 +115,7 @@ h2 { text-align:center; margin-bottom:15px; }
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
 <script>
-// Firebase config
+// Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
   authDomain: "voter-25c94.firebaseapp.com",
@@ -150,46 +155,116 @@ db.ref("voters").once("value").then(snap => {
 // Search
 function renderResults() {
   const q = document.getElementById("searchBox").value.toLowerCase();
-  let html = "";
-  if (q.length >= 1) {
-    voters.forEach(v => {
-      if (v.voter_full_name.toLowerCase().includes(q) || v.epic_no.toLowerCase().includes(q)) {
-        html += `<div class="result-item" onclick="openCard('${v.key}')">
-                   <span><b>${v.voter_full_name}</b> (${v.epic_no})</span>
-                   <span class="voter-color-tag" style="background:${v.color}"></span>
-                 </div>`;
+  let html="";
+  if(q.length>=1){
+    voters.forEach(v=>{
+      if(v.voter_full_name.toLowerCase().includes(q) || v.epic_no.toLowerCase().includes(q)){
+        html+=`<div class="result-item" onclick="openCard('${v.key}')">
+                 <span><b>${v.voter_full_name}</b> (${v.epic_no})</span>
+                 <span class="voter-color-tag" style="background:${v.color}"></span>
+               </div>`;
       }
     });
   }
-  document.getElementById("results").innerHTML = html;
+  document.getElementById("results").innerHTML=html;
 }
 document.getElementById("searchBox").addEventListener("input", renderResults);
 
-// Card
+// CARD
 function openCard(key){
-    activeVoter = voters.find(v=>v.key===key);
-    if(!activeVoter) return;
+  activeVoter = voters.find(v=>v.key===key);
+  if(!activeVoter) return;
 
-    document.getElementById("vname").innerText = activeVoter.voter_full_name;
-    document.getElementById("vepic").innerText = activeVoter.epic_no;
-    document.getElementById("vserial").innerText = activeVoter.sl_no_in_part;
-    document.getElementById("varea").innerText = activeVoter.area;
-    document.getElementById("vhouse").innerText = activeVoter.house_no;
-    document.getElementById("vward").innerText = activeVoter.ward;
-    document.getElementById("vrelation").innerText = `${activeVoter.relation_name} (${activeVoter.relation_type})`;
-    document.getElementById("vage").innerText = activeVoter.age;
-    document.getElementById("vgender").innerText = activeVoter.gender;
-    document.getElementById("colortag").style.background = activeVoter.color;
-    document.getElementById("msg").value = activeVoter.message;
-    document.getElementById("card").style.display = "flex";
+  document.getElementById("vname").innerText = activeVoter.voter_full_name;
+  document.getElementById("vepic").innerText = activeVoter.epic_no;
+  document.getElementById("vserial").innerText = activeVoter.sl_no_in_part;
+  document.getElementById("varea").innerText = activeVoter.area;
+  document.getElementById("vhouse").innerText = activeVoter.house_no;
+  document.getElementById("vward").innerText = activeVoter.ward;
+  document.getElementById("vrelation").innerText = `${activeVoter.relation_name} (${activeVoter.relation_type})`;
+  document.getElementById("vage").innerText = activeVoter.age;
+  document.getElementById("vgender").innerText = activeVoter.gender;
+  document.getElementById("colortag").style.background = activeVoter.color;
+  document.getElementById("msg").value = activeVoter.message;
+
+  document.getElementById("card").style.display = "flex";
 }
 
-function closeCard(){ document.getElementById("card").style.display = "none"; }
-function saveColor(c){ if(!activeVoter) return; activeVoter.color=c; db.ref("voters/"+activeVoter.key+"/color").set(c); document.getElementById("colortag").style.background=c; renderResults(); }
-function saveMessage(){ if(!activeVoter) return; activeVoter.message=document.getElementById("msg").value; db.ref("voters/"+activeVoter.key+"/message").set(activeVoter.message); alert("Message saved!"); }
-function deleteMessage(){ if(!activeVoter) return; db.ref("voters/"+activeVoter.key+"/message").remove(); document.getElementById("msg").value=""; }
-function printCard(){ if(!activeVoter) return; let text=`Name: ${activeVoter.voter_full_name}\nEPIC: ${activeVoter.epic_no}\nSerial/Part: ${activeVoter.sl_no_in_part}\nArea: ${activeVoter.area}\nHouse No: ${activeVoter.house_no}\nWard: ${activeVoter.ward}\nRelation: ${activeVoter.relation_name} (${activeVoter.relation_type})\nAge/Gender: ${activeVoter.age} / ${activeVoter.gender}\n\nMessage:\n${activeVoter.message}`; let w=window.open("","", "width=400,height=600"); w.document.write("<pre>"+text+"</pre>"); w.print(); }
-function sendWhatsApp(){ if(!activeVoter) return; let text=`*Voter Details*\nName: ${activeVoter.voter_full_name}\nEPIC: ${activeVoter.epic_no}\nSerial/Part: ${activeVoter.sl_no_in_part}\nArea: ${activeVoter.area}\nHouse No: ${activeVoter.house_no}\nWard: ${activeVoter.ward}\nRelation: ${activeVoter.relation_name} (${activeVoter.relation_type})\nAge/Gender: ${activeVoter.age} / ${activeVoter.gender}\n\nMessage:\n${activeVoter.message}`; let url="https://wa.me/?text="+encodeURIComponent(text); window.open(url,"_blank"); }
+function closeCard(){ document.getElementById("card").style.display="none"; }
+
+function saveColor(c){
+  if(!activeVoter) return;
+  activeVoter.color=c;
+  db.ref("voters/"+activeVoter.key+"/color").set(c);
+  document.getElementById("colortag").style.background=c;
+  renderResults();
+}
+
+function saveMessage(){
+  activeVoter.message=document.getElementById("msg").value;
+  db.ref("voters/"+activeVoter.key+"/message").set(activeVoter.message);
+  alert("Saved!");
+}
+
+function deleteMessage(){
+  db.ref("voters/"+activeVoter.key+"/message").remove();
+  document.getElementById("msg").value="";
+}
+
+// ✔ NEW — PDF Download
+function downloadPDF(){
+  if(!activeVoter) return;
+
+  let content =
+`Voter Details
+--------------------
+Name: ${activeVoter.voter_full_name}
+EPIC: ${activeVoter.epic_no}
+Serial/Part: ${activeVoter.sl_no_in_part}
+Area: ${activeVoter.area}
+House No: ${activeVoter.house_no}
+Ward: ${activeVoter.ward}
+Relation: ${activeVoter.relation_name} (${activeVoter.relation_type})
+Age/Gender: ${activeVoter.age} / ${activeVoter.gender}
+
+Message:
+${activeVoter.message}
+`;
+
+  const blob = new Blob([content], {type: "text/plain"});
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = activeVoter.epic_no + "_voter_details.txt";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function printCard(){
+  let text = document.querySelector(".card-content").innerText;
+  let w = window.open("", "", "width=450,height=600");
+  w.document.write("<pre>"+text+"</pre>");
+  w.print();
+}
+
+function sendWhatsApp(){
+  let text =
+`*Voter Details*
+Name: ${activeVoter.voter_full_name}
+EPIC: ${activeVoter.epic_no}
+Serial/Part: ${activeVoter.sl_no_in_part}
+Area: ${activeVoter.area}
+House No: ${activeVoter.house_no}
+Ward: ${activeVoter.ward}
+Relation: ${activeVoter.relation_name} (${activeVoter.relation_type})
+Age/Gender: ${activeVoter.age} / ${activeVoter.gender}
+
+Message:
+${activeVoter.message}`;
+
+  window.open("https://wa.me/?text=" + encodeURIComponent(text), "_blank");
+}
 </script>
 </body>
 </html>
