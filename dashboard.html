@@ -5,88 +5,96 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard</title>
 <style>
+  /* Fullscreen body */
   html, body {
     margin: 0;
     padding: 0;
-    height: 100%;
+    height: 100vh;
+    width: 100vw;
     font-family: Arial, sans-serif;
     overflow: hidden;
+    position: relative;
   }
 
   /* Background slider */
   body {
     background-size: cover;
     background-position: center;
-    transition: background-image 1s ease-in-out;
+    transition: background 1s ease-in-out;
   }
 
-  /* Button container */
+  /* Buttons container */
   .button-container {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
     display: flex;
-    flex-direction: column;
+    flex-wrap: wrap;
     gap: 15px;
-    align-items: center;
+    justify-content: center;
+    z-index: 2;
   }
 
-  /* Common button style */
+  /* 3D Buttons */
   .btn3d {
-    padding: 20px 50px;
+    padding: 15px 30px;
     font-size: 18px;
     font-weight: bold;
-    color: #fff;
-    border: none;
     border-radius: 12px;
+    border: none;
+    color: #fff;
     cursor: pointer;
-    transition: all 0.2s ease;
-    box-shadow: 0 5px 0 #1c5980,
-                0 8px 15px rgba(0,0,0,0.4);
     position: relative;
+    transition: all 0.2s ease;
+    box-shadow: 0 5px 0 rgba(0,0,0,0.2), 0 8px 15px rgba(0,0,0,0.4);
   }
 
   .btn3d:active {
     transform: translateY(5px);
-    box-shadow: 0 2px 0 #1c5980,
-                0 4px 8px rgba(0,0,0,0.4);
+    box-shadow: 0 2px 0 rgba(0,0,0,0.2), 0 4px 8px rgba(0,0,0,0.4);
   }
 
-  /* Blinking colors for buttons */
-  @keyframes blink1 {
-    0%,100% {background: linear-gradient(145deg, #3498db, #2980b9);}
-    50% {background: linear-gradient(145deg, #2ecc71, #27ae60);}
-  }
-  @keyframes blink2 {
-    0%,100% {background: linear-gradient(145deg, #e74c3c, #c0392b);}
-    50% {background: linear-gradient(145deg, #f1c40f, #f39c12);}
-  }
-  @keyframes blink3 {
-    0%,100% {background: linear-gradient(145deg, #8e44ad, #9b59b6);}
-    50% {background: linear-gradient(145deg, #1abc9c, #16a085);}
-  }
-  @keyframes blink4 {
-    0%,100% {background: linear-gradient(145deg, #f39c12, #d35400);}
-    50% {background: linear-gradient(145deg, #c0392b, #e74c3c);}
-  }
+  /* Different blinking animations */
+  @keyframes blink1 { 0%,100%{background:#3498db}50%{background:#e74c3c} }
+  @keyframes blink2 { 0%,100%{background:#2ecc71}50%{background:#f1c40f} }
+  @keyframes blink3 { 0%,100%{background:#9b59b6}50%{background:#e67e22} }
+  @keyframes blink4 { 0%,100%{background:#1abc9c}50%{background:#f39c12} }
 
-  /* Assign different blinking animations */
-  .btn-blink1 { animation: blink1 2s infinite; }
-  .btn-blink2 { animation: blink2 2s infinite; }
-  .btn-blink3 { animation: blink3 2s infinite; }
-  .btn-blink4 { animation: blink4 2s infinite; }
+  .blink1 { animation: blink1 2s infinite; }
+  .blink2 { animation: blink2 2.5s infinite; }
+  .blink3 { animation: blink3 3s infinite; }
+  .blink4 { animation: blink4 3.5s infinite; }
 
-  /* Logout button small cone */
+  /* Logout small cone */
   #logoutBtn {
     position: absolute;
     top: 10px;
     right: 10px;
-    padding: 10px 15px;
-    border-radius: 50%;
+    padding: 8px 14px;
     font-size: 14px;
-    box-shadow: 0 3px 0 #1c5980,
-                0 4px 6px rgba(0,0,0,0.4);
+    border-radius: 50% 20% 50% 20%;
+    box-shadow: 0 3px 0 rgba(0,0,0,0.2),0 4px 6px rgba(0,0,0,0.3);
+  }
+
+  /* Images container */
+  #images {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    z-index: 2;
+  }
+
+  #images img {
+    width: 120px;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 10px;
   }
 
 </style>
@@ -94,106 +102,108 @@
 <body>
 
 <!-- Logout -->
-<button id="logoutBtn" class="btn3d">X</button>
+<button id="logoutBtn" class="btn3d">Logout</button>
 
 <!-- Main Buttons -->
 <div class="button-container">
-  <button class="btn3d btn-blink1" onclick="window.open('https://electoralsearch.eci.gov.in/','_blank')">Election Search</button>
-  <button class="btn3d btn-blink2" onclick="window.open('https://mahasecvoterlist.in/ObjectionOnClick/SearchVoterName=','_blank')">Voter Name Search</button>
-  <button class="btn3d btn-blink3" onclick="openCloudinaryUpload()">Upload Image</button>
-  <button class="btn3d btn-blink4" onclick="window.location.href='print.html'">Print Page</button>
+  <button class="btn3d blink1" onclick="openLink('https://electoralsearch.eci.gov.in/')">Election Search</button>
+  <button class="btn3d blink2" onclick="openLink('https://mahasecvoterlist.in/ObjectionOnClick/SearchVoterName=')">Voter Name Search</button>
+  <button class="btn3d blink3" onclick="openCloudinaryUpload()">Upload Image</button>
+  <button class="btn3d blink4" onclick="openLink('print.html')">Print Page</button>
 </div>
 
-<!-- Uploaded Images -->
-<div id="images" style="position:absolute; bottom:20px; width:100%; display:flex; flex-wrap:wrap; justify-content:center; gap:10px;"></div>
+<!-- Uploaded images -->
+<div id="images"></div>
 
-<!-- Click Sound -->
-<audio id="clickSound" src="click.mp3"></audio>
+<!-- Button click sound -->
+<audio id="clickSound" src="click.mp3" preload="auto"></audio>
 
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
 
 <script>
-  /* ===== Firebase Config ===== */
-  const firebaseConfig = {
-    apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
-    authDomain: "voter-25c94.firebaseapp.com",
-    databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
-    projectId: "voter-25c94",
-    storageBucket: "voter-25c94.appspot.com"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
+/* ===== Firebase Config ===== */
+const firebaseConfig = {
+  apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
+  authDomain: "voter-25c94.firebaseapp.com",
+  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
+  projectId: "voter-25c94",
+  storageBucket: "voter-25c94.appspot.com"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
 
-  // Check Login
-  auth.onAuthStateChanged(user => {
-    if (!user) window.location.href='index.html';
-  });
+/* Login check */
+auth.onAuthStateChanged(user => {
+  if (!user) window.location.href = 'index.html';
+});
 
-  // Logout
-  document.getElementById('logoutBtn').addEventListener('click', () => {
-    auth.signOut().then(()=> window.location.href='index.html');
-  });
+/* Logout */
+document.getElementById('logoutBtn').addEventListener('click', () => {
+  playSound();
+  auth.signOut().then(() => window.location.href = 'index.html');
+});
 
-  // Background slider
-  const bgImages = [
-    'https://i.ibb.co/FLQDzSGp/1.avif',
-    'https://i.ibb.co/HTKycbLy/2.webp',
-    'https://i.ibb.co/hRRS9vTM/3.jpg',
-    'https://i.ibb.co/hFtvv9bk/4.avif',
-    'https://i.ibb.co/pBfjvXSx/5.jpg'
-  ];
-  let bgIndex = 0;
-  setInterval(()=>{
-    document.body.style.backgroundImage = `url(${bgImages[bgIndex]})`;
-    bgIndex = (bgIndex + 1) % bgImages.length;
-  }, 5000);
+/* Play sound function */
+function playSound(){
+  const sound = document.getElementById('clickSound');
+  sound.currentTime = 0;
+  sound.volume = 1.0;
+  sound.play();
+}
 
-  // Cloudinary Upload
-  function openCloudinaryUpload(){
-    const fileInput = document.createElement('input');
-    fileInput.type='file';
-    fileInput.accept='image/*';
-    fileInput.onchange = ()=>{
-      const file = fileInput.files[0];
-      if(!file) return;
+/* Open link with sound */
+function openLink(url){
+  playSound();
+  setTimeout(()=>{ window.open(url, '_blank'); },100);
+}
 
-      const cloudName='YOUR_CLOUD_NAME';
-      const unsignedUploadPreset='dlsqxs7zl';
-      const url=`https://api.cloudinary.com/v1_1/${cloudName}/upload`;
-
-      const formData = new FormData();
-      formData.append('file',file);
-      formData.append('upload_preset',unsignedUploadPreset);
-
-      fetch(url,{method:'POST',body:formData})
+/* Cloudinary Upload */
+function openCloudinaryUpload(){
+  playSound();
+  const fileInput = document.createElement('input');
+  fileInput.type='file';
+  fileInput.accept='image/*';
+  fileInput.onchange=()=>{
+    const file=fileInput.files[0];
+    if(!file) return;
+    const cloudName='YOUR_CLOUD_NAME';
+    const unsignedUploadPreset='dlsqxs7zl';
+    const url=`https://api.cloudinary.com/v1_1/${cloudName}/upload`;
+    const formData=new FormData();
+    formData.append('file',file);
+    formData.append('upload_preset',unsignedUploadPreset);
+    fetch(url,{method:'POST',body:formData})
       .then(res=>res.json())
       .then(data=>{
         if(data.secure_url){
-          const img = document.createElement('img');
+          const imagesDiv=document.getElementById('images');
+          const img=document.createElement('img');
           img.src=data.secure_url;
-          img.style.width='150px';
-          img.style.height='150px';
-          img.style.objectFit='cover';
-          img.style.borderRadius='10px';
-          document.getElementById('images').appendChild(img);
-        }else alert("Upload failed");
+          imagesDiv.appendChild(img);
+        } else alert('Upload failed');
       }).catch(err=>alert(err));
-    };
-    fileInput.click();
-  }
+  };
+  fileInput.click();
+}
 
-  // Click sound on all buttons
-  const clickSound = document.getElementById('clickSound');
-  clickSound.volume = 1.0;
+/* ===== Background Slider ===== */
+const backgrounds=[
+  'https://i.ibb.co/FLQDzSGp/1.avif',
+  'https://i.ibb.co/HTKycbLy/2.webp',
+  'https://i.ibb.co/hRRS9vTM/3.jpg',
+  'https://i.ibb.co/hFtvv9bk/4.avif',
+  'https://i.ibb.co/pBfjvXSx/5.jpg'
+];
+let bgIndex=0;
+function changeBackground(){
+  document.body.style.backgroundImage=`url(${backgrounds[bgIndex]})`;
+  bgIndex=(bgIndex+1)%backgrounds.length;
+}
+changeBackground();
+setInterval(changeBackground,5000); // every 5 sec
 
-  document.querySelectorAll('.btn3d').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      clickSound.currentTime=0;
-      clickSound.play();
-    });
-  });
 </script>
-
 </body>
 </html>
