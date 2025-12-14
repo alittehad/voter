@@ -11,7 +11,7 @@
 
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:Arial}
-html,body{width:100%;height:100%;overflow:hidden}
+html,body{width:100%;height:100%;overflow:hidden;}
 
 /* ===== BACKGROUND SLIDER ===== */
 body::before{
@@ -23,15 +23,16 @@ height:100%;
 z-index:-1;
 background-size:cover;
 background-position:center;
-animation:bgSlide 20s infinite;
+animation:bgSlide 25s infinite;
 }
 
 @keyframes bgSlide{
 0%{background-image:url('https://i.ibb.co/FLQDzSGp/1.avif')}
-25%{background-image:url('https://i.ibb.co/HTKycbLy/2.webp')}
-50%{background-image:url('https://i.ibb.co/hRRS9vTM/3.jpg')}
-75%{background-image:url('https://i.ibb.co/hFtvv9bk/4.avif')}
-100%{background-image:url('https://i.ibb.co/pBfjvXSx/5.jpg')}
+20%{background-image:url('https://i.ibb.co/HTKycbLy/2.webp')}
+40%{background-image:url('https://i.ibb.co/hRRS9vTM/3.jpg')}
+60%{background-image:url('https://i.ibb.co/hFtvv9bk/4.avif')}
+80%{background-image:url('https://i.ibb.co/pBfjvXSx/5.jpg')}
+100%{background-image:url('https://i.ibb.co/FLQDzSGp/1.avif')}
 }
 
 /* ===== LOGOUT CONE ===== */
@@ -57,7 +58,7 @@ display:flex;
 flex-direction:column;
 justify-content:center;
 align-items:center;
-gap:15px;
+gap:20px;
 padding:15px;
 }
 
@@ -65,8 +66,8 @@ padding:15px;
 .btn3d{
 width:90%;
 max-width:320px;
-padding:16px;
-font-size:18px;
+padding:18px;
+font-size:20px;
 color:#fff;
 border:none;
 border-radius:12px;
@@ -105,7 +106,10 @@ box-shadow:0 2px 0 #1c5980;
 <!-- LOGOUT -->
 <button class="logout-cone" onclick="play(4);logout()">⏻</button>
 
-<button class="btn3d b1" onclick="playAndRedirect(1,'https://electoralsearch.eci.gov.in/true',true)">
+<!-- BUTTONS CENTERED -->
+<div class="button-container">
+
+<button class="btn3d b1" onclick="playAndRedirect(1,'https://electoralsearch.eci.gov.in/',true)">
 Election Search
 </button>
 
@@ -121,18 +125,21 @@ Upload Image
 Print Page
 </button>
 
+</div>
+
 <script>
 const sounds = {
-    1: 'https://www.myserver.com/sound1.mp3', // Election Search / Print Page
-    2: 'https://www.myserver.com/sound2.mp3', // Voter Name Search
-    3: 'https://www.myserver.com/sound3.mp3', // Upload Image
-    4: 'https://www.myserver.com/sound4.mp3', // Logout
+    1: 'https://www.soundjay.com/buttons/sounds/button-16.mp3', 
+    2: 'https://www.soundjay.com/buttons/sounds/button-09.mp3', 
+    3: 'https://www.soundjay.com/buttons/sounds/button-4.mp3', 
+    4: 'https://www.soundjay.com/buttons/sounds/button-6.mp3', 
 };
 
 function play(soundNumber) {
-    const audio = new Audio(sounds[soundNumber]);
+    const audio = document.getElementById("s"+soundNumber);
+    audio.currentTime = 0;
     audio.volume = 1.0; // तेज आवाज
-    audio.play();
+    audio.play().catch(()=>{});
 }
 
 // Button के साथ redirect या open करने के लिए
@@ -141,16 +148,9 @@ function playAndRedirect(soundNumber, url, isNewTab = false) {
     setTimeout(() => {
         if(isNewTab) window.open(url,'_blank');
         else window.location.href = url;
-    }, 500); // 500ms delay
+    }, 500);
 }
-</script>
 
-
-
-
-</div>
-
-<script>
 /* ===== FIREBASE CONFIG ===== */
 firebase.initializeApp({
 apiKey:"AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
@@ -161,13 +161,6 @@ projectId:"voter-25c94"
 firebase.auth().onAuthStateChanged(u=>{
  if(!u) location.href="index.html";
 });
-
-/* ===== SOUND ===== */
-function play(n){
- const a=document.getElementById("s"+n);
- a.currentTime=0;
- a.play().catch(()=>{});
-}
 
 /* ===== LOGOUT ===== */
 function logout(){
