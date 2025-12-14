@@ -1,91 +1,109 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Auto Slider</title>
+
 <style>
-  *{margin:0;padding:0;box-sizing:border-box;}
-  html, body{
-    width:100%;
-    height:100%;
-    overflow:hidden;
-    font-family: Arial, sans-serif;
-  }
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  font-family:Arial, sans-serif;
+}
 
-  /* Slider container */
-  .slider{
-    width:100%;
-    height:100vh;
-    position:relative;
-  }
+/* ===== SLIDER ===== */
+.slider{
+  width:100%;
+  height:100vh;
+  position:relative;
+}
 
-  .slide{
-    position:absolute;
-    top:0;
-    left:0;
-    width:100%;
-    height:100%;
-    object-fit:cover;
-    opacity:0;
-    transition: opacity 1s ease-in-out, transform 1s ease-in-out;
-    transform: scale(1.05);
-  }
+.slide{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  opacity:0;
+  transform:scale(1.05);
+  transition:opacity 1s ease, transform 1s ease;
+}
 
-  .slide.active{
-    opacity:1;
-    transform: scale(1);
-  }
+.slide.active{
+  opacity:1;
+  transform:scale(1);
+}
+
+/* ===== LOGIN BUTTON ===== */
+.login-btn{
+  position:fixed;
+  bottom:20px;
+  left:50%;
+  transform:translateX(-50%);
+  padding:10px 28px;
+  font-size:16px;
+  color:#fff;
+  border:none;
+  border-radius:30px;
+  cursor:pointer;
+  background:linear-gradient(145deg,#3498db,#1f6fb2);
+  box-shadow:0 5px 0 #144d7a,0 8px 15px rgba(0,0,0,.4);
+  animation:blink 1.5s infinite;
+  z-index:10;
+}
+
+.login-btn:active{
+  transform:translateX(-50%) translateY(4px);
+  box-shadow:0 2px 0 #144d7a;
+}
+
+/* ===== BLINK ===== */
+@keyframes blink{
+  0%,100%{filter:brightness(1)}
+  50%{filter:brightness(1.6)}
+}
 </style>
 </head>
+
 <body>
 
 <div class="slider">
 
+<img src="https://i.ibb.co/mC548wmP/Whats-App-Image-2025-12-14-at-13-47-59-04e3a507.jpg" class="slide active">
+<img src="https://i.ibb.co/bjrrNmz1/Whats-App-Image-2025-12-14-at-13-48-00-5a3a5660.jpg" class="slide">
+<img src="https://i.ibb.co/S7m0FC4r/Whats-App-Image-2025-12-14-at-13-48-00-f96375ff.jpg" class="slide">
+<img src="https://i.ibb.co/G45XZqrY/Whats-App-Image-2025-12-14-at-13-48-01-459cdfd1.jpg" class="slide">
 
-
-
-<img src="https://i.ibb.co/mC548wmP/Whats-App-Image-2025-12-14-at-13-47-59-04e3a507.jpg" alt="Slide 1" class="slide active">
-
-
-
- <img src="https://i.ibb.co/bjrrNmz1/Whats-App-Image-2025-12-14-at-13-48-00-5a3a5660.jpg" alt="Slide 3" class="slide">
-
-
-
- <img src="https://i.ibb.co/S7m0FC4r/Whats-App-Image-2025-12-14-at-13-48-00-f96375ff.jpg" alt="Slide 3" class="slide">
-
-
-
-
- <img src="https://i.ibb.co/G45XZqrY/Whats-App-Image-2025-12-14-at-13-48-01-459cdfd1.jpg" alt="Slide 3" class="slide">
-
-
-
-
-
- 
 </div>
 
+<!-- LOGIN BUTTON -->
+<button class="login-btn" onclick="goLogin()">Login</button>
+
 <script>
+/* ===== SLIDER LOGIC ===== */
 const slides = document.querySelectorAll('.slide');
 let current = 0;
-const total = slides.length;
-const delay = 3000; // 3 sec per slide
+const delay = 3000;
 
 function nextSlide(){
   slides[current].classList.remove('active');
   current++;
-  if(current >= total){
-    // Redirect after last slide
+  if(current >= slides.length){
     window.location.href = "https://voter-eight.vercel.app/index.html";
     return;
   }
   slides[current].classList.add('active');
 }
 
-// Auto slider
 setInterval(nextSlide, delay);
+
+/* ===== LOGIN ===== */
+function goLogin(){
+  window.location.href = "dashboard.html";
+}
 </script>
 
 </body>
