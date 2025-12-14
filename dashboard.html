@@ -129,27 +129,30 @@ Print Page
 </button>
 
 
-
 <script>
 const sounds = {
-    1: 'https://www.myserver.com/sound1.mp3', // Print Page sound
-    2: 'https://www.myserver.com/sound2.mp3', // Upload Image sound
-    3: 'https://www.myserver.com/sound3.mp3'  // किसी और button की sound
+    1: 'https://www.myserver.com/sound1.mp3', // Election Search / Print Page
+    2: 'https://www.myserver.com/sound2.mp3', // Voter Name Search
+    3: 'https://www.myserver.com/sound3.mp3', // Upload Image
+    4: 'https://www.myserver.com/sound4.mp3', // Logout
 };
 
 function play(soundNumber) {
     const audio = new Audio(sounds[soundNumber]);
-    audio.volume = 1.0; // आवाज तेज
+    audio.volume = 1.0; // तेज आवाज
     audio.play();
 }
 
-function playAndRedirect(soundNumber, url) {
-    play(soundNumber); // Sound बजाओ
+// Button के साथ redirect या open करने के लिए
+function playAndRedirect(soundNumber, url, isNewTab = false) {
+    play(soundNumber);
     setTimeout(() => {
-        window.location.href = url; // थोड़ी देर बाद redirect
+        if(isNewTab) window.open(url,'_blank');
+        else window.location.href = url;
     }, 500); // 500ms delay
 }
 </script>
+
 
 
 
