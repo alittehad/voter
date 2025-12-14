@@ -1,474 +1,114 @@
-<!doctype html>
-<html lang="hi">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Voter Manager</title>
-  <script type="module">
-  // -------------------------
-  // Firebase + App (single file)
-  // -------------------------
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-  import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
-  import { getDatabase, ref, onValue, set, get, child, update, push, remove } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
-  import { getStorage, ref as sref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-storage.js";
-
-  // -------------------------
-  // <-- PASTE YOUR FIREBASE CONFIG (YOU ALREADY PROVIDED) -->
-  const firebaseConfig = {
-    apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
-    authDomain: "voter-25c94.firebaseapp.com",
-    databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
-    projectId: "voter-25c94",
-    storageBucket: "voter-25c94.firebasestorage.app",
-    messagingSenderId: "297773534400",
-    appId: "1:297773534400:web:3722c487b8c83e9b787125"
-  };
-  // -------------------------
-
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getDatabase(app);
-  const storage = getStorage(app);
-
-  // Utility: convert dot to safe key and back
-  function emailToKey(email){ return email.replaceAll('.', '_dot_'); }
-  function keyToEmail(key){ return key.replaceAll('_dot_', '.'); }
-
-  // Basic DOM refs
-  const el = {};
-  window.addEventListener('DOMContentLoaded', () => {
-    el.loginBtn = document.getElementById('loginBtn');
-    el.logoutBtn = document.getElementById('logoutBtn');
-    el.userLabel = document.getElementById('userLabel');
-    el.adminPanel = document.getElementById('adminPanel');
-    el.sheetSelector = document.getElementById('sheetSelector');
-    el.voterTable = document.getElementById('voterTable');
-    el.cardModal = document.getElementById('cardModal');
-    el.cardContent = document.getElementById('cardContent');
-    el.photoBox = document.getElementById('photoBox');
-    el.photoInput = document.getElementById('photoInput');
-    el.manualForm = document.getElementById('manualForm');
-    el.addSheetForm = document.getElementById('addSheetForm');
-    el.adminListDiv = document.getElementById('adminListDiv');
-    el.exportBtn = document.getElementById('exportBtn');
-
-    el.loginBtn.addEventListener('click', login);
-    el.logoutBtn.addEventListener('click', logout);
-    el.sheetSelector.addEventListener('change', onSheetChange);
-    el.photoInput.addEventListener('change', onPhotoSelected);
-    el.manualForm.addEventListener('submit', onManualAdd);
-    el.addSheetForm.addEventListener('submit', onAddSheet);
-    el.exportBtn.addEventListener('click', exportSelectedSheet);
-
-    listenSheets(); // start listening to sheets list
-  });
-
-  // Auth
-  async function login(){
-    const provider = new GoogleAuthProvider();
-    try{
-      await signInWithPopup(auth, provider);
-    }catch(e){ alert('Login failed: ' + e.message); }
-  }
-  async function logout(){ await signOut(auth); }
-
-  // on auth change
-  let currentUser = null;
-  let currentIsAdmin = false;
-  onAuthStateChanged(auth, async (u) => {
-    currentUser = u;
-    if(!u){ el.userLabel.innerText = 'Not logged in'; el.loginBtn.style.display='inline-block'; el.logoutBtn.style.display='none'; el.adminPanel.style.display='none'; return; }
-    el.userLabel.innerText = u.email;
-    el.loginBtn.style.display='none';
-    el.logoutBtn.style.display='inline-block';
-    currentIsAdmin = await checkIsAdmin(u.email);
-    el.adminPanel.style.display = currentIsAdmin ? 'block' : 'none';
-    renderAdminList(); // show admins if admin
-  });
-
-  // Admin check by reading /admins/{emailKey}
-  async function checkIsAdmin(email){
-    if(!email) return false;
-    const key = emailToKey(email);
-    const snap = await get(child(ref(db), `admins/${key}`));
-    return snap.exists();
-  }
-
-  // ----------------------------
-  // SHEETS: listen and populate dropdown
-  // ----------------------------
-  let sheetsCache = {}; // id -> {name, csv_url}
-  function listenSheets(){
-    onValue(ref(db, 'sheets'), (snap) => {
-      const val = snap.exists() ? snap.val() : {};
-      sheetsCache = val;
-      renderSheetsDropdown();
-    });
-    // also render admins list initially
-    renderAdminList();
-  }
-
-  function renderSheetsDropdown(){
-    el.sheetSelector.innerHTML = '<option value="">-- Select Sheet --</option>';
-    for(const id in sheetsCache){
-      const opt = document.createElement('option');
-      opt.value = id;
-      opt.textContent = sheetsCache[id].name || id;
-      el.sheetSelector.appendChild(opt);
-    }
-  }
-
-  // When a sheet is selected
-  let currentSheetId = null;
-  let currentCSVRows = null;
-  async function onSheetChange(){
-    const id = el.sheetSelector.value;
-    currentSheetId = id || null;
-    el.voterTable.innerHTML = id ? '<small>Loading CSV...</small>' : '';
-    if(!id) return;
-    const csvUrl = sheetsCache[id].csv_url;
-    try{
-      const text = await (await fetch(csvUrl)).text();
-      currentCSVRows = parseCSV(text); // returns array of objects (if headers present)
-      renderTable(currentCSVRows);
-    }catch(e){
-      el.voterTable.innerHTML = '<div style="color:red">CSV load failed: '+e.message+'</div>';
-    }
-  }
-
-  // Simple CSV parser -> returns array of objects if headers present else arrays
-  function parseCSV(text){
-    // handle CRLF
-    const lines = text.split(/\r\n|\n/).filter(l => l.trim() !== '');
-    if(lines.length === 0) return [];
-    // naive parse with support for quoted fields
-    function splitLine(line){
-      const out = [];
-      let cur = '', inQuotes=false;
-      for(let i=0;i<line.length;i++){
-        const ch=line[i];
-        if(ch==='\"'){ inQuotes = !inQuotes; continue; }
-        if(ch===',' && !inQuotes){ out.push(cur); cur=''; } else cur+=ch;
-      }
-      out.push(cur);
-      return out.map(s => s.trim());
-    }
-    const header = splitLine(lines[0]);
-    const rows = [];
-    for(let i=1;i<lines.length;i++){
-      const vals = splitLine(lines[i]);
-      const obj = {};
-      for(let j=0;j<header.length;j++){
-        obj[header[j]||('col'+j)] = vals[j] || '';
-      }
-      rows.push(obj);
-    }
-    return rows;
-  }
-
-  // Render table of voters (simple)
-  function renderTable(rows){
-    if(!rows || rows.length===0){ el.voterTable.innerHTML = '<div>No rows</div>'; return; }
-    // build HTML table
-    const cols = Object.keys(rows[0]);
-    let html = '<div style="overflow:auto"><table class="table" border="1" cellspacing="0" cellpadding="6"><thead><tr>';
-    for(const c of cols) html += `<th>${escapeHtml(c)}</th>`;
-    html += '<th>Action</th></tr></thead><tbody>';
-    for(const r of rows){
-      html += '<tr>';
-      for(const c of cols) html += `<td>${escapeHtml(r[c]||'')}</td>`;
-      // identify EPIC field if present otherwise use first column as id
-      const epic = (r.EPIC || r.epic || r.Epic || r['EPIC NO'] || Object.values(r)[1] || Object.values(r)[0]) || '';
-      html += `<td><button onclick='window.openVoterCard(${JSON.stringify(JSON.stringify(r))})'>View</button></td>`;
-      html += '</tr>';
-    }
-    html += '</tbody></table></div>';
-    // attach to DOM
-    el.voterTable.innerHTML = html;
-  }
-
-  // expose open function for buttons (because we used inline onclick)
-  window.openVoterCard = function(jsonStr){
-    const r = JSON.parse(jsonStr);
-    openCard(r);
-  };
-
-  function openCard(voterObj){
-    // show modal with formatted data
-    el.cardContent.innerHTML = `<h2 style="margin-top:0">${escapeHtml(voterObj.name || voterObj.Name || Object.values(voterObj)[0] || 'Voter')}</h2>`;
-    let html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">';
-    for(const k in voterObj){
-      html += `<div style="background:#f7f7f7;padding:8px;border-radius:6px"><b>${escapeHtml(k)}</b><div>${escapeHtml(voterObj[k])}</div></div>`;
-    }
-    html += '</div>';
-    html += `<div style="margin-top:10px"><button id="printBtn">Print</button> <button id="waBtn">Share WhatsApp</button></div>`;
-    // photo area
-    html += `<h3 style="margin-top:10px">Photos</h3><div id="photoBoxInner"></div>`;
-    // admin upload area (visible only if admin)
-    html += `<div id="adminPhotoArea" style="margin-top:8px;display:none">
-              <input id="photoFileInput" type="file" accept="image/*" />
-              <button id="photoUploadBtn">Upload Photo</button>
-             </div>`;
-    el.cardContent.innerHTML = html;
-    // show modal
-    el.cardModal.style.display = 'flex';
-    // attach actions
-    document.getElementById('printBtn').addEventListener('click', () => {
-      // open printable window
-      const w = window.open();
-      w.document.write('<html><head><title>Print</title></head><body>' + el.cardContent.innerHTML + '</body></html>');
-      w.document.close();
-      w.print();
-    });
-    document.getElementById('waBtn').addEventListener('click', () => {
-      const msg = Object.entries(voterObj).map(([k,v]) => `${k}: ${v}`).join('\n');
-      window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
-    });
-
-    // load photos for this voter if any
-    const epic = (voterObj.EPIC || voterObj.epic || voterObj.Epic || Object.values(voterObj)[1] || Object.values(voterObj)[0]) || '';
-    loadPhotosForVoter(currentSheetId, epic);
-
-    // show admin upload if current user is admin
-    checkIsAdmin(currentUser?.email).then(isAdmin => {
-      if(isAdmin){
-        document.getElementById('adminPhotoArea').style.display = 'block';
-        document.getElementById('photoUploadBtn').addEventListener('click', async () => {
-          const fileEl = document.getElementById('photoFileInput');
-          if(!fileEl.files || !fileEl.files[0]) return alert('Choose a file');
-          await uploadPhotoForVoter(currentSheetId, epic, fileEl.files[0]);
-          loadPhotosForVoter(currentSheetId, epic);
-        });
-      }
-    });
-  }
-
-  // Close card
-  function closeCard(){
-    el.cardModal.style.display = 'none';
-    el.cardContent.innerHTML = '';
-  }
-  window.closeCard = closeCard;
-
-  // Photos: stored in Storage at voters/{sheetId}/{epic}/{filename}
-  async function uploadPhotoForVoter(sheetId, epic, file){
-    if(!sheetId) return alert('Select a sheet first');
-    const path = `voters/${sheetId}/${epic || 'no_epic'}/${Date.now()}_${file.name}`;
-    const r = sref(storage, path);
-    await uploadBytes(r, file);
-    const url = await getDownloadURL(r);
-    // save metadata in RTDB -> photos/{sheetId}/{epic} = { url1: true, ... } OR array
-    const key = epic || 'no_epic';
-    const photoRef = ref(db, `photos/${sheetId}/${key}`);
-    const snap = await get(photoRef);
-    const list = snap.exists() ? snap.val() : [];
-    list.push(url);
-    await set(photoRef, list);
-    return url;
-  }
-
-  async function loadPhotosForVoter(sheetId, epic){
-    const key = epic || 'no_epic';
-    const photoRef = ref(db, `photos/${sheetId}/${key}`);
-    const snap = await get(photoRef);
-    const list = snap.exists() ? snap.val() : [];
-    const box = document.getElementById('photoBoxInner');
-    box.innerHTML = '';
-    for(const url of list){
-      const div = document.createElement('div');
-      div.style.display = 'inline-block';
-      div.style.margin = '6px';
-      div.innerHTML = `<img src="${url}" style="width:120px;border-radius:8px;display:block"/><button data-url="${url}" class="delPhotoBtn">Delete</button>`;
-      box.appendChild(div);
-    }
-    // attach delete handlers (admin-only)
-    const delBtns = box.querySelectorAll('.delPhotoBtn');
-    delBtns.forEach(btn => {
-      btn.addEventListener('click', async () => {
-        if(!confirm('Delete this photo?')) return;
-        const url = btn.dataset.url;
-        try{
-          const objRef = sref(storage, urlToStoragePath(url));
-          await deleteObject(objRef);
-        }catch(e){
-          // sometimes delete fails if storage path not resolvable from URL; ignore
-          console.warn('storage delete failed', e);
-        }
-        // remove from DB list
-        const newList = list.filter(u => u !== url);
-        await set(ref(db, `photos/${sheetId}/${key}`), newList);
-        loadPhotosForVoter(sheetId, epic);
-      });
-    });
-  }
-
-  // helper: convert download URL -> storage path (best-effort). If fails, delete in DB only.
-  function urlToStoragePath(url){
-    try{
-      // download URLs have /o/{encodedPath}?...
-      const m = url.match(/\/o\/([^?]+)\?/);
-      if(!m) return null;
-      return decodeURIComponent(m[1]);
-    }catch(e){ return null; }
-  }
-
-  // photo input outside card (unused but reserved)
-  function onPhotoSelected(){ /* unused placeholder */ }
-
-  // Manual add voter (admin-only) - adds simple JSON under voters/{sheetId}/autoId
-  async function onManualAdd(e){
-    e.preventDefault();
-    if(!currentSheetId) return alert('Select a sheet first');
-    if(!currentUser) return alert('Please login as admin');
-    const form = new FormData(el.manualForm);
-    const obj = {};
-    for(const [k,v] of form.entries()) obj[k]=v;
-    // push to RTDB
-    const refPush = push(ref(db, `voters/${currentSheetId}`));
-    await set(refPush, obj);
-    alert('Manual voter added');
-  }
-
-  // Admin: Add new sheet (name + csv_url)
-  async function onAddSheet(e){
-    e.preventDefault();
-    if(!currentUser) return alert('Login as admin');
-    const form = new FormData(el.addSheetForm);
-    const name = form.get('sheetName');
-    const url = form.get('sheetUrl');
-    if(!name || !url) return alert('Fill both');
-    const newRef = push(ref(db, 'sheets'));
-    await set(newRef, { name, csv_url: url });
-    el.addSheetForm.reset();
-    alert('Sheet added');
-  }
-
-  // Admin list render + add/remove admin
-  async function renderAdminList(){
-    el.adminListDiv.innerHTML = '';
-    const snap = await get(ref(db, 'admins'));
-    const obj = snap.exists() ? snap.val() : {};
-    const container = el.adminListDiv;
-    container.innerHTML = '<h4>Admins</h4>';
-    const ul = document.createElement('ul');
-    for(const key in obj){
-      const email = keyToEmail(key);
-      const li = document.createElement('li');
-      li.innerHTML = `${escapeHtml(email)} <button data-key="${key}" class="remAdminBtn">Remove</button>`;
-      ul.appendChild(li);
-    }
-    container.appendChild(ul);
-    // add add-admin form
-    const form = document.createElement('div');
-    form.innerHTML = `<input id="newAdminEmail" placeholder="email to add" /> <button id="addAdminBtn">Add Admin</button>`;
-    container.appendChild(form);
-    document.getElementById('addAdminBtn').addEventListener('click', async () => {
-      const em = document.getElementById('newAdminEmail').value.trim();
-      if(!em) return alert('Enter email');
-      await set(ref(db, `admins/${emailToKey(em)}`), true);
-      renderAdminList();
-    });
-    // remove handlers
-    container.querySelectorAll('.remAdminBtn').forEach(b=>{
-      b.addEventListener('click', async () => {
-        if(!confirm('Remove this admin?')) return;
-        const key = b.dataset.key;
-        await remove(ref(db, `admins/${key}`));
-        renderAdminList();
-      });
-    });
-  }
-
-  // Export selected sheet -> download JSON (currentCSVRows)
-  function exportSelectedSheet(){
-    if(!currentCSVRows) return alert('No sheet loaded');
-    const blob = new Blob([JSON.stringify(currentCSVRows, null, 2)], {type:'application/json'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = (sheetsCache[currentSheetId]?.name || 'sheet') + '.json';
-    a.click();
-  }
-
-  // helper: escapeHtml
-  function escapeHtml(s){ if(!s && s!==0) return ''; return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
-
-  // helper: convert object rows to CSV if needed (not used)
-  function toCSV(rows){
-    if(!rows || rows.length===0) return '';
-    const cols = Object.keys(rows[0]);
-    let out = cols.join(',') + '\n';
-    for(const r of rows){
-      out += cols.map(c => `"${String(r[c]||'').replaceAll('"','""')}"`).join(',') + '\n';
-    }
-    return out;
-  }
-
-  </script>
-
-  <style>
-    body{font-family:system-ui,Segoe UI,Arial;background:#f9fafb;padding:14px}
-    header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
-    .table{width:100%;border-collapse:collapse}
-    th{background:#eef2ff}
-    #cardModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);align-items:center;justify-content:center}
-    #cardContent{background:white;padding:16px;border-radius:8px;max-width:860px;width:94%;max-height:90vh;overflow:auto}
-    button{cursor:pointer}
-    #adminPanel{background:#fff;border:1px solid #eee;padding:10px;border-radius:8px}
-    input,select{padding:6px;margin:4px 0}
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard</title>
+<link rel="stylesheet" href="style.css">
 </head>
-<body>
-  <header>
-    <div>
-      <h1>Voter Manager</h1>
-      <div id="userLabel">Not logged in</div>
-    </div>
-    <div>
-      <button id="loginBtn">Login with Google</button>
-      <button id="logoutBtn" style="display:none">Logout</button>
-    </div>
-  </header>
 
-  <section id="adminPanel" style="display:none;margin-bottom:10px">
-    <h3>Admin Panel</h3>
-    <div id="adminListDiv"></div>
+<body class="dash-bg">
 
-    <hr/>
+<!-- Logout -->
+<button id="logoutBtn" class="btn3d logout-btn">Logout</button>
 
-    <form id="addSheetForm">
-      <b>Add Sheet (CSV URL)</b><br/>
-      <input name="sheetName" placeholder="Name (eg: Nalasopara 2025)" style="width:60%" />
-      <input name="sheetUrl" placeholder="CSV URL (publish to web -> CSV)" style="width:60%;display:block;margin-top:6px" />
-      <button type="submit">Add Sheet</button>
-    </form>
+<!-- Main Buttons -->
+<div class="button-container">
 
-    <hr/>
+  <button class="btn3d color-btn"
+    onclick="window.open('https://electoralsearch.eci.gov.in/=', '_blank')">
+    Election Search
+  </button>
 
-    <form id="manualForm">
-      <b>Manual Add Voter (to selected sheet)</b><br/>
-      <input name="name" placeholder="Name" />
-      <input name="EPIC" placeholder="EPIC" />
-      <input name="address" placeholder="Address" />
-      <input name="part_no" placeholder="Part No" />
-      <button type="submit">Add Voter</button>
-    </form>
-  </section>
+  <button class="btn3d color-btn"
+    onclick="window.open('https://mahasecvoterlist.in/ObjectionOnClick/SearchVoterName=', '_blank')">
+    Voter Name Search
+  </button>
 
-  <section>
-    <label>Select Sheet:</label>
-    <select id="sheetSelector"></select>
-    <button id="exportBtn">Export sheet as JSON</button>
-  </section>
+  <button class="btn3d color-btn" onclick="openCloudinaryUpload()">
+    Upload Image
+  </button>
 
-  <hr/>
+  <!-- ⭐ FIXED: PRINT PAGE BUTTON NOW OPENS print.html -->
+  <button class="btn3d blinking" onclick="window.location.href='print.html'">
+    Print Page
+  </button>
 
-  <section id="voterTable"></section>
+</div>
 
-  <!-- Card modal -->
-  <div id="cardModal" onclick="if(event.target===this) closeCard()">
-    <div id="cardContent"></div>
-  </div>
+<!-- Uploaded images -->
+<div id="images"
+  style="margin-top:20px; display:flex; flex-wrap:wrap; gap:10px; justify-content:center;">
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+
+<script>
+/* Firebase Config */
+const firebaseConfig = {
+  apiKey: "AIzaSyD7x6epAwfshYNzc4G8JvmE4Bu3UNdMB5U",
+  authDomain: "nikah-c234b.firebaseapp.com",
+  databaseURL: "https://nikah-c234b-default-rtdb.firebaseio.com",
+  projectId: "nikah-c234b",
+  storageBucket: "nikah-c234b.appspot.com",
+  messagingSenderId: "760906560668",
+  appId: "1:760906560668:web:0a2c16a47aeaec26482959",
+  measurementId: "G-ENL0FZPEEF"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+
+/* Check Login */
+auth.onAuthStateChanged(user => {
+  if (!user) window.location.href = 'index.html';
+});
+
+/* Logout */
+document.getElementById('logoutBtn').addEventListener('click', () => {
+  auth.signOut().then(() => window.location.href = 'index.html');
+});
+
+/* Cloudinary Upload */
+function openCloudinaryUpload() {
+  const fileInput = document.createElement('input');
+  fileInput.type = 'file';
+  fileInput.accept = 'image/*';
+
+  fileInput.onchange = () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    const cloudName = 'YOUR_CLOUD_NAME';
+    const unsignedUploadPreset = 'dlsqxs7zl';
+    const url = `https://api.cloudinary.com/v1_1/${cloudName}/upload`;
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', unsignedUploadPreset);
+
+    fetch(url, { method: 'POST', body: formData })
+      .then(res => res.json())
+      .then(data => {
+        if (data.secure_url) {
+          const imagesDiv = document.getElementById('images');
+          const img = document.createElement('img');
+          img.src = data.secure_url;
+          img.style.width = '150px';
+          img.style.height = '150px';
+          img.style.objectFit = 'cover';
+          img.style.borderRadius = '10px';
+          imagesDiv.appendChild(img);
+        } else {
+          alert("Upload failed");
+        }
+      })
+      .catch(err => alert(err));
+  };
+
+  fileInput.click();
+}
+</script>
 
 </body>
 </html>
