@@ -11,14 +11,12 @@
     overflow-x: hidden;
   }
 
-  /* Background slider */
   body {
     background-size: cover;
     background-position: center;
     transition: background-image 1s ease-in-out;
   }
 
-  /* Buttons container */
   .button-container {
     position: absolute;
     top:50%; left:50%;
@@ -31,7 +29,6 @@
     max-width:600px;
   }
 
-  /* 3D Buttons */
   .btn3d {
     padding: 20px 40px;
     font-size:18px;
@@ -49,29 +46,26 @@
     box-shadow: 0 2px 0 #1c5980, 0 4px 8px rgba(0,0,0,0.4);
   }
 
-  /* Blinking animations with delay for each button */
-  @keyframes blink1 { 0%,100%{background:#3498db} 50%{background:#e74c3c} }
-  @keyframes blink2 { 0%,100%{background:#2ecc71} 50%{background:#f39c12} }
-  @keyframes blink3 { 0%,100%{background:#9b59b6} 50%{background:#f1c40f} }
-  @keyframes blink4 { 0%,100%{background:#e67e22} 50%{background:#1abc9c} }
+  /* Blinking buttons */
+  @keyframes blink1 {0%,100%{background:#3498db}50%{background:#e74c3c}}
+  @keyframes blink2 {0%,100%{background:#2ecc71}50%{background:#f39c12}}
+  @keyframes blink3 {0%,100%{background:#9b59b6}50%{background:#f1c40f}}
+  @keyframes blink4 {0%,100%{background:#e67e22}50%{background:#1abc9c}}
 
-  .blinking1 { animation: blink1 2s infinite; }
-  .blinking2 { animation: blink2 2s infinite; }
-  .blinking3 { animation: blink3 2s infinite; }
-  .blinking4 { animation: blink4 2s infinite; }
+  .blinking1 {animation: blink1 2s infinite;}
+  .blinking2 {animation: blink2 2s infinite;}
+  .blinking3 {animation: blink3 2s infinite;}
+  .blinking4 {animation: blink4 2s infinite;}
 
-  /* Logout button */
   #logoutBtn {
     position: absolute;
     top:20px; right:20px;
     width:50px; height:50px;
     border-radius:50%;
-    padding:0;
     font-size:12px;
     text-align:center;
   }
 
-  /* Uploaded images */
   #images {
     margin-top:20px;
     display:flex;
@@ -97,7 +91,6 @@
 <!-- Logout -->
 <button id="logoutBtn" class="btn3d">Logout</button>
 
-<!-- Buttons -->
 <div class="button-container">
   <button class="btn3d blinking1" onclick="buttonClick('https://electoralsearch.eci.gov.in/=')">Election Search</button>
   <button class="btn3d blinking2" onclick="buttonClick('https://mahasecvoterlist.in/ObjectionOnClick/SearchVoterName=')">Voter Name Search</button>
@@ -105,16 +98,16 @@
   <button class="btn3d blinking4" onclick="buttonClick('print.html')">Print Page</button>
 </div>
 
-<!-- Uploaded images -->
 <div id="images"></div>
 
-<!-- Button click sound -->
+<!-- Audio -->
 <audio id="clickSound" src="https://www.soundjay.com/buttons/sounds/button-16.mp3" preload="auto"></audio>
 
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+
 <script>
-  // Firebase config
+  // Firebase
   const firebaseConfig = {
     apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
     authDomain: "voter-25c94.firebaseapp.com",
@@ -127,38 +120,42 @@
 
   // Check login
   auth.onAuthStateChanged(user => {
-    if (!user) window.location.href='index.html';
+    if(!user) window.location.href='index.html';
   });
 
-  // Logout
-  document.getElementById('logoutBtn').addEventListener('click', () => {
+  // Play sound function
+  function playSound(){
     const sound = document.getElementById('clickSound');
+    sound.currentTime = 0;
+    sound.volume = 1.0; // max volume
     sound.play();
+  }
+
+  // Button click with sound
+  function buttonClick(url){
+    playSound();
+    setTimeout(()=> window.open(url,'_blank'),150);
+  }
+
+  // Logout
+  document.getElementById('logoutBtn').addEventListener('click',()=>{
+    playSound();
     auth.signOut().then(()=> window.location.href='index.html');
   });
 
-  // Button click with sound and link
-  function buttonClick(url){
-    const sound = document.getElementById('clickSound');
-    sound.play();
-    setTimeout(()=> window.open(url, '_blank'), 150);
-  }
-
   // Cloudinary Upload
   function openCloudinaryUpload(){
-    const sound = document.getElementById('clickSound');
-    sound.play();
-
+    playSound();
     const fileInput = document.createElement('input');
     fileInput.type='file';
     fileInput.accept='image/*';
-    fileInput.onchange = () => {
+    fileInput.onchange = ()=>{
       const file = fileInput.files[0];
       if(!file) return;
 
-      const cloudName = 'YOUR_CLOUD_NAME';
-      const unsignedUploadPreset = 'dlsqxs7zl';
-      const url = `https://api.cloudinary.com/v1_1/${cloudName}/upload`;
+      const cloudName='YOUR_CLOUD_NAME';
+      const unsignedUploadPreset='dlsqxs7zl';
+      const url=`https://api.cloudinary.com/v1_1/${cloudName}/upload`;
 
       const formData = new FormData();
       formData.append('file', file);
@@ -168,11 +165,11 @@
         .then(res=>res.json())
         .then(data=>{
           if(data.secure_url){
-            const imagesDiv = document.getElementById('images');
-            const img = document.createElement('img');
-            img.src = data.secure_url;
+            const imagesDiv=document.getElementById('images');
+            const img=document.createElement('img');
+            img.src=data.secure_url;
             imagesDiv.appendChild(img);
-          } else { alert("Upload failed"); }
+          }else alert("Upload failed");
         }).catch(err=>alert(err));
     };
     fileInput.click();
@@ -186,14 +183,13 @@
     "https://i.ibb.co/hFtvv9bk/4.avif",
     "https://i.ibb.co/pBfjvXSx/5.jpg"
   ];
-  let bgIndex = 0;
+  let bgIndex=0;
   function changeBackground(){
-    document.body.style.backgroundImage = `url(${bgImages[bgIndex]})`;
-    bgIndex = (bgIndex+1)%bgImages.length;
+    document.body.style.backgroundImage=`url(${bgImages[bgIndex]})`;
+    bgIndex=(bgIndex+1)%bgImages.length;
   }
   changeBackground();
-  setInterval(changeBackground, 5000); // change every 5 sec
-
+  setInterval(changeBackground,5000);
 </script>
 </body>
 </html>
