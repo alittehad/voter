@@ -4,64 +4,81 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Login Page</title>
-
 <style>
-html, body {
-  margin: 0;
-  padding: 0;
-  height: 100vh;
-  width: 100vw;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  overflow: hidden;
-  font-family: Arial, sans-serif;
-}
+  /* Fullscreen and center content */
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    width: 100vw;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+  }
 
-body::before {
-  content: "";
-  background-image: url('https://i.ibb.co/fVzDLVT6/Chat-GPT-Image-Dec-12-2025-01-07-19-PM.png');
-  background-size: cover;
-  background-position: center;
-  position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  z-index: -1;
-}
+  /* Background Image */
+  body::before {
+    content: "";
+    background-image: url('https://i.ibb.co/fVzDLVT6/Chat-GPT-Image-Dec-12-2025-01-07-19-PM.png');
+    background-size: cover;
+    background-position: center;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: -1;
+  }
 
-.btn3d {
-  padding: 20px 60px;
-  font-size: 22px;
-  font-weight: bold;
-  border: none;
-  border-radius: 12px;
-  color: #fff;
-  cursor: pointer;
-  background: linear-gradient(145deg,#3498db,#2980b9);
-  box-shadow: 0 5px 0 #1c5980,0 8px 15px rgba(0,0,0,0.4);
-}
+  /* 3D Blinking Button */
+  .btn3d {
+    padding: 20px 60px;
+    font-size: 22px;
+    font-weight: bold;
+    text-transform: uppercase;
+    border: none;
+    border-radius: 12px;
+    color: #fff;
+    cursor: pointer;
+    position: relative;
+    z-index: 1;
+    transition: all 0.2s ease;
 
-.btn3d:active {
-  transform: translateY(5px);
-  box-shadow: 0 2px 0 #1c5980,0 4px 8px rgba(0,0,0,0.4);
-}
+    /* 3D effect */
+    background: linear-gradient(145deg, #3498db, #2980b9);
+    box-shadow: 0 5px 0 #1c5980,
+                0 8px 15px rgba(0,0,0,0.4);
+  }
 
-@keyframes blinkColor {
-  0%   { background: linear-gradient(145deg,#3498db,#2980b9); }
-  25%  { background: linear-gradient(145deg,#e74c3c,#c0392b); }
-  50%  { background: linear-gradient(145deg,#2ecc71,#27ae60); }
-  75%  { background: linear-gradient(145deg,#f1c40f,#f39c12); }
-  100% { background: linear-gradient(145deg,#3498db,#2980b9); }
-}
+  /* Press effect */
+  .btn3d:active {
+    transform: translateY(5px);
+    box-shadow: 0 2px 0 #1c5980,
+                0 4px 8px rgba(0,0,0,0.4);
+  }
 
-.blinking {
-  animation: blinkColor 2s infinite;
-}
+  /* Hover effect */
+  .btn3d:hover {
+    filter: brightness(1.2);
+  }
+
+  /* Blinking color animation */
+  @keyframes blinkColor {
+    0%   { background: linear-gradient(145deg, #3498db, #2980b9); }
+    25%  { background: linear-gradient(145deg, #e74c3c, #c0392b); }
+    50%  { background: linear-gradient(145deg, #2ecc71, #27ae60); }
+    75%  { background: linear-gradient(145deg, #f1c40f, #f39c12); }
+    100% { background: linear-gradient(145deg, #3498db, #2980b9); }
+  }
+
+  .blinking {
+    animation: blinkColor 2s infinite;
+  }
 </style>
 </head>
-
 <body>
 
+<!-- Centered Button -->
 <button id="loginBtn" class="btn3d blinking">Login with Google</button>
 
 <!-- Firebase SDK -->
@@ -69,27 +86,30 @@ body::before {
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
 
 <script>
-// ✅ Firebase config (ONLY ONCE)
+/* ===== Firebase Config ===== */
 const firebaseConfig = {
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
   authDomain: "voter-25c94.firebaseapp.com",
   databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
   projectId: "voter-25c94",
-  storageBucket: "voter-25c94.appspot.com",
+  storageBucket: "voter-25c94.appspot.com"
 };
 
-// Initialize Firebase
+/* ===== Initialize ONCE ===== */
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 
-// Google Login
-document.getElementById("loginBtn").addEventListener("click", () => {
+/* ===== Google Login ===== */
+document.getElementById('loginBtn').addEventListener('click', () => {
   const provider = new firebase.auth.GoogleAuthProvider();
   auth.signInWithPopup(provider)
     .then(() => {
+      // ✅ LOGIN SUCCESS → SAME PAGE REDIRECT
       window.location.href = "dashboard.html";
     })
-    .catch(err => alert(err.message));
+    .catch(error => {
+      alert(error.message);
+    });
 });
 </script>
 
