@@ -131,13 +131,26 @@ Print Page
 
 
 <script>
+const sounds = {
+    1: 'https://www.myserver.com/sound1.mp3', // Print Page sound
+    2: 'https://www.myserver.com/sound2.mp3', // Upload Image sound
+    3: 'https://www.myserver.com/sound3.mp3'  // किसी और button की sound
+};
+
+function play(soundNumber) {
+    const audio = new Audio(sounds[soundNumber]);
+    audio.volume = 1.0; // आवाज तेज
+    audio.play();
+}
+
 function playAndRedirect(soundNumber, url) {
     play(soundNumber); // Sound बजाओ
     setTimeout(() => {
         window.location.href = url; // थोड़ी देर बाद redirect
-    }, 500); // 500ms delay (sound play होने का समय)
+    }, 500); // 500ms delay
 }
 </script>
+
 
 
 </div>
