@@ -1,47 +1,113 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>Mera Browser</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login Page</title>
+<style>
+  /* Fullscreen and center content */
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    width: 100vw;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+  }
 
-  <style>
-    body { margin:0; overflow:hidden; font-family:Arial; }
+  /* Background Image */
+  body::before {
+    content: "";
+    background-image: url('https://i.ibb.co/fVzDLVT6/Chat-GPT-Image-Dec-12-2025-01-07-19-PM.png');
+    background-size: cover;
+    background-position: center;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: -1;
+  }
 
-    header {
-      position:fixed; top:0; left:0; right:0;
-      height:80px; background:#0078D7; color:white;
-      display:flex; align-items:center; padding:10px 20px;
-      font-size:20px; font-weight:bold;
-      z-index:1000;
-    }
+  /* 3D Blinking Button */
+  .btn3d {
+    padding: 20px 60px;
+    font-size: 22px;
+    font-weight: bold;
+    text-transform: uppercase;
+    border: none;
+    border-radius: 12px;
+    color: #fff;
+    cursor: pointer;
+    position: relative;
+    z-index: 1;
+    transition: all 0.2s ease;
 
-    footer {
-      position:fixed; bottom:0; left:0; right:0;
-      height:70px; background:black; color:white;
-      display:flex; align-items:center; justify-content:space-evenly;
-      z-index:1000;
-    }
+    /* 3D effect */
+    background: linear-gradient(145deg, #3498db, #2980b9);
+    box-shadow: 0 5px 0 #1c5980,
+                0 8px 15px rgba(0,0,0,0.4);
+  }
 
-    button {
-      padding:10px 16px; border:none; border-radius:6px;
-      background:green; color:white; cursor:pointer;
-      font-size:16px;
-    }
-  </style>
+  /* Press effect */
+  .btn3d:active {
+    transform: translateY(5px);
+    box-shadow: 0 2px 0 #1c5980,
+                0 4px 8px rgba(0,0,0,0.4);
+  }
 
+  /* Hover effect */
+  .btn3d:hover {
+    filter: brightness(1.2);
+  }
+
+  /* Blinking color animation */
+  @keyframes blinkColor {
+    0%   { background: linear-gradient(145deg, #3498db, #2980b9); }
+    25%  { background: linear-gradient(145deg, #e74c3c, #c0392b); }
+    50%  { background: linear-gradient(145deg, #2ecc71, #27ae60); }
+    75%  { background: linear-gradient(145deg, #f1c40f, #f39c12); }
+    100% { background: linear-gradient(145deg, #3498db, #2980b9); }
+  }
+
+  .blinking {
+    animation: blinkColor 2s infinite;
+  }
+</style>
 </head>
-
 <body>
 
-<header>
-  <div>🔵 Mera Custom Browser</div>
-</header>
+<!-- Centered Button -->
+<button id="loginBtn" class="btn3d blinking">Login with Google</button>
 
-<footer>
-  <button onclick="alert('Home button')">Home</button>
-  <button onclick="alert('Gov site button')">Gov Site</button>
-  <button onclick="alert('My Site button')">My Site</button>
-</footer>
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+
+<script>
+  // Firebase config
+  const firebaseConfig = {
+    apiKey: "AIzaSyD7x6epAwfshYNzc4G8JvmE4Bu3UNdMB5U",
+    authDomain: "nikah-c234b.firebaseapp.com",
+    databaseURL: "https://nikah-c234b-default-rtdb.firebaseio.com",
+    projectId: "nikah-c234b",
+    storageBucket: "nikah-c234b.appspot.com",
+    messagingSenderId: "760906560668",
+    appId: "1:760906560668:web:0a2c16a47aeaec26482959",
+    measurementId: "G-ENL0FZPEEF"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+
+  // Google login
+  document.getElementById('loginBtn').addEventListener('click', () => {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    auth.signInWithPopup(provider)
+        .then(() => window.location.href='dashboard.html')
+        .catch(err => alert(err.message));
+  });
+</script>
 
 </body>
 </html>
