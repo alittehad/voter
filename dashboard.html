@@ -53,8 +53,8 @@ body::before{
 /* ===== 3D BUTTONS ===== */
 .btn3d{
   width:100%;
-  padding:14px;        /* कम किया */
-  font-size:16px;      /* छोटा किया */
+  padding:14px;
+  font-size:16px;
   color:#fff;
   border:none;
   border-radius:12px;
@@ -68,7 +68,7 @@ body::before{
   box-shadow:0 2px 0 #1c5980;
 }
 
-/* ===== BLINKING ANIMATIONS ===== */
+/* ===== BLINKING ===== */
 .b1{animation:blink1 2s infinite}
 .b2{animation:blink2 3s infinite}
 .b3{animation:blink3 4s infinite}
@@ -79,12 +79,12 @@ body::before{
 @keyframes blink3{50%{background:#2ecc71}}
 @keyframes blink4{50%{background:#f1c40f}}
 
-/* ===== LOGOUT CONE ===== */
+/* ===== LOGOUT ===== */
 .logout-cone{
   position:fixed;
   top:15px;
   right:15px;
-  width:40px;   /* थोड़ा छोटा */
+  width:40px;
   height:40px;
   border-radius:50%;
   border:none;
@@ -94,14 +94,9 @@ body::before{
   background:linear-gradient(145deg,#ff4b2b,#c0392b);
   box-shadow:0 3px 0 #8e2b21;
 }
-
-/* RESPONSIVE */
-@media(max-width:500px){
-  .btn3d{font-size:14px;padding:12px}
-  .logout-cone{width:35px;height:35px;font-size:16px}
-}
 </style>
 </head>
+
 <body>
 
 <!-- 🔊 SOUNDS -->
@@ -115,13 +110,32 @@ body::before{
 
 <!-- BUTTONS -->
 <div class="button-container">
-  <button class="btn3d b1" onclick="playAndRedirect(1,'https://#######electoralsearch.eci.gov.in/',true)">Election Search</button>
-  <button class="btn3d b2" onclick="playAndRedirect(2,'https://#####mahasecvoterlist.in/ObjectionOnClick/SearchVoterName',true)">Voter Name Search</button>
-  <button class="btn3d b3" onclick="play(3); alert('Upload Image Clicked')">Upload Image</button>
-  <button class="btn3d b4" onclick="playAndRedirect(1,'###print.html')">Print Page</button>
 
-  <button class="btn3d b1" onclick="playAndRedirect(1,'list.html',true)">Admin  Search</button>
-  
+  <button class="btn3d b1"
+    onclick="playAndRedirect(1,'https://electoralsearch.eci.gov.in/',true)">
+    Election Search
+  </button>
+
+  <button class="btn3d b2"
+    onclick="playAndRedirect(2,'https://mahasecvoterlist.in/ObjectionOnClick/SearchVoterName',true)">
+    Voter Name Search
+  </button>
+
+  <button class="btn3d b3"
+    onclick="play(3);alert('Upload Image Clicked')">
+    Upload Image
+  </button>
+
+  <button class="btn3d b4"
+    onclick="playAndRedirect(1,'print.html')">
+    Print Page
+  </button>
+
+  <!-- 🔐 ADMIN BUTTON -->
+  <button class="btn3d b1" onclick="adminAccess()">
+    Admin Search
+  </button>
+
 </div>
 
 <script>
@@ -132,12 +146,12 @@ firebase.initializeApp({
   projectId:"voter-25c94"
 });
 
-/* CHECK LOGIN */
+/* ===== LOGIN CHECK ===== */
 firebase.auth().onAuthStateChanged(user=>{
   if(!user) location.href="index.html";
 });
 
-/* ===== SOUND FUNCTION ===== */
+/* ===== SOUND ===== */
 function play(n){
   const a=document.getElementById("s"+n);
   a.currentTime=0;
@@ -145,18 +159,38 @@ function play(n){
   a.play().catch(()=>{});
 }
 
-/* ===== REDIRECT WITH SOUND ===== */
-function playAndRedirect(soundNumber,url,isNewTab=false){
-  play(soundNumber);
+/* ===== REDIRECT ===== */
+function playAndRedirect(sound,url,newTab=false){
+  play(sound);
   setTimeout(()=>{
-    if(isNewTab) window.open(url,'_blank');
-    else window.location.href=url;
+    newTab ? window.open(url,'_blank') : location.href=url;
   },500);
 }
 
 /* ===== LOGOUT ===== */
 function logout(){
-  firebase.auth().signOut().then(()=>location.href="index.html");
+  firebase.auth().signOut().then(()=>{
+    location.href="index.html";
+  });
+}
+
+/* ===== ADMIN PASSWORD ===== */
+function adminAccess(){
+  play(1);
+
+  const ADMIN_PASSWORD = "1234"; // 🔐 CHANGE PASSWORD HERE
+
+  const input = prompt("🔐 Admin Password Enter करें:");
+
+  if(input === null) return;
+
+  if(input === ADMIN_PASSWORD){
+    setTimeout(()=>{
+      window.open("list.html","_blank");
+    },300);
+  }else{
+    alert("❌ Wrong Password!");
+  }
 }
 </script>
 
