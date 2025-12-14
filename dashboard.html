@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard</title>
 <style>
-/* Body & background slider */
 body {
   margin:0;
   padding:0;
@@ -20,13 +19,13 @@ body {
   position: relative;
 }
 
+/* Background slider */
 .bg-slider {
   position: fixed;
   top:0; left:0;
   width:100%; height:100%;
   z-index:-1;
 }
-
 .bg-slider img {
   position:absolute;
   top:0; left:0;
@@ -44,7 +43,6 @@ body {
   gap:15px;
   z-index:1;
 }
-
 .btn3d {
   padding:15px 40px;
   font-size:18px;
@@ -57,33 +55,23 @@ body {
   transition: all 0.2s ease;
   box-shadow: 0 5px 0 #1c5980, 0 8px 15px rgba(0,0,0,0.4);
 }
-
 .btn3d:active {
   transform: translateY(5px);
   box-shadow: 0 2px 0 #1c5980, 0 4px 8px rgba(0,0,0,0.4);
 }
 
-/* Blinking animations - different for each */
-@keyframes blink1 {
-  0% {background: #3498db;} 25% {background:#e74c3c;} 50% {background:#2ecc71;} 75% {background:#f1c40f;} 100% {background:#3498db;}
-}
-@keyframes blink2 {
-  0% {background:#9b59b6;} 25% {background:#16a085;} 50% {background:#f39c12;} 75% {background:#e67e22;} 100% {background:#9b59b6;}
-}
-@keyframes blink3 {
-  0% {background:#1abc9c;} 25% {background:#c0392b;} 50% {background:#2980b9;} 75% {background:#8e44ad;} 100% {background:#1abc9c;}
-}
-@keyframes blink4 {
-  0% {background:#f39c12;} 25% {background:#27ae60;} 50% {background:#c0392b;} 75% {background:#2980b9;} 100% {background:#f39c12;}
-}
+/* Blinking animations */
+@keyframes blink1 {0%{background:#3498db;}25%{background:#e74c3c;}50%{background:#2ecc71;}75%{background:#f1c40f;}100%{background:#3498db;}}
+@keyframes blink2 {0%{background:#9b59b6;}25%{background:#16a085;}50%{background:#f39c12;}75%{background:#e67e22;}100%{background:#9b59b6;}}
+@keyframes blink3 {0%{background:#1abc9c;}25%{background:#c0392b;}50%{background:#2980b9;}75%{background:#8e44ad;}100%{background:#1abc9c;}}
+@keyframes blink4 {0%{background:#f39c12;}25%{background:#27ae60;}50%{background:#c0392b;}75%{background:#2980b9;}100%{background:#f39c12;}}
 
-/* Assign animations */
 #btn1 {animation: blink1 2s infinite;}
 #btn2 {animation: blink2 2s infinite;}
 #btn3 {animation: blink3 2s infinite;}
 #btnPrint {animation: blink4 2s infinite;}
 
-/* Logout button small cone */
+/* Logout button small round */
 #logoutBtn {
   width:50px;
   height:50px;
@@ -100,10 +88,8 @@ body {
 </head>
 <body>
 
-<!-- Logout -->
 <button id="logoutBtn" class="btn3d">Logout</button>
 
-<!-- Buttons -->
 <div class="button-container">
   <button id="btn1" class="btn3d">Election Search</button>
   <button id="btn2" class="btn3d">Voter Name Search</button>
@@ -111,7 +97,7 @@ body {
   <button id="btnPrint" class="btn3d">Print Page</button>
 </div>
 
-<!-- Background Slider -->
+<!-- Background slider -->
 <div class="bg-slider">
   <img src="https://i.ibb.co/FLQDzSGp/1.avif" class="slide" style="opacity:1;">
   <img src="https://i.ibb.co/HTKycbLy/2.webp" class="slide">
@@ -126,7 +112,7 @@ body {
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
 <script>
-/* ===== Firebase Config (Login check only) ===== */
+/* Firebase login check only */
 const firebaseConfig = {
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
   authDomain: "voter-25c94.firebaseapp.com",
@@ -142,18 +128,6 @@ document.getElementById('logoutBtn').addEventListener('click', () => {
   auth.signOut().then(()=>window.location.href='index.html');
 });
 
-/* Button click sound */
-const buttons = document.querySelectorAll('.btn3d');
-const clickSound = document.getElementById('clickSound');
-
-buttons.forEach(btn => {
-  btn.addEventListener('click', () => {
-    clickSound.currentTime = 0;
-    clickSound.volume = 1;
-    clickSound.play();
-  });
-});
-
 /* Background slider */
 let slides = document.querySelectorAll('.slide');
 let index = 0;
@@ -162,6 +136,29 @@ setInterval(() => {
   index = (index+1)%slides.length;
   slides[index].style.opacity = 1;
 }, 4000);
+
+/* Button click sound and actions */
+const clickSound = document.getElementById('clickSound');
+
+document.getElementById('btn1').addEventListener('click', ()=>{
+  clickSound.currentTime=0; clickSound.volume=1; clickSound.play();
+  window.open('https://electoralsearch.eci.gov.in/','_blank');
+});
+
+document.getElementById('btn2').addEventListener('click', ()=>{
+  clickSound.currentTime=0; clickSound.volume=1; clickSound.play();
+  window.open('https://mahasecvoterlist.in/ObjectionOnClick/SearchVoterName=','_blank');
+});
+
+document.getElementById('btn3').addEventListener('click', ()=>{
+  clickSound.currentTime=0; clickSound.volume=1; clickSound.play();
+  alert("Upload Image Clicked"); // placeholder
+});
+
+document.getElementById('btnPrint').addEventListener('click', ()=>{
+  clickSound.currentTime=0; clickSound.volume=1; clickSound.play();
+  window.location.href='print.html';
+});
 </script>
 </body>
 </html>
