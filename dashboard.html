@@ -30,21 +30,42 @@ animation:bgSlide 25s infinite;
 100%{background-image:url('https://i.ibb.co/FLQDzSGp/1.avif')}
 }
 
-/* LOGOUT CONE */
-.logout-cone{
-position:fixed;
-top:10px;
-right:10px;
-width:45px;
-height:45px;
-border-radius:50%;
-border:none;
-font-size:20px;
-color:#fff;
-cursor:pointer;
-background:linear-gradient(145deg,#ff4b2b,#c0392b);
-box-shadow:0 4px 0 #8e2b21;
+<!-- LOGOUT -->
+<button class="logout-cone" onclick="play(4);logout()">⏻</button>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+
+<script>
+// Firebase config
+const firebaseConfig = {
+  apiKey:"AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
+  authDomain:"voter-25c94.firebaseapp.com",
+  projectId:"voter-25c94"
+};
+
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+
+// Logout function
+function logout(){
+    auth.signOut()
+    .then(() => {
+        alert('Logout Successful');
+        window.location.href = "index.html";
+    })
+    .catch(err => alert('Logout Error: '+err.message));
 }
+
+// Login check
+auth.onAuthStateChanged(user => {
+    if(!user){
+        window.location.href="index.html";
+    }
+});
+</script>
+
 
 /* BUTTON CONTAINER */
 .button-container{
