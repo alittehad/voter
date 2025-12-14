@@ -124,9 +124,45 @@ Upload Image
 </button>
 
 <button class="btn3d b4"
- onclick="play(1);window.location.href='print.html'">
+ onclick="playAndRedirect(1, 'print.html')">
 Print Page
 </button>
+
+<script>
+function playAndRedirect(soundNumber, url) {
+    play(soundNumber); // Sound बजाओ
+    setTimeout(() => {
+        window.location.href = url; // थोड़ी देर बाद redirect
+    }, 500); // 500ms delay (sound play होने का समय)
+}
+</script>
+<button class="btn3d b4"
+ onclick="playAndRedirect(1, 'print.html')">
+Print Page
+</button>
+
+<script>
+function playAndRedirect(soundNumber, url) {
+    play(soundNumber); // Sound बजाओ
+    setTimeout(() => {
+        window.location.href = url; // थोड़ी देर बाद redirect
+    }, 500); // 500ms delay (sound play होने का समय)
+}
+</script>
+<button class="btn3d b4"
+ onclick="playAndRedirect(1, 'print.html')">
+Print Page
+</button>
+
+<script>
+function playAndRedirect(soundNumber, url) {
+    play(soundNumber); // Sound बजाओ
+    setTimeout(() => {
+        window.location.href = url; // थोड़ी देर बाद redirect
+    }, 500); // 500ms delay (sound play होने का समय)
+}
+</script>
+
 
 </div>
 
