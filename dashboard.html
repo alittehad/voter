@@ -6,173 +6,158 @@
 <title>Dashboard</title>
 
 <style>
-/* ===== BODY + BLINKING BACKGROUND ===== */
-body{
-  margin:0;
-  min-height:100vh;
-  font-family:Arial,sans-serif;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  overflow:hidden;
-  background:#0f2027;
-}
+/* ===== RESET ===== */
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;font-family:Arial, sans-serif;overflow:hidden}
 
+/* ===== BACKGROUND SLIDER ===== */
 body::before{
   content:"";
   position:fixed;
-  inset:0;
+  top:0;left:0;
+  width:100%;
+  height:100%;
   z-index:-1;
-  background:linear-gradient(
-    120deg,
-    #0f2027,
-    #203a43,
-    #2c5364,
-    #1b2735,
-    #090a0f
-  );
-  background-size:400% 400%;
-  animation:bgBlink 12s ease-in-out infinite;
+  background-size:cover;
+  background-position:center;
+  animation:bgSlider 25s infinite;
 }
 
-@keyframes bgBlink{
-  0%{background-position:0% 50%;}
-  25%{background-position:50% 50%;}
-  50%{background-position:100% 50%;}
-  75%{background-position:50% 50%;}
-  100%{background-position:0% 50%;}
+@keyframes bgSlider{
+  0%{background-image:url('https://i.ibb.co/FLQDzSGp/1.avif')}
+  20%{background-image:url('https://i.ibb.co/HTKycbLy/2.webp')}
+  40%{background-image:url('https://i.ibb.co/hRRS9vTM/3.jpg')}
+  60%{background-image:url('https://i.ibb.co/hFtvv9bk/4.avif')}
+  80%{background-image:url('https://i.ibb.co/pBfjvXSx/5.jpg')}
+  100%{background-image:url('https://i.ibb.co/FLQDzSGp/1.avif')}
 }
 
-/* ===== BUTTON CONTAINER ===== */
+/* ===== CONTAINER ===== */
 .button-container{
+  height:100%;
   display:flex;
   flex-direction:column;
-  gap:20px;
+  justify-content:center;
   align-items:center;
+  gap:18px;
 }
 
-/* ===== 3D BUTTON BASE ===== */
+/* ===== BUTTON BASE ===== */
 .btn3d{
-  padding:18px 50px;
+  width:260px;
+  padding:16px;
   font-size:18px;
   font-weight:bold;
+  color:#fff;
   border:none;
   border-radius:14px;
-  color:#fff;
   cursor:pointer;
   text-transform:uppercase;
-  box-shadow:
-    0 6px 0 rgba(0,0,0,0.4),
-    0 12px 20px rgba(0,0,0,0.6);
-  transition:transform .15s;
+  background:linear-gradient(145deg,#3498db,#2980b9);
+  box-shadow:0 6px 0 #1c5980,0 10px 20px rgba(0,0,0,.4);
+  transition:0.2s;
 }
 
 .btn3d:active{
   transform:translateY(6px);
-  box-shadow:
-    0 2px 0 rgba(0,0,0,0.4),
-    0 6px 10px rgba(0,0,0,0.6);
+  box-shadow:0 2px 0 #1c5980,0 4px 10px rgba(0,0,0,.4);
 }
 
-/* ===== DIFFERENT BLINKING BUTTONS ===== */
-.blink1{
-  background:linear-gradient(145deg,#3498db,#2980b9);
-  animation:blink1 3s infinite;
-}
-@keyframes blink1{
-  0%,100%{filter:brightness(1);}
-  50%{filter:brightness(1.6);}
-}
+/* ===== DIFFERENT BLINKING ===== */
+@keyframes blink1{0%,100%{filter:brightness(1)}50%{filter:brightness(1.5)}}
+@keyframes blink2{0%,100%{background:#e74c3c}50%{background:#c0392b}}
+@keyframes blink3{0%,100%{background:#2ecc71}50%{background:#27ae60}}
+@keyframes blink4{0%,100%{background:#f1c40f}50%{background:#f39c12}}
 
-.blink2{
-  background:linear-gradient(145deg,#e67e22,#d35400);
-  animation:blink2 4s infinite;
-}
-@keyframes blink2{
-  0%,100%{filter:brightness(1);}
-  50%{filter:brightness(1.7);}
-}
+.blink1{animation:blink1 2s infinite}
+.blink2{animation:blink2 2.5s infinite}
+.blink3{animation:blink3 3s infinite}
+.blink4{animation:blink4 1.8s infinite}
 
-.blink3{
-  background:linear-gradient(145deg,#2ecc71,#27ae60);
-  animation:blink3 5s infinite;
-}
-@keyframes blink3{
-  0%,100%{filter:brightness(1);}
-  50%{filter:brightness(1.8);}
-}
-
-.blink4{
-  background:linear-gradient(145deg,#9b59b6,#8e44ad);
-  animation:blink4 2.5s infinite;
-}
-@keyframes blink4{
-  0%,100%{filter:brightness(1);}
-  50%{filter:brightness(2);}
-}
-
-/* ===== LOGOUT BUTTON ===== */
+/* ===== LOGOUT ===== */
 .logout-btn{
   position:fixed;
-  top:20px;
-  right:20px;
-  padding:12px 25px;
-  background:linear-gradient(145deg,#e74c3c,#c0392b);
+  top:15px;
+  right:15px;
+  width:120px;
+  animation:blink1 2s infinite;
+}
+
+/* ===== MOBILE ===== */
+@media(max-width:600px){
+  .btn3d{width:90%;font-size:16px}
 }
 </style>
 </head>
 
 <body>
 
-<button id="logoutBtn" class="btn3d logout-btn">Logout</button>
+<!-- CLICK SOUND -->
+<audio id="clickSound" preload="auto">
+  <source src="https://assets.mixkit.co/sfx/preview/mixkit-modern-click-box-check-1120.mp3">
+</audio>
 
+<!-- LOGOUT -->
+<button id="logoutBtn" class="btn3d logout-btn" onclick="playClick()">Logout</button>
+
+<!-- BUTTONS -->
 <div class="button-container">
 
   <button class="btn3d blink1"
-    onclick="window.open('https://electoralsearch.eci.gov.in/', '_blank')">
+    onclick="playClick(); window.open('https://electoralsearch.eci.gov.in/','_blank')">
     Election Search
   </button>
 
   <button class="btn3d blink2"
-    onclick="window.open('https://mahasecvoterlist.in/ObjectionOnClick/SearchVoterName', '_blank')">
+    onclick="playClick(); window.open('https://mahasecvoterlist.in/ObjectionOnClick/SearchVoterName','_blank')">
     Voter Name Search
   </button>
 
-  <button class="btn3d blink3" onclick="alert('Upload page open here')">
+  <button class="btn3d blink3"
+    onclick="playClick(); alert('Upload Page Here')">
     Upload Image
   </button>
 
-  <button class="btn3d blink4" onclick="window.location.href='print.html'">
+  <button class="btn3d blink4"
+    onclick="playClick(); window.location.href='print.html'">
     Print Page
   </button>
 
 </div>
 
-<!-- ===== FIREBASE LOGIN CHECK ONLY ===== -->
+<!-- FIREBASE -->
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
 
 <script>
+/* ===== FIREBASE CONFIG ===== */
 firebase.initializeApp({
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
   authDomain: "voter-25c94.firebaseapp.com",
-  projectId: "voter-25c94"
+  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
+  projectId: "voter-25c94",
+  storageBucket: "voter-25c94.appspot.com"
 });
 
 const auth = firebase.auth();
 
-/* 🔒 LOGIN CHECK */
+/* LOGIN CHECK ONLY */
 auth.onAuthStateChanged(user=>{
-  if(!user){
-    window.location.href="index.html"; // login page
-  }
+  if(!user) window.location.href="index.html";
 });
 
 /* LOGOUT */
 document.getElementById("logoutBtn").onclick=()=>{
-  auth.signOut().then(()=>location.href="index.html");
+  playClick();
+  auth.signOut().then(()=>window.location.href="index.html");
 };
+
+/* CLICK SOUND */
+function playClick(){
+  const s=document.getElementById("clickSound");
+  s.currentTime=0;
+  s.play();
+}
 </script>
 
 </body>
