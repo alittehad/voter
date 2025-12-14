@@ -5,114 +5,147 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard</title>
 <style>
-body {
-  margin:0;
-  padding:0;
-  height:100vh;
-  width:100vw;
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-  align-items:center;
-  overflow:hidden;
-  font-family: Arial, sans-serif;
-  position: relative;
-}
+  /* Fullscreen */
+  html, body {
+    margin: 0; padding: 0; height: 100%; width: 100%; font-family: Arial, sans-serif;
+    overflow: hidden;
+  }
 
-/* Background slider */
-.bg-slider {
-  position: fixed;
-  top:0; left:0;
-  width:100%; height:100%;
-  z-index:-1;
-}
-.bg-slider img {
-  position:absolute;
-  top:0; left:0;
-  width:100%; height:100%;
-  object-fit:cover;
-  opacity:0;
-  transition: opacity 1.5s ease-in-out;
-}
+  /* Background slider */
+  body {
+    position: relative;
+  }
+  .bg-slide {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-size: cover;
+    background-position: center;
+    transition: opacity 1s ease-in-out;
+    z-index: -2;
+  }
 
-/* Buttons */
-.button-container {
-  display:flex;
-  flex-wrap:wrap;
-  justify-content:center;
-  gap:15px;
-  z-index:1;
-}
-.btn3d {
-  padding:15px 40px;
-  font-size:18px;
-  font-weight:bold;
-  border:none;
-  border-radius:12px;
-  color:#fff;
-  cursor:pointer;
-  position:relative;
-  transition: all 0.2s ease;
-  box-shadow: 0 5px 0 #1c5980, 0 8px 15px rgba(0,0,0,0.4);
-}
-.btn3d:active {
-  transform: translateY(5px);
-  box-shadow: 0 2px 0 #1c5980, 0 4px 8px rgba(0,0,0,0.4);
-}
+  /* Overlay for dim */
+  .overlay {
+    position: fixed;
+    top:0; left:0; width:100%; height:100%;
+    background: rgba(0,0,0,0.3);
+    z-index: -1;
+  }
 
-/* Blinking animations */
-@keyframes blink1 {0%{background:#3498db;}25%{background:#e74c3c;}50%{background:#2ecc71;}75%{background:#f1c40f;}100%{background:#3498db;}}
-@keyframes blink2 {0%{background:#9b59b6;}25%{background:#16a085;}50%{background:#f39c12;}75%{background:#e67e22;}100%{background:#9b59b6;}}
-@keyframes blink3 {0%{background:#1abc9c;}25%{background:#c0392b;}50%{background:#2980b9;}75%{background:#8e44ad;}100%{background:#1abc9c;}}
-@keyframes blink4 {0%{background:#f39c12;}25%{background:#27ae60;}50%{background:#c0392b;}75%{background:#2980b9;}100%{background:#f39c12;}}
+  /* Button container */
+  .button-container {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    justify-content: center;
+    padding-top: 50px;
+  }
 
-#btn1 {animation: blink1 2s infinite;}
-#btn2 {animation: blink2 2s infinite;}
-#btn3 {animation: blink3 2s infinite;}
-#btnPrint {animation: blink4 2s infinite;}
+  /* Buttons */
+  .btn3d {
+    padding: 20px 50px;
+    font-size: 18px;
+    font-weight: bold;
+    text-transform: uppercase;
+    border: none;
+    border-radius: 12px;
+    color: #fff;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 5px 0 #1c5980,
+                0 8px 15px rgba(0,0,0,0.4);
+    min-width: 180px;
+    text-align: center;
+  }
+  .btn3d:active {
+    transform: translateY(5px);
+    box-shadow: 0 2px 0 #1c5980, 0 4px 8px rgba(0,0,0,0.4);
+  }
 
-/* Logout button small round */
-#logoutBtn {
-  width:50px;
-  height:50px;
-  border-radius:50%;
-  font-size:12px;
-  padding:0;
-}
+  /* Different blinking animations */
+  @keyframes blink1 {
+    0%,100% {background: linear-gradient(145deg,#3498db,#2980b9);}
+    50% {background: linear-gradient(145deg,#e74c3c,#c0392b);}
+  }
+  @keyframes blink2 {
+    0%,100% {background: linear-gradient(145deg,#2ecc71,#27ae60);}
+    50% {background: linear-gradient(145deg,#f1c40f,#f39c12);}
+  }
+  @keyframes blink3 {
+    0%,100% {background: linear-gradient(145deg,#9b59b6,#8e44ad);}
+    50% {background: linear-gradient(145deg,#e67e22,#d35400);}
+  }
+  .blink1 { animation: blink1 2s infinite; }
+  .blink2 { animation: blink2 2s infinite; }
+  .blink3 { animation: blink3 2s infinite; }
 
-/* Responsive */
-@media(max-width:600px){
-  .btn3d {padding:12px 25px; font-size:16px;}
-}
+  /* Logout small cone */
+  .logout-btn {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50% 50% 50% 0;
+    padding: 0;
+    font-size: 12px;
+  }
+
+  /* Uploaded images */
+  #images {
+    margin-top:20px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    justify-content:center;
+    position: relative;
+    z-index:1;
+  }
 </style>
 </head>
 <body>
 
-<button id="logoutBtn" class="btn3d">Logout</button>
+<div class="bg-slide" id="bg1"></div>
+<div class="bg-slide" id="bg2"></div>
+<div class="overlay"></div>
 
+<!-- Logout -->
+<button id="logoutBtn" class="btn3d logout-btn blink1">Logout</button>
+
+<!-- Main Buttons -->
 <div class="button-container">
-  <button id="btn1" class="btn3d">Election Search</button>
-  <button id="btn2" class="btn3d">Voter Name Search</button>
-  <button id="btn3" class="btn3d">Upload Image</button>
-  <button id="btnPrint" class="btn3d">Print Page</button>
+
+  <button class="btn3d blink1" id="btnElection">
+    Election Search
+  </button>
+
+  <button class="btn3d blink2" id="btnVoter">
+    Voter Name Search
+  </button>
+
+  <button class="btn3d blink3" id="btnUpload">
+    Upload Image
+  </button>
+
+  <button class="btn3d blink1" id="btnPrint">
+    Print Page
+  </button>
+
 </div>
 
-<!-- Background slider -->
-<div class="bg-slider">
-  <img src="https://i.ibb.co/FLQDzSGp/1.avif" class="slide" style="opacity:1;">
-  <img src="https://i.ibb.co/HTKycbLy/2.webp" class="slide">
-  <img src="https://i.ibb.co/hRRS9vTM/3.jpg" class="slide">
-  <img src="https://i.ibb.co/hFtvv9bk/4.avif" class="slide">
-  <img src="https://i.ibb.co/pBfjvXSx/5.jpg" class="slide">
-</div>
+<!-- Uploaded images -->
+<div id="images"></div>
 
-<!-- Sound -->
-<audio id="clickSound" src="https://www.soundjay.com/button/sounds/button-3.mp3"></audio>
+<audio id="clickSound" src="click.mp3" preload="auto"></audio>
 
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+
 <script>
-/* Firebase login check only */
+/* Firebase Config */
 const firebaseConfig = {
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
   authDomain: "voter-25c94.firebaseapp.com",
@@ -122,43 +155,95 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
-auth.onAuthStateChanged(user => { if(!user) window.location.href='index.html'; });
 
-document.getElementById('logoutBtn').addEventListener('click', () => {
+/* Check login */
+auth.onAuthStateChanged(user => {
+  if(!user) window.location.href='index.html';
+});
+
+/* Logout */
+document.getElementById('logoutBtn').addEventListener('click', ()=>{
+  playSound();
   auth.signOut().then(()=>window.location.href='index.html');
 });
 
-/* Background slider */
-let slides = document.querySelectorAll('.slide');
-let index = 0;
-setInterval(() => {
-  slides[index].style.opacity = 0;
-  index = (index+1)%slides.length;
-  slides[index].style.opacity = 1;
-}, 4000);
-
-/* Button click sound and actions */
+/* Button sound function */
 const clickSound = document.getElementById('clickSound');
+function playSound(){
+    clickSound.currentTime = 0;
+    clickSound.volume = 1;
+    clickSound.play().catch(e=>console.log(e));
+}
 
-document.getElementById('btn1').addEventListener('click', ()=>{
-  clickSound.currentTime=0; clickSound.volume=1; clickSound.play();
-  window.open('https://electoralsearch.eci.gov.in/','_blank');
+/* Button actions with sound */
+document.getElementById('btnElection').addEventListener('click', ()=>{
+    playSound();
+    window.open('https://electoralsearch.eci.gov.in/','_blank');
 });
-
-document.getElementById('btn2').addEventListener('click', ()=>{
-  clickSound.currentTime=0; clickSound.volume=1; clickSound.play();
-  window.open('https://mahasecvoterlist.in/ObjectionOnClick/SearchVoterName=','_blank');
+document.getElementById('btnVoter').addEventListener('click', ()=>{
+    playSound();
+    window.open('https://mahasecvoterlist.in/ObjectionOnClick/SearchVoterName=','_blank');
 });
-
-document.getElementById('btn3').addEventListener('click', ()=>{
-  clickSound.currentTime=0; clickSound.volume=1; clickSound.play();
-  alert("Upload Image Clicked"); // placeholder
+document.getElementById('btnUpload').addEventListener('click', ()=>{
+    playSound();
+    openCloudinaryUpload();
 });
-
 document.getElementById('btnPrint').addEventListener('click', ()=>{
-  clickSound.currentTime=0; clickSound.volume=1; clickSound.play();
-  window.location.href='print.html';
+    playSound();
+    window.location.href='print.html';
 });
+
+/* Cloudinary Upload */
+function openCloudinaryUpload(){
+  const fileInput = document.createElement('input');
+  fileInput.type = 'file'; fileInput.accept = 'image/*';
+  fileInput.onchange = () => {
+    const file = fileInput.files[0];
+    if(!file) return;
+    const cloudName = 'YOUR_CLOUD_NAME';
+    const unsignedUploadPreset = 'dlsqxs7zl';
+    const url = `https://api.cloudinary.com/v1_1/${cloudName}/upload`;
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', unsignedUploadPreset);
+    fetch(url, {method:'POST', body: formData})
+      .then(res=>res.json())
+      .then(data=>{
+        if(data.secure_url){
+          const img = document.createElement('img');
+          img.src = data.secure_url;
+          img.style.width='150px';
+          img.style.height='150px';
+          img.style.objectFit='cover';
+          img.style.borderRadius='10px';
+          document.getElementById('images').appendChild(img);
+        } else alert('Upload failed');
+      }).catch(err=>alert(err));
+  };
+  fileInput.click();
+}
+
+/* Background slider */
+const backgrounds = [
+  'https://i.ibb.co/FLQDzSGp/1.avif',
+  'https://i.ibb.co/HTKycbLy/2.webp',
+  'https://i.ibb.co/hRRS9vTM/3.jpg',
+  'https://i.ibb.co/hFtvv9bk/4.avif',
+  'https://i.ibb.co/pBfjvXSx/5.jpg'
+];
+let current = 0;
+const bg1 = document.getElementById('bg1');
+const bg2 = document.getElementById('bg2');
+bg1.style.backgroundImage = `url('${backgrounds[0]}')`;
+bg2.style.backgroundImage = `url('${backgrounds[1]}')`;
+bg2.style.opacity = 0;
+
+setInterval(()=>{
+  current = (current + 1) % backgrounds.length;
+  bg2.style.backgroundImage = `url('${backgrounds[current]}')`;
+  bg2.style.opacity = 1;
+  setTimeout(()=>{ bg1.style.backgroundImage = bg2.style.backgroundImage; bg2.style.opacity = 0; },1000);
+},5000);
 </script>
 </body>
 </html>
