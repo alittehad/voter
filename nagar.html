@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Auto Slider</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html, body{height:100%;width:100%;display:flex;justify-content:center;align-items:center;background:#000}
+
+  .slider{
+    position:relative;
+    width:100%;
+    max-width:600px; /* mobile friendly */
+    height:100vh;
+    overflow:hidden;
+  }
+
+  .slides{
+    display:flex;
+    width:1000%; /* 10 slides * 100% */
+    height:100%;
+    transition:transform 1s ease-in-out;
+  }
+
+  .slides img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+  }
+</style>
+</head>
+<body>
+
+<div class="slider">
+  <div class="slides" id="slides">
+    <img src="https://i.ibb.co/zVNjZQH0/Whats-App-Image-2025-12-14-at-12-22-37-664cd399.jpg" alt="Slide 1">
+    <img src="https://i.ibb.co/LDfQTG0v/Whats-App-Image-2025-12-14-at-12-22-38-1477595b.jpg" alt="Slide 2">
+    <img src="https://i.ibb.co/cKyy6SWv/Whats-App-Image-2025-12-14-at-12-22-39-0ec36358.jpg" alt="Slide 3">
+    <img src="https://i.ibb.co/BKTSxNdV/Whats-App-Image-2025-12-14-at-12-22-39-36d7be7f.jpg" alt="Slide 4">
+    <img src="https://i.ibb.co/DH6WpfZx/Whats-App-Image-2025-12-14-at-12-22-39-d93cad74.jpg" alt="Slide 5">
+    <img src="https://i.ibb.co/8gKMqtMx/Whats-App-Image-2025-12-14-at-12-22-40-5be53e6a.jpg" alt="Slide 6">
+    <img src="https://i.ibb.co/674J2HTq/Whats-App-Image-2025-12-14-at-12-22-40-28cbd222.jpg" alt="Slide 7">
+    <img src="https://i.ibb.co/hJKWHRvG/Whats-App-Image-2025-12-14-at-12-22-41-1ee4c833.jpg" alt="Slide 8">
+    <img src="https://i.ibb.co/bgp1k3QT/Whats-App-Image-2025-12-14-at-12-22-41-6d1d6b51.jpg" alt="Slide 9">
+    <img src="https://i.ibb.co/Kj86xYMJ/Whats-App-Image-2025-12-14-at-12-22-42-3817ceff.jpg" alt="Slide 10">
+  </div>
+</div>
+
+<script>
+  const slides = document.getElementById('slides');
+  const totalSlides = 10; // total images
+  let index = 0;
+
+  function nextSlide(){
+    index++;
+    if(index >= totalSlides){
+      // जब आखरी slide खत्म हो जाए तो redirect
+      window.location.href = "https://voter-eight.vercel.app/index.html";
+      return;
+    }
+    slides.style.transform = `translateX(-${index * 100}%)`;
+  }
+
+  setInterval(nextSlide, 3000); // हर 3 सेकंड next slide
+</script>
+
+</body>
+</html>
