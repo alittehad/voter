@@ -50,12 +50,6 @@ html,body{
 
 
 
-<button id="installBtn" class="install-3d">
-📲 Install App
-</button>
-
-<audio id="installSound"
-src="https://www.soundjay.com/buttons/sounds/button-10.mp3"></audio>
 
 
 
@@ -87,63 +81,7 @@ src="https://www.soundjay.com/buttons/sounds/button-10.mp3"></audio>
 
 
 
-<script>
-let deferredPrompt;
-const installBtn = document.getElementById("installBtn");
-const sound = document.getElementById("installSound");
 
-/* 🚫 Already installed → hide */
-function checkInstalled(){
-  if(
-    window.matchMedia('(display-mode: standalone)').matches ||
-    window.navigator.standalone === true
-  ){
-    installBtn.style.display = "none";
-    return true;
-  }
-  return false;
-}
-
-/* 🔍 On load check */
-checkInstalled();
-
-/* 📥 Show install only if not installed */
-window.addEventListener("beforeinstallprompt", e => {
-  if(checkInstalled()) return;
-
-  e.preventDefault();
-  deferredPrompt = e;
-  installBtn.style.display = "block";
-});
-
-/* 📲 Install click */
-installBtn.addEventListener("click", () => {
-
-  // 🔊 Sound
-  sound.currentTime = 0;
-  sound.volume = 1.0;
-  sound.play().catch(()=>{});
-
-  // 📳 Vibration
-  if(navigator.vibrate){
-    navigator.vibrate([200,100,200]);
-  }
-
-  setTimeout(()=>{
-    deferredPrompt.prompt();
-
-    deferredPrompt.userChoice.then(()=>{
-      deferredPrompt = null;
-      installBtn.style.display = "none";
-    });
-  },400);
-});
-
-/* ✅ After install event */
-window.addEventListener("appinstalled", ()=>{
-  installBtn.style.display = "none";
-});
-</script>
 
 
 
@@ -178,7 +116,7 @@ const interval = setInterval(()=>{
     clearInterval(interval);
     // last image ke baad redirect
     setTimeout(()=>{
-      location.href = "index.html";
+      location.href = "ajit/index.html";
     },2000);
   }
 }, slideTime);
