@@ -1,11 +1,10 @@
 {
-  "name": "sandeep App",
-  "short_name": "sandeep",
-  "start_url": "./",
-  "scope": "./",
+  "name": "My Browser PWA",
+  "short_name": "MyBrowser",
+  "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#000000",
-  "theme_color": "#2196f3",
+  "background_color": "#222222",
+  "theme_color": "#222222",
   "icons": [
     {
       "src": "icon-192.png",
