@@ -1,6 +1,6 @@
 {
-  "name": "My Browser PWA",
-  "short_name": "MyBrowser",
+  "name": "sanny bhayya",
+  "short_name": "sanny",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#222222",
