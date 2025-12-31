@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Auto Slider</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+}
+
+html,body{
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  background:#000;
+}
+
+.slider{
+  width:100%;
+  height:100%;
+  position:relative;
+}
+
+.slide{
+  position:absolute;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  opacity:0;
+  transition:opacity .6s ease-in-out;
+}
+
+.slide.active{
+  opacity:1;
+}
+
+.slide img{
+  width:100%;
+  height:100%;
+  object-fit:contain; /* image pura dikhe */
+  background:#000;
+}
+</style>
+</head>
+
+
+
+
+
+
+  
+<body>
+
+<!-- 🔊 TOUCH SOUND -->
+<audio id="touchSound" src="https://www.soundjay.com/buttons/sounds/button-16.mp3"></audio>
+
+<div class="slider" onclick="playTouchSound()" ontouchstart="playTouchSound()">
+
+  <div class="slide active">
+    <img src="https://i.ibb.co/KpHGY7v1/bjp-logo.jpg">
+  </div>
+
+  <div class="slide">
+    <img src="https://i.ibb.co/mCDZjBwV/Whats-App-Image-2025-12-26-at-12-16-31-PM.png">
+  </div>
+
+  <div class="slide">
+    <img src="https://i.ibb.co/Z6HZ1ZxD/Whats-App-Image-2025-12-26-at-12-16-32-PM.png">
+  </div>
+
+ <div class="slide">
+    <img src="https://i.ibb.co/670bKPZd/Whats-App-Image-2025-12-26-at-12-16-33-PM.png">
+  </div>
+
+  
+ 
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+<script>
+const slides = document.querySelectorAll(".slide");
+let index = 0;
+const slideTime = 2000; // 2 seconds
+
+/* 🔊 Touch / Click Sound */
+function playTouchSound(){
+  const s = document.getElementById("touchSound");
+  s.currentTime = 0;
+  s.volume = 1.0;
+  s.play().catch(()=>{});
+}
+
+/* ▶ Auto Slider */
+const interval = setInterval(()=>{
+  slides[index].classList.remove("active");
+  index++;
+
+  if(index < slides.length){
+    slides[index].classList.add("active");
+  }else{
+    clearInterval(interval);
+    // last image ke baad redirect
+    setTimeout(()=>{
+      location.href = "sandeep/index.html";
+    },2000);
+  }
+}, slideTime);
+</script>
+
+</body>
+</html>
