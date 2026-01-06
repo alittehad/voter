@@ -3,219 +3,311 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard</title>
-
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+<title>Voter List</title>
 
 <style>
-*{box-sizing:border-box;margin:0;padding:0;font-family:Arial}
-html,body{width:100%;height:100%;overflow:hidden}
-
-/* ===== BACKGROUND SLIDER ===== */
-body{
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  flex-direction:column;
+.voter-button {
+    /* सामान्य बटन स्टाइलिंग */
+    display: inline-block;
+    padding: 15px 30px; /* पैडिंग से बटन बड़ा दिखता है */
+    border: none;
+    border-radius: 12px; /* गोल किनारे */
+    font-size: 18px;
+    font-weight: bold;
+    text-decoration: none; /* लिंक के नीचे की लाइन हटाना */
+    cursor: pointer;
+    transition: all 0.2s ease; /* होवर इफ़ेक्ट के लिए */
+    
+    /* रंगीन और 3D इफ़ेक्ट */
+    background-color: #4CAF50; /* हरा रंग */
+    color: white;
+    
+    /* 3D उभरा हुआ इफ़ेक्ट */
+    /* नीचे और दाएं की तरफ गहरे रंग का शैडो 3D लुक देता है */
+    box-shadow: 0 9px #38761D; 
 }
-body::before{
-  content:"";
-  position:fixed;
-  top:0;left:0;
+
+/* माउस ओवर (Hover) इफ़ेक्ट */
+.voter-button:hover {
+    background-color: #45A049; /* होवर पर हल्का रंग */
+    box-shadow: 0 7px #38761D; /* शैडो को थोड़ा उठाना */
+    transform: translateY(-2px); /* बटन को ऊपर उठाना */
+}
+
+/* क्लिक (Active) इफ़ेक्ट - बटन को अंदर दबाना */
+.voter-button:active {
+    background-color: #3e8e41;
+    box-shadow: 0 4px #38761D; /* शैडो को कम करना */
+    transform: translateY(5px); /* बटन को नीचे दबाना */
+}
+
+
+
+  
+body { font-family: Arial; margin:0; padding:10px; background:#f1f1f1; }
+
+/* 🔥 scrolling text */
+#scrollText {
   width:100%;
-  height:100%;
-  z-index:-1;
-  background-size:cover;
-  background-position:center;
-  animation:bgSlide 25s infinite;
-}
-@keyframes bgSlide{
-0%{background-image:url('https://i.ibb.co/FLQDzSGp/1.avif')}
-20%{background-image:url('https://i.ibb.co/HTKycbLy/2.webp')}
-40%{background-image:url('https://i.ibb.co/hRRS9vTM/3.jpg')}
-60%{background-image:url('https://i.ibb.co/hFtvv9bk/4.avif')}
-80%{background-image:url('https://i.ibb.co/pBfjvXSx/5.jpg')}
-100%{background-image:url('https://i.ibb.co/FLQDzSGp/1.avif')}
-}
-
-/* ===== BUTTON CONTAINER ===== */
-.button-container{
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  gap:12px;
-  width:90%;
-  max-width:300px;
-}
-
-/* ===== 3D BUTTONS ===== */
-.btn3d{
-  width:100%;
-  padding:14px;
-  font-size:16px;
-  color:#fff;
-  border:none;
-  border-radius:12px;
-  cursor:pointer;
-  background:linear-gradient(145deg,#3498db,#2980b9);
-  box-shadow:0 4px 0 #1c5980,0 6px 12px rgba(0,0,0,.4);
-  transition:.2s;
-}
-.btn3d:active{
-  transform:translateY(4px);
-  box-shadow:0 2px 0 #1c5980;
-}
-
-/* ===== BLINKING ===== */
-.b1{animation:blink1 2s infinite}
-.b2{animation:blink2 3s infinite}
-.b3{animation:blink3 4s infinite}
-.b4{animation:blink4 5s infinite}
-
-@keyframes blink1{50%{filter:brightness(1.3)}}
-@keyframes blink2{50%{background:#e74c3c}}
-@keyframes blink3{50%{background:#2ecc71}}
-@keyframes blink4{50%{background:#f1c40f}}
-
-/* ===== LOGOUT ===== */
-.logout-cone{
-  position:fixed;
-  top:15px;
-  right:15px;
-  width:40px;
-  height:40px;
-  border-radius:50%;
-  border:none;
+  background:#ffeb3b;
+  padding:8px;
   font-size:18px;
-  color:#fff;
-  cursor:pointer;
-  background:linear-gradient(145deg,#ff4b2b,#c0392b);
-  box-shadow:0 3px 0 #8e2b21;
+  font-weight:bold;
+  overflow:hidden;
+  white-space:nowrap;
+  box-sizing:border-box;
+}
+#scrollText span {
+  display:inline-block;
+  padding-left:100%;
+  animation: scroll 12s linear infinite;
+}
+@keyframes scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-100%); }
 }
 
-/* 🔙 ANDROID STYLE BACK BUTTON (BOTTOM-LEFT) */
-.back-btn{
-  position:fixed;
-  bottom:18px;
-  left:18px;
-  width:48px;
-  height:48px;
-  border-radius:50%;
-  border:none;
-  font-size:22px;
-  background:#212121;
-  color:#fff;
-  cursor:pointer;
-  z-index:9999;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  box-shadow:0 6px 12px rgba(0,0,0,.4);
+/* Notice box */
+.notice-box {
+  background:#fff3cd;
+  padding:10px;
+  border-left:6px solid #ff9800;
+  border-radius:6px;
+  margin:12px 0;
+  font-size:17px;
 }
-.back-btn:active{
-  transform:scale(0.9);
-}
+
+/* UI */
+h2 { text-align:center; margin-bottom:15px; }
+#searchBox { width:100%; padding:10px; border:2px solid #999; border-radius:6px; font-size:18px; margin-bottom:15px; }
+.result-item { padding:10px; margin:5px 0; background:white; border-radius:6px; border-left:5px solid #007bff; cursor:pointer; display:flex; justify-content:space-between; align-items:center; }
+
+#card { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); justify-content:center; align-items:flex-start; padding:20px; overflow-y:auto; }
+
+.card-content{ background:white; padding:15px; border-radius:10px; max-width:450px; width:95%; position:relative; }
+.close-btn{ position:absolute; top:10px; right:10px; background:red; border:none; color:white; padding:5px 10px; border-radius:5px; cursor:pointer; }
+
+.color-btn { width:30px; height:30px; border-radius:6px; border:none; margin-right:8px; cursor:pointer; }
+
+#msg { width:100%; height:80px; padding:8px; border:2px solid #aaa; border-radius:6px; }
+
+.btn-small { padding:8px 15px; border:none; border-radius:6px; margin-right:10px; cursor:pointer; color:white; }
+.btn-save { background:#28a745; }
+.btn-del { background:#dc3545; }
+.btn-print { background:#007bff; }
+.btn-whatsapp { background:#25d366; }
+.btn-download { background:#6a1b9a; }   /* NEW BUTTON */
+
+.voter-color-tag { width:20px; height:20px; border-radius:4px; display:inline-block; }
 </style>
 </head>
-
 <body>
 
-<!-- 🔙 BACK BUTTON -->
-<button class="back-btn" onclick="goBack()">←</button>
+<!-- 🔥 Scrolling Text -->
+<div id="scrollText"><span>कृपया Search Box मध्ये आपला EPIC क्रमांक टाइप करा… -------------------मतदार यादीत तुमचे नाव आहे का ते तपासण्यासाठी खालील बटणावर क्लिक करा.</span></div>
 
-<!-- 🔊 SOUNDS -->
-<audio id="s1" src="https://www.soundjay.com/buttons/sounds/button-16.mp3"></audio>
-<audio id="s2" src="https://www.soundjay.com/buttons/sounds/button-09.mp3"></audio>
-<audio id="s3" src="https://www.soundjay.com/buttons/sounds/button-4.mp3"></audio>
-<audio id="s4" src="https://www.soundjay.com/buttons/sounds/button-6.mp3"></audio>
-
-<!-- LOGOUT -->
-<button class="logout-cone" onclick="play(4);logout()">⏻</button>
-
-<!-- BUTTONS -->
-<div class="button-container">
-
-  <button class="btn3d b1"
-    onclick="playAndRedirect(1,'https://electoralsearch.eci.gov.in/',true)">
-    Election Search
-  </button>
-
-  <button class="btn3d b2"
-    onclick="playAndRedirect(2,'https://mahasecvoterlist.in/ObjectionOnClick/SearchVoterName',true)">
-    Voter Name Search
-  </button>
-
-  <button class="btn3d b3"
-    onclick="play(3);alert('Upload Image Clicked')">
-    Upload Image
-  </button>
-
-  <button class="btn3d b4"
-    onclick="playAndRedirect(1,'https://voter-eight.vercel.app/list.html')">
-    Print Page
-  </button>
-
-  <button class="btn3d b1" onclick="adminAccess()">
-    Admin Search
-  </button>
-
+<!-- 🔥 Notice Box -->
+<div class="notice-box">
+<b>सूचना:</b> शोधण्यासाठी Search Box मध्ये आपले नाव किंवा EPIC क्रमांक टाइप करा.
 </div>
 
+<h2>Voter Search</h2>
+
+<input type="text" id="searchBox" placeholder="Type 1 letter or EPIC to search..." />
+<div id="results"></div>
+
+<!-- CARD -->
+<div id="card">
+  <div class="card-content">
+    <button class="close-btn" onclick="closeCard()">X</button>
+    <h3 id="vname"></h3>
+    <p><b>EPIC:</b> <span id="vepic"></span></p>
+    <p><b>Serial/Part:</b> <span id="vserial"></span></p>
+    <p><b>Area:</b> <span id="varea"></span></p>
+    <p><b>House No:</b> <span id="vhouse"></span></p>
+    <p><b>Ward:</b> <span id="vward"></span></p>
+    <p><b>Relation:</b> <span id="vrelation"></span></p>
+    <p><b>Age/Gender:</b> <span id="vage"></span> / <span id="vgender"></span></p>
+    <p><b>Saved Color:</b> <span class="voter-color-tag" id="colortag"></span></p>
+
+    <hr>
+    <p><b>Change Color:</b></p>
+    <button class="color-btn" style="background:#ff4444" onclick="saveColor('#ff4444')"></button>
+    <button class="color-btn" style="background:#44cc44" onclick="saveColor('#44cc44')"></button>
+    <button class="color-btn" style="background:#4477ff" onclick="saveColor('#4477ff')"></button>
+
+    <hr>
+    <p><b>Sender Message:</b></p>
+    <textarea id="msg"></textarea>
+    <button class="btn-small btn-save" onclick="saveMessage()">Save</button>
+    <button class="btn-small btn-del" onclick="deleteMessage()">Delete</button>
+
+    <hr>
+    <button class="btn-small btn-print" onclick="printCard()">Print</button>
+    <button class="btn-small btn-whatsapp" onclick="sendWhatsApp()">Send</button>
+    <button class="btn-small btn-download" onclick="downloadPDF()">Download</button> <!-- NEW -->
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
 <script>
-/* ===== FIREBASE CONFIG ===== */
-firebase.initializeApp({
-  apiKey:"AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
-  authDomain:"voter-25c94.firebaseapp.com",
-  projectId:"voter-25c94"
+// Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
+  authDomain: "voter-25c94.firebaseapp.com",
+  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
+  projectId: "voter-25c94",
+  storageBucket: "voter-25c94.appspot.com",
+  messagingSenderId: "297773534400",
+  appId: "1:297773534400:web:3722c487b8c83e9b787125"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+let voters = [];
+let activeVoter = null;
+
+// Load voters
+db.ref("voters").once("value").then(snap => {
+    const data = snap.val() || {};
+    voters = Object.keys(data).map(key => ({
+        key: key,
+        epic_no: data[key].EPIC_NO || key,
+        voter_full_name: data[key].VoterName || "NA",
+        sl_no_in_part: data[key].PartNo || "NA",
+        area: data[key].Area || "NA",
+        house_no: data[key].HouseNo || "NA",
+        ward: data[key].Ward || "NA",
+        relation_name: data[key].RelationName || "NA",
+        relation_type: data[key].RelationType || "NA",
+        age: data[key].Age || "NA",
+        gender: data[key].Gender || "NA",
+        color: data[key].color || "#ffffff",
+        message: data[key].message || ""
+    }));
+    renderResults();
 });
 
-/* ===== LOGIN CHECK ===== */
-firebase.auth().onAuthStateChanged(user=>{
-  if(!user) location.href="index.html";
-});
-
-/* ===== SOUND ===== */
-function play(n){
-  const a=document.getElementById("s"+n);
-  a.currentTime=0;
-  a.volume=1.0;
-  a.play().catch(()=>{});
-}
-
-/* ===== REDIRECT ===== */
-function playAndRedirect(sound,url,newTab=false){
-  play(sound);
-  setTimeout(()=>{
-    newTab ? window.open(url,'_blank') : location.href=url;
-  },500);
-}
-
-/* ===== LOGOUT ===== */
-function logout(){
-  firebase.auth().signOut().then(()=>{
-    location.href="index.html";
-  });
-}
-
-/* 🔙 BACK FUNCTION */
-function goBack(){
-  window.history.back();
-}
-
-/* ===== ADMIN PASSWORD ===== */
-function adminAccess(){
-  play(1);
-  const ADMIN_PASSWORD = "1975";
-  const input = prompt("🔐 Admin Password Enter करें:");
-  if(input === ADMIN_PASSWORD){
-    window.open("list.html","_blank");
-  }else if(input !== null){
-    alert("❌ Wrong Password!");
+// Search
+function renderResults() {
+  const q = document.getElementById("searchBox").value.toLowerCase();
+  let html="";
+  if(q.length>=1){
+    voters.forEach(v=>{
+      if(v.voter_full_name.toLowerCase().includes(q) || v.epic_no.toLowerCase().includes(q)){
+        html+=`<div class="result-item" onclick="openCard('${v.key}')">
+                 <span><b>${v.voter_full_name}</b> (${v.epic_no})</span>
+                 <span class="voter-color-tag" style="background:${v.color}"></span>
+               </div>`;
+      }
+    });
   }
+  document.getElementById("results").innerHTML=html;
+}
+document.getElementById("searchBox").addEventListener("input", renderResults);
+
+// CARD
+function openCard(key){
+  activeVoter = voters.find(v=>v.key===key);
+  if(!activeVoter) return;
+
+  document.getElementById("vname").innerText = activeVoter.voter_full_name;
+  document.getElementById("vepic").innerText = activeVoter.epic_no;
+  document.getElementById("vserial").innerText = activeVoter.sl_no_in_part;
+  document.getElementById("varea").innerText = activeVoter.area;
+  document.getElementById("vhouse").innerText = activeVoter.house_no;
+  document.getElementById("vward").innerText = activeVoter.ward;
+  document.getElementById("vrelation").innerText = `${activeVoter.relation_name} (${activeVoter.relation_type})`;
+  document.getElementById("vage").innerText = activeVoter.age;
+  document.getElementById("vgender").innerText = activeVoter.gender;
+  document.getElementById("colortag").style.background = activeVoter.color;
+  document.getElementById("msg").value = activeVoter.message;
+
+  document.getElementById("card").style.display = "flex";
+}
+
+function closeCard(){ document.getElementById("card").style.display="none"; }
+
+function saveColor(c){
+  if(!activeVoter) return;
+  activeVoter.color=c;
+  db.ref("voters/"+activeVoter.key+"/color").set(c);
+  document.getElementById("colortag").style.background=c;
+  renderResults();
+}
+
+function saveMessage(){
+  activeVoter.message=document.getElementById("msg").value;
+  db.ref("voters/"+activeVoter.key+"/message").set(activeVoter.message);
+  alert("Saved!");
+}
+
+function deleteMessage(){
+  db.ref("voters/"+activeVoter.key+"/message").remove();
+  document.getElementById("msg").value="";
+}
+
+// ✔ NEW — PDF Download
+function downloadPDF(){
+  if(!activeVoter) return;
+
+  let content =
+`Voter Details
+--------------------
+Name: ${activeVoter.voter_full_name}
+EPIC: ${activeVoter.epic_no}
+Serial/Part: ${activeVoter.sl_no_in_part}
+Area: ${activeVoter.area}
+House No: ${activeVoter.house_no}
+Ward: ${activeVoter.ward}
+Relation: ${activeVoter.relation_name} (${activeVoter.relation_type})
+Age/Gender: ${activeVoter.age} / ${activeVoter.gender}
+
+Message:
+${activeVoter.message}
+`;
+
+  const blob = new Blob([content], {type: "text/plain"});
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = activeVoter.epic_no + "_voter_details.txt";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function printCard(){
+  let text = document.querySelector(".card-content").innerText;
+  let w = window.open("", "", "width=450,height=600");
+  w.document.write("<pre>"+text+"</pre>");
+  w.print();
+}
+
+function sendWhatsApp(){
+  let text =
+`*Voter Details*
+Name: ${activeVoter.voter_full_name}
+EPIC: ${activeVoter.epic_no}
+Serial/Part: ${activeVoter.sl_no_in_part}
+Area: ${activeVoter.area}
+House No: ${activeVoter.house_no}
+Ward: ${activeVoter.ward}
+Relation: ${activeVoter.relation_name} (${activeVoter.relation_type})
+Age/Gender: ${activeVoter.age} / ${activeVoter.gender}
+
+Message:
+${activeVoter.message}`;
+
+  window.open("https://wa.me/?text=" + encodeURIComponent(text), "_blank");
 }
 </script>
+<!-- 🔥 Notice Box -->
+<div class="notice-box">
+<b>सूचना:</b>------------
+</div>
 
 </body>
 </html>
