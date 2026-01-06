@@ -106,7 +106,7 @@ document.getElementById("loginBtn").onclick = () => {
   const provider = new firebase.auth.GoogleAuthProvider();
   auth.signInWithPopup(provider)
     .then(() => {
-      window.location.href = "rupali/deshbord.html";
+      window.location.href = "deshbord.html";
     })
     .catch(err => alert(err.message));
 };
