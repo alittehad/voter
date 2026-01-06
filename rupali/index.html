@@ -1,1 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login Page</title>
 
+<!-- 🔗 PWA MANIFEST -->
+<link rel="manifest" href="manifest.json">
+
+<style>
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  font-family: Arial, sans-serif;
+}
+
+/* 🌄 Background Image */
+body::before {
+  content: "";
+  background-image: url('https://i.ibb.co/fVzDLVT6/Chat-GPT-Image-Dec-12-2025-01-07-19-PM.png');
+  background-size: cover;
+  background-position: center;
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  z-index: -1;
+}
+
+/* 🔘 3D Button */
+.btn3d {
+  padding: 20px 60px;
+  font-size: 22px;
+  font-weight: bold;
+  text-transform: uppercase;
+  border: none;
+  border-radius: 12px;
+  color: #fff;
+  cursor: pointer;
+  margin: 10px;
+  transition: all 0.2s ease;
+  background: linear-gradient(145deg, #3498db, #2980b9);
+  box-shadow: 0 5px 0 #1c5980, 0 8px 15px rgba(0,0,0,0.4);
+}
+
+.btn3d:active {
+  transform: translateY(5px);
+  box-shadow: 0 2px 0 #1c5980, 0 4px 8px rgba(0,0,0,0.4);
+}
+
+.blinking {
+  animation: blinkColor 2s infinite;
+}
+
+@keyframes blinkColor {
+  0%   { background: linear-gradient(145deg, #3498db, #2980b9); }
+  25%  { background: linear-gradient(145deg, #e74c3c, #c0392b); }
+  50%  { background: linear-gradient(145deg, #2ecc71, #27ae60); }
+  75%  { background: linear-gradient(145deg, #f1c40f, #f39c12); }
+  100% { background: linear-gradient(145deg, #3498db, #2980b9); }
+}
+</style>
+</head>
+
+<body>
+
+<!-- 🔐 LOGIN BUTTON -->
+<button id="loginBtn" class="btn3d blinking">
+Login with Google
+</button>
+
+<!-- 📲 INSTALL BUTTON -->
+<button id="installBtn" class="btn3d blinking" style="display:none">
+📲 Install App
+</button>
+
+<!-- 🔊 SOUND -->
+<audio id="installSound"
+src="https://www.soundjay.com/buttons/sounds/button-10.mp3"></audio>
+
+<!-- 🔥 Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+
+<script>
+/* ===== FIREBASE CONFIG ===== */
+firebase.initializeApp({
+  apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
+  authDomain: "voter-25c94.firebaseapp.com",
+  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
+  projectId: "voter-25c94",
+  storageBucket: "voter-25c94.appspot.com"
+});
+
+const auth = firebase.auth();
+
+/* 🔐 GOOGLE LOGIN */
+document.getElementById("loginBtn").onclick = () => {
+  const provider = new firebase.auth.GoogleAuthProvider();
+  auth.signInWithPopup(provider)
+    .then(() => {
+      window.location.href = "dashboard.html";
+    })
+    .catch(err => alert(err.message));
+};
+
+/* ===== PWA INSTALL LOGIC ===== */
+let deferredPrompt;
+const installBtn = document.getElementById("installBtn");
+const sound = document.getElementById("installSound");
+
+function isInstalled(){
+  return window.matchMedia('(display-mode: standalone)').matches
+      || window.navigator.standalone === true;
+}
+
+/* 🚫 Already installed */
+if(isInstalled()){
+  installBtn.style.display = "none";
+}
+
+/* 📥 Show install */
+window.addEventListener("beforeinstallprompt", e => {
+  if(isInstalled()) return;
+  e.preventDefault();
+  deferredPrompt = e;
+  installBtn.style.display = "block";
+});
+
+/* 📲 Install click */
+installBtn.onclick = () => {
+
+  // 🔊 Sound
+  sound.currentTime = 0;
+  sound.play().catch(()=>{});
+
+  // 📳 Vibration
+  if(navigator.vibrate){
+    navigator.vibrate([200,100,200]);
+  }
+
+  setTimeout(()=>{
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(()=>{
+      installBtn.style.display = "none";
+      deferredPrompt = null;
+    });
+  },400);
+};
+
+/* ✅ After install */
+window.addEventListener("appinstalled", ()=>{
+  installBtn.style.display = "none";
+});
+
+/* 🔧 SERVICE WORKER */
+if("serviceWorker" in navigator){
+  navigator.serviceWorker.register("sw.js");
+}
+</script>
+
+</body>
+</html>
