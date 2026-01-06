@@ -1,8 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
+<button class="back-btn" onclick="goBack()">← Back</button>
+
+  
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+
+
+  
 <title>Dashboard</title>
 
 <!-- Firebase -->
@@ -94,36 +103,16 @@ body::before{
   background:linear-gradient(145deg,#ff4b2b,#c0392b);
   box-shadow:0 3px 0 #8e2b21;
 }
-
-/* 🔙 ANDROID STYLE BACK BUTTON (BOTTOM-LEFT) */
-.back-btn{
-  position:fixed;
-  bottom:18px;
-  left:18px;
-  width:48px;
-  height:48px;
-  border-radius:50%;
-  border:none;
-  font-size:22px;
-  background:#212121;
-  color:#fff;
-  cursor:pointer;
-  z-index:9999;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  box-shadow:0 6px 12px rgba(0,0,0,.4);
-}
-.back-btn:active{
-  transform:scale(0.9);
-}
 </style>
 </head>
 
 <body>
 
-<!-- 🔙 BACK BUTTON -->
-<button class="back-btn" onclick="goBack()">←</button>
+
+
+
+
+  
 
 <!-- 🔊 SOUNDS -->
 <audio id="s1" src="https://www.soundjay.com/buttons/sounds/button-16.mp3"></audio>
@@ -157,6 +146,7 @@ body::before{
     Print Page
   </button>
 
+  <!-- 🔐 ADMIN BUTTON -->
   <button class="btn3d b1" onclick="adminAccess()">
     Admin Search
   </button>
@@ -199,19 +189,21 @@ function logout(){
   });
 }
 
-/* 🔙 BACK FUNCTION */
-function goBack(){
-  window.history.back();
-}
-
 /* ===== ADMIN PASSWORD ===== */
 function adminAccess(){
   play(1);
-  const ADMIN_PASSWORD = "1975";
+
+  const ADMIN_PASSWORD = "1975"; // 🔐 CHANGE PASSWORD HERE
+
   const input = prompt("🔐 Admin Password Enter करें:");
+
+  if(input === null) return;
+
   if(input === ADMIN_PASSWORD){
-    window.open("list.html","_blank");
-  }else if(input !== null){
+    setTimeout(()=>{
+      window.open("list.html","_blank");
+    },300);
+  }else{
     alert("❌ Wrong Password!");
   }
 }
