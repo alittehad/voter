@@ -1,21 +1,68 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Offline Voter Software</title>
-<link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<title>Voter Search</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body { font-family: Arial; background:#f2f2f2; padding:10px; }
+input, button {
+  width:100%; padding:10px; margin:5px 0;
+  font-size:16px;
+}
+.card {
+  background:#fff; padding:10px; margin:8px 0;
+  border-radius:6px;
+}
+.print { background:#0a7; color:#fff; border:none; }
+</style>
 </head>
 <body>
 
-<h2>Offline Voter Software</h2>
+<h3>🔍 Voter Search</h3>
 
-<input type="file" id="csvFile">
-<button onclick="loadCSV()">Upload CSV</button>
-
-<br><br>
-<input type="text" id="search" placeholder="Search Name / EPIC" onkeyup="searchVoter()">
+<input id="q" placeholder="Name / EPIC / Booth">
+<button onclick="search()">Search</button>
 
 <div id="result"></div>
 
-<script src="app.js"></script>
+<script>
+const API_URL = "PASTE_YOUR_SCRIPT_URL_HERE";
+
+function search() {
+  let q = document.getElementById("q").value.trim();
+  if (q.length < 2) {
+    alert("कम से कम 2 अक्षर डालें");
+    return;
+  }
+
+  document.getElementById("result").innerHTML = "Searching...";
+
+  fetch(API_URL + "?q=" + encodeURIComponent(q))
+    .then(r => r.json())
+    .then(data => {
+      let out = "";
+      if (data.length === 0) {
+        out = "❌ No voter found";
+      } else {
+        data.forEach(v => {
+          out += `
+          <div class="card">
+            <b>${v.name}</b><br>
+            Father: ${v.father}<br>
+            Age: ${v.age} | ${v.gender}<br>
+            EPIC: ${v.epic}<br>
+            Booth: ${v.booth} | Part: ${v.part}<br>
+            ${v.address || ""}
+            <br><br>
+            <button class="print" onclick="window.print()">Print</button>
+          </div>`;
+        });
+      }
+      document.getElementById("result").innerHTML = out;
+    });
+}
+</script>
+
 </body>
 </html>
