@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Text to CSV Converter</title>
+<title>Text to CSV</title>
 <style>
   body { font-family: Arial; padding: 20px; background: #f9f9f9; }
-  textarea { width: 100%; height: 200px; margin-bottom: 10px; }
-  input, button { padding: 8px; margin-bottom: 10px; }
+  textarea { width: 100%; height: 300px; margin-bottom: 10px; }
+  input, button { padding: 8px; margin-bottom: 10px; width: 100%; }
 </style>
 </head>
 <body>
@@ -14,7 +14,7 @@
 <h2>Text to CSV Converter</h2>
 
 <label>Enter Headers (comma separated):</label><br>
-<input type="text" id="headers" placeholder="Serial No,ID,Part No,Name,Father/Husband Name,House No,Age,Gender,Photo Available" style="width:100%;"><br>
+<input type="text" id="headers" placeholder="Serial No,ID,Part No,Name,Father/Husband Name,House No,Age,Gender,Photo Available"><br>
 
 <label>Paste Text Here:</label><br>
 <textarea id="inputText" placeholder="Paste messy text here..."></textarea><br>
@@ -31,29 +31,36 @@ let csvContent = "";
 function convertToCSV() {
     const headers = document.getElementById("headers").value.split(",");
     const text = document.getElementById("inputText").value.split(/\n+/);
-    
+
     let csvArray = [];
     csvArray.push(headers); // Add headers first
 
     let serial = 1;
+    let row = [];
     for (let i = 0; i < text.length; i++) {
         const line = text[i].trim();
         if (line === "") continue;
 
-        // Try to extract ID, Part No, Name, Father/Husband, House, Age, Gender, Photo
-        const regex = /([A-Z0-9]+)\s+(\d+\/\d+\/\d+)\s*(.*)/;
-        const match = line.match(regex);
+        // Check for Voter/Property ID pattern (adjust regex if needed)
+        const match = line.match(/([A-Z]{2,3}[0-9]+)\s+(\d+\/\d+\/\d+)/);
         if (match) {
+            if (row.length > 0) csvArray.push(row); // Push previous row
             const id = match[1];
             const partNo = match[2];
-            const name = match[3].split("मतदाराचे पूर्ण|प्रोपर्टी रजिस्ट्रेशन:")[1] || match[3];
-            
-            // Minimal parsing, others left blank
-            const row = [serial, id, partNo, name.trim(), "", "", "", "", ""];
-            csvArray.push(row);
+            row = [serial, id, partNo]; // Start new row
             serial++;
+        } else {
+            row.push(line); // Add rest of the info in columns
         }
     }
+    if (row.length > 0) csvArray.push(row);
+
+    // Make sure each row has same columns as headers
+    csvArray = csvArray.map(r => {
+        const newRow = [];
+        for (let j = 0; j < headers.length; j++) newRow.push(r[j] || "");
+        return newRow;
+    });
 
     // Convert array to CSV string
     csvContent = csvArray.map(r => r.map(f => `"${f}"`).join(",")).join("\n");
