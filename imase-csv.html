@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<title>Text to CSV Converter</title>
+<style>
+body { font-family: Arial; margin: 20px; background: #f9f9f9; }
+h2 { color: #333; }
+textarea { width: 100%; height: 200px; margin-bottom: 10px; }
+button { padding: 10px 20px; background: #4CAF50; color: white; border: none; cursor: pointer; }
+button:hover { background: #45a049; }
+#output { width: 100%; height: 200px; margin-top: 10px; }
+</style>
+</head>
+<body>
+
+<h2>Messy Text to CSV Converter</h2>
+
+<label>Raw Text Input:</label>
+<textarea id="inputText" placeholder="Yahan aap apna voter ya property text paste karein..."></textarea>
+
+<button onclick="convertToCSV()">Convert to CSV</button>
+
+<label>Output CSV:</label>
+<textarea id="output" readonly placeholder="CSV output yahan dikhega..."></textarea>
+
+<script>
+function convertToCSV() {
+    const input = document.getElementById('inputText').value;
+    const lines = input.split(/\r?\n/);
+
+    let csv = "Serial No,Voter ID/Property ID,Part No,Name,Father/Husband Name,House No,Age,Gender,Photo Available\n";
+    let serial = 1;
+
+    for (let line of lines) {
+        line = line.trim();
+        if (!line) continue;
+
+        // Extract simple ID patterns
+        const idMatch = line.match(/(WEH|MTX)\d{7,10}/);
+        const partMatch = line.match(/\d{1,3}\/\d{1,3}\/\d{1,3}/);
+        
+        if (idMatch && partMatch) {
+            // Extract Name / Father / House No etc (very simple heuristic)
+            let name = line.split(/मतदाराचे पूर्ण|प्रोपर्टी रजिस्ट्रेशन:/)[1];
+            if (!name) name = "-";
+            else name = name.split("Photo")[0].trim();
+
+            csv += `${serial},${idMatch[0]},${partMatch[0]},${name},-,-,-,-,Available\n`;
+            serial++;
+        }
+    }
+
+    document.getElementById('output').value = csv;
+}
+</script>
+
+</body>
+</html>
