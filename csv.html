@@ -1,97 +1,27 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
-<title>Offline PDF to CSV Converter</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<style>
-body{font-family:Arial;background:#f4f6f8;padding:20px}
-.box{max-width:900px;margin:auto;background:#fff;padding:20px;border-radius:8px}
-h2{text-align:center}
-input[type=file]{padding:10px}
-button{padding:10px 15px;margin:5px;border:none;border-radius:5px;background:#007bff;color:#fff;cursor:pointer}
-button:hover{background:#0056b3}
-#preview{max-height:300px;overflow:auto;border:1px solid #ccc;margin-top:15px}
-table{border-collapse:collapse;width:100%}
-th,td{border:1px solid #aaa;padding:5px;font-size:13px}
-.downloads{margin-top:15px}
-</style>
+<title>Text to CSV</title>
 </head>
 <body>
-<div class="box">
-<h2>Offline PDF → CSV / Excel Converter</h2>
 
-<input type="file" id="pdfFile" accept="application/pdf">
-<button onclick="convertPDF()">Convert</button>
-
-<div id="preview"></div>
-
-<div class="downloads" style="display:none" id="downloads">
-<button onclick="downloadCSV()">Download CSV</button>
-<button onclick="downloadExcel()">Download Excel</button>
-</div>
-</div>
-
-<!-- Libraries (Offline use ke liye same folder me rakhein) -->
-<script src="pdf.min.js"></script>
-<script src="xlsx.full.min.js"></script>
+<h3>Text Paste Karein</h3>
+<textarea id="txt" rows="10" cols="80"></textarea><br>
+<button onclick="convert()">Convert</button>
 
 <script>
-let tableData = [];
+function convert(){
+  let t = document.getElementById('txt').value.trim();
+  let rows = t.split('\n');
+  let csv = rows.map(r => r.split(/\s+/).join(',')).join('\n');
 
-async function convertPDF(){
-  const file = document.getElementById('pdfFile').files[0];
-  if(!file){alert('PDF select karein');return;}
-
-  const arrayBuffer = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({data:arrayBuffer}).promise;
-
-  tableData = [];
-
-  for(let p=1;p<=pdf.numPages;p++){
-    const page = await pdf.getPage(p);
-    const text = await page.getTextContent();
-    let row=[];
-    text.items.forEach(item=>{
-      row.push(item.str);
-    });
-    tableData.push(row);
-  }
-
-  showPreview();
-  document.getElementById('downloads').style.display='block';
-}
-
-function showPreview(){
-  let html='<table>';
-  tableData.slice(0,20).forEach(r=>{
-    html+='<tr>';
-    r.forEach(c=>html+=`<td>${c}</td>`);
-    html+='</tr>';
-  });
-  html+='</table>';
-  document.getElementById('preview').innerHTML=html;
-}
-
-function downloadCSV(){
-  let csv = tableData.map(r=>r.join(',')).join('\n');
-  downloadFile(csv,'output.csv','text/csv');
-}
-
-function downloadExcel(){
-  const ws = XLSX.utils.aoa_to_sheet(tableData);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
-  XLSX.writeFile(wb, 'output.xlsx');
-}
-
-function downloadFile(data, filename, type){
-  const blob = new Blob([data], {type});
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = filename;
-  link.click();
+  let blob = new Blob([csv], {type:'text/csv'});
+  let a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'data.csv';
+  a.click();
 }
 </script>
+
 </body>
 </html>
