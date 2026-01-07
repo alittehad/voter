@@ -2,81 +2,118 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Text to CSV</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PDF to CSV Converter</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.9.179/pdf.min.js"></script>
 <style>
-  body { font-family: Arial; padding: 20px; background: #f9f9f9; }
-  textarea { width: 100%; height: 300px; margin-bottom: 10px; }
-  input, button { padding: 8px; margin-bottom: 10px; width: 100%; }
+body { font-family: Arial; padding: 20px; background: #f4f4f4; }
+input, button { margin: 10px 0; padding: 10px; width: 100%; }
+button { background: #007bff; color: white; border: none; cursor: pointer; }
+button:hover { background: #0056b3; }
+a { display: block; margin-top: 15px; }
 </style>
 </head>
 <body>
 
-<h2>Text to CSV Converter</h2>
+<h2>PDF/Text to CSV Converter</h2>
 
-<label>Enter Headers (comma separated):</label><br>
-<input type="text" id="headers" placeholder="Serial No,ID,Part No,Name,Father/Husband Name,House No,Age,Gender,Photo Available"><br>
+<label>Upload PDF or Text File:</label>
+<input type="file" id="fileInput" accept=".pdf,.txt">
 
-<label>Paste Text Here:</label><br>
-<textarea id="inputText" placeholder="Paste messy text here..."></textarea><br>
+<label>Enter CSV Headers (comma separated):</label>
+<input type="text" id="csvHeader" placeholder="Serial No,ID,Part No,Name,Father/Husband Name,House No,Age,Gender,Photo Available">
 
-<button onclick="convertToCSV()">Convert to CSV</button>
-<button onclick="downloadCSV()">Download CSV</button>
+<button onclick="convertPDFToCSV()">Convert & Download CSV</button>
 
-<h3>Preview:</h3>
-<textarea id="outputCSV" readonly></textarea>
+<a id="downloadLink" style="display:none;">Download CSV</a>
 
 <script>
-let csvContent = "";
+async function convertPDFToCSV() {
+    const fileInput = document.getElementById('fileInput');
+    if (!fileInput.files.length) { alert('Please select a file!'); return; }
+    
+    const file = fileInput.files[0];
+    let textContent = '';
 
-function convertToCSV() {
-    const headers = document.getElementById("headers").value.split(",");
-    const text = document.getElementById("inputText").value.split(/\n+/);
-
-    let csvArray = [];
-    csvArray.push(headers); // Add headers first
-
-    let serial = 1;
-    let row = [];
-    for (let i = 0; i < text.length; i++) {
-        const line = text[i].trim();
-        if (line === "") continue;
-
-        // Check for Voter/Property ID pattern (adjust regex if needed)
-        const match = line.match(/([A-Z]{2,3}[0-9]+)\s+(\d+\/\d+\/\d+)/);
-        if (match) {
-            if (row.length > 0) csvArray.push(row); // Push previous row
-            const id = match[1];
-            const partNo = match[2];
-            row = [serial, id, partNo]; // Start new row
-            serial++;
-        } else {
-            row.push(line); // Add rest of the info in columns
+    if(file.type === 'application/pdf') {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
+        for(let i=1; i<=pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const text = await page.getTextContent();
+            textContent += text.items.map(item => item.str).join(' ') + '\n';
         }
+    } else {
+        textContent = await file.text();
     }
-    if (row.length > 0) csvArray.push(row);
 
-    // Make sure each row has same columns as headers
-    csvArray = csvArray.map(r => {
-        const newRow = [];
-        for (let j = 0; j < headers.length; j++) newRow.push(r[j] || "");
-        return newRow;
+    // Get headers from user
+    const headers = document.getElementById('csvHeader').value.split(',').map(h => h.trim());
+    if(headers.length === 0) { alert('Enter CSV headers!'); return; }
+
+    // Split text into lines
+    const lines = textContent.split('\n').map(l => l.trim()).filter(l => l !== '');
+    
+    // Convert lines to CSV based on headers
+    const rows = [];
+    let serial = 1;
+
+    lines.forEach(line => {
+        if(!line) return;
+        const row = [];
+        headers.forEach(header => {
+            let value = '';
+            // Simple matching logic based on keywords
+            if(header.toLowerCase().includes('serial')) value = serial++;
+            else if(header.toLowerCase().includes('id')) {
+                const match = line.match(/[A-Z]{2,3}\d{6,10}/);
+                if(match) value = match[0];
+            }
+            else if(header.toLowerCase().includes('part')) {
+                const match = line.match(/\d+\/\d+\/\d+/);
+                if(match) value = match[0];
+            }
+            else if(header.toLowerCase().includes('name')) {
+                const match = line.match(/मतदाराचे पूर्ण[:]*\s*([^\|]*)/);
+                if(match) value = match[1].trim();
+            }
+            else if(header.toLowerCase().includes('father')) {
+                const match = line.match(/वडिलांचे नाव\s*[:]*\s*([^\|]*)/);
+                if(match) value = match[1].trim();
+            }
+            else if(header.toLowerCase().includes('house')) {
+                const match = line.match(/घर क्रमांक\s*[:]*\s*([^\|]*)/);
+                if(match) value = match ? match[1].trim() : '';
+            }
+            else if(header.toLowerCase().includes('age')) {
+                const match = line.match(/वय\s*[:]*\s*([^\|]*)/);
+                if(match) value = match[1].trim();
+            }
+            else if(header.toLowerCase().includes('gender')) {
+                const match = line.match(/लिंग\s*[:]*\s*([^\|]*)/);
+                if(match) value = match[1].trim();
+            }
+            else if(header.toLowerCase().includes('photo')) {
+                value = line.includes('Photo') ? 'Available' : 'NA';
+            }
+            row.push(value);
+        });
+        rows.push(row);
     });
 
-    // Convert array to CSV string
-    csvContent = csvArray.map(r => r.map(f => `"${f}"`).join(",")).join("\n");
-    document.getElementById("outputCSV").value = csvContent;
-}
+    // Generate CSV
+    let csvContent = headers.join(',') + '\n';
+    rows.forEach(r => {
+        csvContent += r.map(v => `"${v}"`).join(',') + '\n';
+    });
 
-function downloadCSV() {
-    if (!csvContent) {
-        alert("Please convert first!");
-        return;
-    }
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = "output.csv";
-    link.click();
+    const blob = new Blob([csvContent], {type: 'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const dl = document.getElementById('downloadLink');
+    dl.href = url;
+    dl.download = 'converted.csv';
+    dl.style.display = 'block';
+    dl.textContent = 'Download CSV';
 }
 </script>
 
