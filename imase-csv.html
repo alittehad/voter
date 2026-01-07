@@ -2,125 +2,121 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Marathi PDF to CSV with Custom Headers</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.9.179/pdf.min.js"></script>
+<title>PDF to CSV Converter</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.10.111/pdf.min.js"></script>
 <style>
-body { font-family: Arial; padding: 20px; background: #f9f9f9; }
-input, button, textarea { margin: 10px 0; padding: 10px; width: 100%; box-sizing: border-box; }
-button { background: #007bff; color: white; border: none; cursor: pointer; }
-button:hover { background: #0056b3; }
-#preview { max-height: 300px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; background: #fff; }
+body { font-family: Arial; padding:20px; background:#f5f5f5; }
+h2 { text-align:center; }
+input, select, button { margin:5px 0; padding:5px; }
+table { border-collapse: collapse; width:100%; margin-top:10px; }
+table, th, td { border:1px solid #ccc; }
+th, td { padding:8px; text-align:left; }
+#preview { max-height:400px; overflow:auto; background:white; padding:10px; border:1px solid #ccc; }
 </style>
 </head>
 <body>
 
-<h2>Marathi PDF/Text to CSV Converter (Custom Headers)</h2>
+<h2>PDF to CSV Converter (Marathi+English)</h2>
 
-<label>Upload PDF or Text:</label>
-<input type="file" id="fileInput" accept=".pdf,.txt">
+<label>Upload PDF: </label>
+<input type="file" id="pdfFile" accept=".pdf"><br>
 
-<label>Enter CSV Headers (comma separated):</label>
-<input type="text" id="csvHeader" placeholder="Serial No,ID,Part No,Name,Father/Husband Name,House No,Age,Gender,Photo Available">
+<label>CSV Header (comma separated):</label><br>
+<input type="text" id="csvHeader" value="Serial No,ID,Part No,Name,Father/Husband Name,House No,Age,Gender,Photo Available" style="width:80%"><br>
 
-<button onclick="convertPDFToCSV()">Preview Data</button>
+<button id="processBtn">Process PDF</button>
+<button id="downloadBtn" disabled>Download CSV</button>
 
+<h3>Preview:</h3>
 <div id="preview"></div>
 
-<button onclick="downloadCSV()" id="downloadBtn" style="display:none;">Download CSV</button>
-
 <script>
-let csvData = '';
-let rowsData = [];
+const pdfFile = document.getElementById("pdfFile");
+const csvHeader = document.getElementById("csvHeader");
+const processBtn = document.getElementById("processBtn");
+const preview = document.getElementById("preview");
+const downloadBtn = document.getElementById("downloadBtn");
 
-async function convertPDFToCSV() {
-    const fileInput = document.getElementById('fileInput');
-    if(!fileInput.files.length){ alert('Select a file'); return; }
-    const file = fileInput.files[0];
+let finalCSV = "";
 
-    let textContent = '';
-    if(file.type === 'application/pdf'){
-        const arrayBuffer = await file.arrayBuffer();
-        const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
-        for(let i=1;i<=pdf.numPages;i++){
-            const page = await pdf.getPage(i);
-            const text = await page.getTextContent();
-            textContent += text.items.map(item => item.str).join(' ') + '\n';
-        }
-    } else {
-        textContent = await file.text();
+processBtn.onclick = async () => {
+    if (!pdfFile.files[0]) { alert("PDF select करा"); return; }
+    const file = pdfFile.files[0];
+
+    // Read PDF as ArrayBuffer
+    const arrayBuffer = await file.arrayBuffer();
+
+    // Load PDF.js
+    const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
+
+    let fullText = "";
+    for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items.map(item => item.str).join(' ');
+        fullText += pageText + "\n";
     }
 
-    const headers = document.getElementById('csvHeader').value.split(',').map(h=>h.trim());
-    if(!headers.length){ alert('Enter CSV headers'); return; }
+    // Normalize spaces
+    fullText = fullText.replace(/\s+/g, ' ').trim();
 
-    // Split data by IDs (Marathi PDF में WEH/MTX format assumed)
-    const voterRegex = /(WEH\d+|MTX\d+)[\s\S]*?(?=(WEH\d+|MTX\d+)|$)/g;
-    const voters = [...textContent.matchAll(voterRegex)].map(m=>m[0].trim());
+    // Split into voters using IDs like WEH or MTX
+    const voters = fullText.split(/(?=WEH\d+|MTX\d+)/);
 
-    rowsData = [];
+    const header = csvHeader.value.split(',').map(h => h.trim());
+    const rows = [header];
+
     let serial = 1;
-
     voters.forEach(v => {
-        const row = [];
-        headers.forEach(header => {
-            let val = '';
-            const h = header.toLowerCase();
-            if(h.includes('serial')) val = serial++;
-            else if(h.includes('id')) {
-                const idMatch = v.match(/(WEH\d+|MTX\d+)/);
-                if(idMatch) val = idMatch[0];
-            }
-            else if(h.includes('part')) {
-                const partMatch = v.match(/\d+\/\d+\/\d+/);
-                if(partMatch) val = partMatch[0];
-            }
-            else if(h.includes('name') && !h.includes('father')) {
-                const nameMatch = v.match(/मतदभरभचस\s*([^\d]+)/);
-                if(nameMatch) val = nameMatch[1].trim();
-            }
-            else if(h.includes('father')) {
-                const fatherMatch = v.match(/वडिल(?:ांचे)? नाव\s*:\s*([^\d]+)/);
-                if(fatherMatch) val = fatherMatch[1].trim();
-            }
-            else if(h.includes('house')) {
-                const houseMatch = v.match(/घर\s*क्रमांक\s*:\s*([^\d]+)/);
-                if(houseMatch) val = houseMatch[1].trim();
-            }
-            else if(h.includes('age')) {
-                const ageMatch = v.match(/\s(\d{2})\s*:/);
-                if(ageMatch) val = ageMatch[1].trim();
-            }
-            else if(h.includes('gender')) {
-                const genderMatch = v.match(/(पुरुष|स्त्री|Male|Female)/i);
-                if(genderMatch) val = genderMatch[1].trim();
-            }
-            else if(h.includes('photo')) {
-                val = v.includes('Photo Available') ? 'Available' : 'NA';
-            }
-            row.push(val);
-        });
-        rowsData.push(row);
+        if (!v.trim()) return;
+
+        const idMatch = v.match(/(WEH\d+|MTX\d+)/);
+        const partMatch = v.match(/(\d+\/\d+\/\d+)/);
+
+        // Name (Marathi text before first number)
+        const nameMatch = v.match(/^[^\d]+/);
+        const fatherMatch = v.match(/वडिलांचे नाव\s*[:\-]\s*([^:0-9]+)/);
+        const houseMatch = v.match(/घर क्रमांक\s*[:\-]\s*([^:]+)/);
+        const ageMatch = v.match(/(\d{1,3})\s*[:]?/); // first number after name
+        const genderMatch = v.match(/पुरुष|स्त्री/); // Optional
+        const photoMatch = v.includes("Photo Available") ? "Yes" : "No";
+
+        const row = [
+            serial++,
+            idMatch ? idMatch[1].trim() : "",
+            partMatch ? partMatch[1].trim() : "",
+            nameMatch ? nameMatch[0].trim() : "",
+            fatherMatch ? fatherMatch[1].trim() : "",
+            houseMatch ? houseMatch[1].trim() : "",
+            ageMatch ? ageMatch[1].trim() : "",
+            genderMatch ? genderMatch[0].trim() : "",
+            photoMatch
+        ];
+
+        rows.push(row);
     });
 
-    // Preview
-    const previewDiv = document.getElementById('preview');
-    previewDiv.innerHTML = '<b>Detected Voters:</b><br>' + rowsData.map(r => r.join(' | ')).join('<br>');
+    // Show preview table
+    let html = "<table><tr>" + header.map(h => "<th>"+h+"</th>").join('') + "</tr>";
+    rows.slice(1, 21).forEach(r => { // first 20 for preview
+        html += "<tr>" + r.map(c => "<td>"+c+"</td>").join('') + "</tr>";
+    });
+    html += "</table>";
+    preview.innerHTML = html;
 
-    // Prepare CSV
-    csvData = headers.join(',') + '\n' + rowsData.map(r => r.map(x=>`"${x}"`).join(',')).join('\n');
+    // Prepare CSV text
+    finalCSV = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+    downloadBtn.disabled = false;
+};
 
-    document.getElementById('downloadBtn').style.display = 'block';
-}
-
-function downloadCSV() {
-    const blob = new Blob([csvData], {type: 'text/csv'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'converted.csv';
-    a.click();
-}
+// Download CSV
+downloadBtn.onclick = () => {
+    const blob = new Blob([finalCSV], {type: "text/csv;charset=utf-8;"});
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "voters.csv";
+    link.click();
+};
 </script>
 
 </body>
