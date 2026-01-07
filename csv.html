@@ -1,59 +1,97 @@
-# app.py
-# Simple PDF to CSV / Excel / DOC converter website
-# Backend: Python Flask
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Offline PDF to CSV Converter</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body{font-family:Arial;background:#f4f6f8;padding:20px}
+.box{max-width:900px;margin:auto;background:#fff;padding:20px;border-radius:8px}
+h2{text-align:center}
+input[type=file]{padding:10px}
+button{padding:10px 15px;margin:5px;border:none;border-radius:5px;background:#007bff;color:#fff;cursor:pointer}
+button:hover{background:#0056b3}
+#preview{max-height:300px;overflow:auto;border:1px solid #ccc;margin-top:15px}
+table{border-collapse:collapse;width:100%}
+th,td{border:1px solid #aaa;padding:5px;font-size:13px}
+.downloads{margin-top:15px}
+</style>
+</head>
+<body>
+<div class="box">
+<h2>Offline PDF → CSV / Excel Converter</h2>
 
-from flask import Flask, render_template, request, send_file
-import pandas as pd
-import pdfplumber
-import os
+<input type="file" id="pdfFile" accept="application/pdf">
+<button onclick="convertPDF()">Convert</button>
 
-app = Flask(__name__)
-UPLOAD_FOLDER = 'uploads'
-OUTPUT_FOLDER = 'outputs'
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-os.makedirs(OUTPUT_FOLDER, exist_ok=True)
+<div id="preview"></div>
 
-@app.route('/')
-def index():
-    return render_template('index.html')
+<div class="downloads" style="display:none" id="downloads">
+<button onclick="downloadCSV()">Download CSV</button>
+<button onclick="downloadExcel()">Download Excel</button>
+</div>
+</div>
 
-@app.route('/upload', methods=['POST'])
-def upload():
-    file = request.files['pdf']
-    path = os.path.join(UPLOAD_FOLDER, file.filename)
-    file.save(path)
+<!-- Libraries (Offline use ke liye same folder me rakhein) -->
+<script src="pdf.min.js"></script>
+<script src="xlsx.full.min.js"></script>
 
-    rows = []
-    with pdfplumber.open(path) as pdf:
-        for page in pdf.pages:
-            table = page.extract_table()
-            if table:
-                rows.extend(table)
+<script>
+let tableData = [];
 
-    df = pd.DataFrame(rows)
+async function convertPDF(){
+  const file = document.getElementById('pdfFile').files[0];
+  if(!file){alert('PDF select karein');return;}
 
-    csv_path = os.path.join(OUTPUT_FOLDER, 'output.csv')
-    excel_path = os.path.join(OUTPUT_FOLDER, 'output.xlsx')
-    doc_path = os.path.join(OUTPUT_FOLDER, 'output.docx')
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({data:arrayBuffer}).promise;
 
-    df.to_csv(csv_path, index=False, header=False)
-    df.to_excel(excel_path, index=False, header=False)
+  tableData = [];
 
-    from docx import Document
-    doc = Document()
-    table = doc.add_table(rows=len(df)+1, cols=len(df.columns))
-    for i, col in enumerate(df.columns):
-        table.rows[0].cells[i].text = str(col)
-    for r in range(len(df)):
-        for c in range(len(df.columns)):
-            table.rows[r+1].cells[c].text = str(df.iloc[r, c])
-    doc.save(doc_path)
+  for(let p=1;p<=pdf.numPages;p++){
+    const page = await pdf.getPage(p);
+    const text = await page.getTextContent();
+    let row=[];
+    text.items.forEach(item=>{
+      row.push(item.str);
+    });
+    tableData.push(row);
+  }
 
-    return render_template('preview.html', tables=df.head(20).to_html())
+  showPreview();
+  document.getElementById('downloads').style.display='block';
+}
 
-@app.route('/download/<filetype>')
-def download(filetype):
-    return send_file(f'outputs/output.{filetype}', as_attachment=True)
+function showPreview(){
+  let html='<table>';
+  tableData.slice(0,20).forEach(r=>{
+    html+='<tr>';
+    r.forEach(c=>html+=`<td>${c}</td>`);
+    html+='</tr>';
+  });
+  html+='</table>';
+  document.getElementById('preview').innerHTML=html;
+}
 
-if __name__ == '__main__':
-    app.run(debug=True)
+function downloadCSV(){
+  let csv = tableData.map(r=>r.join(',')).join('\n');
+  downloadFile(csv,'output.csv','text/csv');
+}
+
+function downloadExcel(){
+  const ws = XLSX.utils.aoa_to_sheet(tableData);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
+  XLSX.writeFile(wb, 'output.xlsx');
+}
+
+function downloadFile(data, filename, type){
+  const blob = new Blob([data], {type});
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  link.click();
+}
+</script>
+</body>
+</html>
