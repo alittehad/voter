@@ -7,16 +7,16 @@
 <style>
 body { font-family: Arial; margin:0; padding:10px; background:#f1f1f1; }
 h2 { text-align:center; margin-bottom:15px; }
-#searchBox { width:100%; padding:10px; border:2px solid #999; border-radius:6px; font-size:18px; margin-bottom:15px; }
-.result-item { padding:10px; margin:5px 0; background:white; border-radius:6px; border-left:5px solid #007bff; cursor:pointer; display:flex; justify-content:space-between; align-items:center; }
+#searchBox { width:100%; padding:10px; border:2px solid #999; border-radius:6px; font-size:16px; margin-bottom:15px; }
+.result-item { padding:10px; margin:5px 0; background:white; border-radius:6px; border-left:5px solid #007bff; cursor:pointer; display:flex; justify-content:space-between; align-items:center; font-size:14px; }
 .voter-color-tag { width:20px; height:20px; border-radius:4px; display:inline-block; }
 
 #card { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); justify-content:center; align-items:flex-start; padding:20px; overflow-y:auto; }
-.card-content{ background:white; padding:15px; border-radius:10px; max-width:450px; width:95%; position:relative; }
+.card-content{ background:white; padding:15px; border-radius:10px; max-width:450px; width:95%; position:relative; font-size:14px; }
 .close-btn{ position:absolute; top:10px; right:10px; background:red; border:none; color:white; padding:5px 10px; border-radius:5px; cursor:pointer; }
 .color-btn { width:30px; height:30px; border-radius:6px; border:none; margin-right:8px; cursor:pointer; }
 #msg { width:100%; height:80px; padding:8px; border:2px solid #aaa; border-radius:6px; }
-.btn-small { padding:8px 15px; border:none; border-radius:6px; margin-right:10px; cursor:pointer; color:white; }
+.btn-small { padding:8px 15px; border:none; border-radius:6px; margin-right:10px; cursor:pointer; color:white; font-size:12px; }
 .btn-save { background:#28a745; }
 .btn-del { background:#dc3545; }
 .btn-print { background:#007bff; }
@@ -28,12 +28,12 @@ h2 { text-align:center; margin-bottom:15px; }
   body, .card-content {
       width: 100%;
       max-width: 450px;
-      font-size: 12px;
+      font-size: 10px;
       padding: 5px;
       margin: 0 auto;
   }
   img { max-width:100%; height:auto; }
-  pre { white-space: pre-wrap; word-break: break-word; }
+  pre { white-space: pre-wrap; word-break: break-word; font-size:10px; }
   hr { border: 1px solid #000; }
 }
 </style>
@@ -94,8 +94,9 @@ const db = firebase.database();
 
 let voters = [];
 let activeVoter = null;
+let dataLoaded = false;
 
-// Fetch voters from Firebase
+// Fetch voters
 db.ref("voters").once("value").then(snap => {
     const data = snap.val() || {};
     voters = Object.keys(data).map(key => ({
@@ -113,11 +114,14 @@ db.ref("voters").once("value").then(snap => {
         color: data[key].color || "#ffffff",
         message: data[key].message || ""
     }));
-    renderResults(); // Render all initially
+    dataLoaded = true;
+    renderResults();
 });
 
-// Live search: Name / EPIC
+// Live search
 function renderResults() {
+  if(!dataLoaded) return;
+
   const q = document.getElementById("searchBox").value.trim().toLowerCase();
   let html = "";
 
@@ -136,7 +140,6 @@ function renderResults() {
   document.getElementById("results").innerHTML = html;
 }
 
-// Trigger live search on typing
 document.getElementById("searchBox").addEventListener("input", renderResults);
 
 // CARD functions
@@ -181,15 +184,14 @@ function deleteMessage(){
   alert("Message deleted!");
 }
 
-// --- Print / WhatsApp / Download functions ---
-
+// Print / WhatsApp / Download
 function printCard(){
   if(!activeVoter) return;
 
   let content = `
   <div class="card-content" style="font-family: Arial; padding:10px;">
     <div style="text-align:center;">
-      <img src="https://i.ibb.co/2t5x7Yq/clock-logo.png" style="max-width:100px; height:auto;"><br>
+      <img src="https://i.ibb.co/2t5x7Yq/clock-logo.png" style="width:120px; height:auto;"><br>
       <b style="font-size:16px;">🕒 विजयी बनाएं / विजयी बनवा 🕒</b>
     </div>
     <hr>
@@ -215,7 +217,7 @@ function printCard(){
   w.document.write(`<html><head>
     <style>
       body { margin:0; padding:5px; }
-      pre { white-space: pre-wrap; word-break: break-word; }
+      pre { white-space: pre-wrap; word-break: break-word; font-size:10px; }
       img { max-width:100%; height:auto; }
     </style>
   </head><body>${content}</body></html>`);
@@ -275,6 +277,5 @@ ${activeVoter.message}`;
   URL.revokeObjectURL(url);
 }
 </script>
-
 </body>
 </html>
