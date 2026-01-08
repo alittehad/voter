@@ -11,10 +11,11 @@ h2 { text-align:center; margin-bottom:15px; }
 .result-item { padding:10px; margin:5px 0; background:white; border-radius:6px; border-left:5px solid #007bff; cursor:pointer; display:flex; justify-content:space-between; align-items:center; }
 .voter-color-tag { width:20px; height:20px; border-radius:4px; display:inline-block; }
 
-#card { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); justify-content:center; align-items:flex-start; padding:20px; overflow-y:auto; }
+#card { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); justify-content:center; align-items:flex-start; padding:20px; overflow-y:auto; z-index:999; }
 .card-content{ background:white; padding:15px; border-radius:10px; max-width:450px; width:95%; position:relative; }
 .close-btn{ position:absolute; top:10px; right:10px; background:red; border:none; color:white; padding:5px 10px; border-radius:5px; cursor:pointer; }
 .color-btn { width:30px; height:30px; border-radius:6px; border:none; margin-right:8px; cursor:pointer; }
+.color-btn.active { border:3px solid #000; }
 #msg { width:100%; height:80px; padding:8px; border:2px solid #aaa; border-radius:6px; }
 .btn-small { padding:8px 15px; border:none; border-radius:6px; margin-right:10px; cursor:pointer; color:white; }
 .btn-save { background:#28a745; }
@@ -27,14 +28,14 @@ h2 { text-align:center; margin-bottom:15px; }
 @media print {
   body, .card-content {
       width: 100%;
-      max-width: 450px;
-      font-size: 12px;
-      padding: 5px;
+      max-width: 200px; /* 2 inch approx */
+      font-size: 10px;
+      padding: 2px;
       margin: 0 auto;
   }
-  img { max-width:100%; height:auto; }
+  img { max-width:50px; height:auto; }
   pre { white-space: pre-wrap; word-break: break-word; }
-  hr { border: 1px solid #000; }
+  hr { border:1px solid #000; }
 }
 </style>
 </head>
@@ -59,9 +60,9 @@ h2 { text-align:center; margin-bottom:15px; }
 
     <hr>
     <p><b>Change Color:</b></p>
-    <button class="color-btn" style="background:#ff4444" onclick="saveColor('#ff4444')"></button>
-    <button class="color-btn" style="background:#44cc44" onclick="saveColor('#44cc44')"></button>
-    <button class="color-btn" style="background:#4477ff" onclick="saveColor('#4477ff')"></button>
+    <button class="color-btn" style="background:#ff4444" onclick="saveColor('#ff4444', this)"></button>
+    <button class="color-btn" style="background:#44cc44" onclick="saveColor('#44cc44', this)"></button>
+    <button class="color-btn" style="background:#4477ff" onclick="saveColor('#4477ff', this)"></button>
 
     <hr>
     <p><b>Sender Message:</b></p>
@@ -96,7 +97,8 @@ let voters = [];
 let activeVoter = null;
 
 // Fetch voters
-db.ref("voters").once("value").then(snap => {
+db.ref("voters").once("value")
+.then(snap => {
     const data = snap.val() || {};
     voters = Object.keys(data).map(key => ({
         key: key,
@@ -113,38 +115,37 @@ db.ref("voters").once("value").then(snap => {
         color: data[key].color || "#ffffff",
         message: data[key].message || ""
     }));
-    renderResults(); // Page load par 20 voters dikhao
-});
+    renderResults();
+})
+.catch(err => alert("Error loading voter data!"));
 
-// Render results
+// Render results with initial 20 voters
 function renderResults() {
   const q = document.getElementById("searchBox").value.trim().toLowerCase();
-  let html = "";
-
   let filtered = voters.filter(v => {
     const name = (v.voter_full_name || "").toLowerCase();
     const epic = (v.epic_no || "").toLowerCase();
-    return q === "" || name.includes(q) || epic.includes(q);
+    return q === "" ? true : name.includes(q) || epic.includes(q);
   });
 
-  // Page load par sirf first 20 voters dikhaye
-  if(q === "") filtered = filtered.slice(0, 20);
+  // Show only first 20 on initial load
+  let display = q === "" ? filtered.slice(0,20) : filtered;
 
-  filtered.forEach(v => {
-    html += `<div class="result-item" onclick="openCard('${v.key}')">
-               <span><b>${v.voter_full_name}</b> (${v.epic_no})</span>
-               <span class="voter-color-tag" style="background:${v.color || '#fff'}"></span>
-             </div>`;
+  let html = "";
+  display.forEach(v => {
+      html += `<div class="result-item" onclick="openCard('${v.key}')">
+                 <span><b>${v.voter_full_name}</b> (${v.epic_no})</span>
+                 <span class="voter-color-tag" style="background:${v.color || '#fff'}"></span>
+               </div>`;
   });
 
   document.getElementById("results").innerHTML = html;
 }
 
-// Live search
+// Search input live
 document.getElementById("searchBox").addEventListener("input", renderResults);
-window.addEventListener('load', renderResults);
 
-// CARD functions
+// Card open / close
 function openCard(key){
   activeVoter = voters.find(v=>v.key===key);
   if(!activeVoter) return;
@@ -159,26 +160,41 @@ function openCard(key){
   document.getElementById("vgender").innerText = activeVoter.gender;
   document.getElementById("colortag").style.background = activeVoter.color;
   document.getElementById("msg").value = activeVoter.message;
+
+  // Highlight selected color button
+  document.querySelectorAll(".color-btn").forEach(btn => {
+    btn.classList.remove("active");
+    if(btn.style.background === activeVoter.color) btn.classList.add("active");
+  });
+
   document.getElementById("card").style.display = "flex";
 }
-
 function closeCard(){ document.getElementById("card").style.display="none"; }
 
-function saveColor(c){
+// Close card on outside click
+document.getElementById("card").addEventListener("click", function(e){
+  if(e.target.id === "card") closeCard();
+});
+
+// Color / Message
+function saveColor(c, btn){
   if(!activeVoter) return;
   activeVoter.color=c;
   db.ref("voters/"+activeVoter.key+"/color").set(c);
   document.getElementById("colortag").style.background=c;
+
+  // Highlight selected button
+  document.querySelectorAll(".color-btn").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+
   renderResults();
 }
-
 function saveMessage(){
   if(!activeVoter) return;
   activeVoter.message = document.getElementById("msg").value;
   db.ref("voters/"+activeVoter.key+"/message").set(activeVoter.message);
   alert("Message saved!");
 }
-
 function deleteMessage(){
   if(!activeVoter) return;
   db.ref("voters/"+activeVoter.key+"/message").remove();
@@ -186,53 +202,41 @@ function deleteMessage(){
   alert("Message deleted!");
 }
 
-// --- Print / WhatsApp / Download functions ---
+// Print / WhatsApp / Download
 function printCard(){
   if(!activeVoter) return;
+  let content = `<div style="text-align:center;font-family:Arial">
+      <img src="https://i.ibb.co/2t5x7Yq/clock-logo.png" style="width:80px;height:auto;"><br>
+      <b style="font-size:14px;">🕒 विजयी बनाएं / विजयी बनवा 🕒</b>
+      <hr>
+      <p><b>नाम / नाव:</b> ${activeVoter.voter_full_name}</p>
+      <p><b>EPIC:</b> ${activeVoter.epic_no}</p>
+      <p><b>क्रमांक/भाग:</b> ${activeVoter.sl_no_in_part}</p>
+      <p><b>क्षेत्र / Area:</b> ${activeVoter.area}</p>
+      <p><b>घर नंबर / House No:</b> ${activeVoter.house_no}</p>
+      <p><b>संबंध / Relation:</b> ${activeVoter.relation_name} (${activeVoter.relation_type})</p>
+      <p><b>वय / Age:</b> ${activeVoter.age} / <b>लिंग / Gender:</b> ${activeVoter.gender}</p>
+      <p><b>रंग / Color:</b> <span style="display:inline-block;width:20px;height:20px;background:${activeVoter.color};border:1px solid #000;"></span></p>
+      <hr>
+      <p style="font-size:12px; font-weight:bold; color:#d32f2f;">
+        भारी मतों से घड़ी को जिताओ!<br>
+        भरपूर मतदान करा, 🕒🕒🕒 घड्याळ जिंका!
+      </p>
+      <hr>
+      <pre>${activeVoter.message}</pre>
+    </div>`;
 
-  let content = `
-  <div class="card-content" style="font-family: Arial; padding:10px;">
-    <div style="text-align:center;">
-      <img src="https://i.ibb.co/2t5x7Yq/clock-logo.png" style="max-width:100px; height:auto;"><br>
-      <b style="font-size:16px;">🕒 विजयी बनाएं / विजयी बनवा 🕒</b>
-    </div>
-    <hr>
-    <p><b>नाम / नाव:</b> ${activeVoter.voter_full_name}</p>
-    <p><b>EPIC:</b> ${activeVoter.epic_no}</p>
-    <p><b>क्रमांक/भाग:</b> ${activeVoter.sl_no_in_part}</p>
-    <p><b>क्षेत्र / Area:</b> ${activeVoter.area}</p>
-    <p><b>घर नंबर / House No:</b> ${activeVoter.house_no}</p>
-    <p><b>संबंध / Relation:</b> ${activeVoter.relation_name} (${activeVoter.relation_type})</p>
-    <p><b>वय / Age:</b> ${activeVoter.age} / <b>लिंग / Gender:</b> ${activeVoter.gender}</p>
-    <p><b>रंग / Saved Color:</b> <span style="display:inline-block;width:20px;height:20px;background:${activeVoter.color};border:1px solid #000;"></span></p>
-    <hr>
-    <p style="font-size:14px; font-weight:bold; color:#d32f2f;">
-      भारी मतों से घड़ी को जिताओ!<br>
-      भरपूर मतदान करा, 🕒🕒🕒 घड्याळ जिंका!
-    </p>
-    <hr>
-    <p><b>Message / संदेश:</b></p>
-    <pre>${activeVoter.message}</pre>
-  </div>`;
-
-  let w = window.open("", "", "width=450,height=600");
-  w.document.write(`<html><head>
-    <style>
-      body { margin:0; padding:5px; }
-      pre { white-space: pre-wrap; word-break: break-word; }
-      img { max-width:100%; height:auto; }
-    </style>
-  </head><body>${content}</body></html>`);
+  let w = window.open("","Print","width=250,height=400");
+  w.document.write(content);
   w.document.close();
   w.print();
 }
 
 function sendWhatsApp(){
   if(!activeVoter) return;
-  let logoText = "🕒🕒🕒";
-  let text = `${logoText} *विजयी बनाएं / विजयी बनवा* ${logoText}
-
-*मतदाता विवरण / मतदार तपशील*
+  let text = `🕒🕒🕒 विजयी बनाएं / विजयी बनवा 🕒🕒🕒
+  
+मतदाता विवरण / मतदार तपशील
 नाम / नाव: ${activeVoter.voter_full_name}
 EPIC: ${activeVoter.epic_no}
 क्रमांक/भाग: ${activeVoter.sl_no_in_part}
@@ -252,10 +256,8 @@ ${activeVoter.message}`;
 
 function downloadPDF(){
   if(!activeVoter) return;
-  let content =
-`🕒🕒🕒 विजयी बनाएं / विजयी बनवा 🕒🕒🕒
+  let content = `🕒🕒🕒 विजयी बनाएं / विजयी बनवा 🕒🕒🕒
 
-Voter Details / मतदार तपशील
 Name / नाव: ${activeVoter.voter_full_name}
 EPIC: ${activeVoter.epic_no}
 Serial/Part / क्रमांक/भाग: ${activeVoter.sl_no_in_part}
@@ -279,6 +281,5 @@ ${activeVoter.message}`;
   URL.revokeObjectURL(url);
 }
 </script>
-
 </body>
 </html>
