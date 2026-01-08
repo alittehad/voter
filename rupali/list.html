@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Voter List</title>
-
 <style>
 body { font-family: Arial; margin:0; padding:10px; background:#f1f1f1; }
 h2 { text-align:center; margin-bottom:15px; }
@@ -23,6 +22,20 @@ h2 { text-align:center; margin-bottom:15px; }
 .btn-print { background:#007bff; }
 .btn-whatsapp { background:#25d366; }
 .btn-download { background:#6a1b9a; }
+
+/* Responsive print for all printers */
+@media print {
+  body, .card-content {
+      width: 100%;
+      max-width: 450px;
+      font-size: 12px;
+      padding: 5px;
+      margin: 0 auto;
+  }
+  img { max-width:100%; height:auto; }
+  pre { white-space: pre-wrap; word-break: break-word; }
+  hr { border: 1px solid #000; }
+}
 </style>
 </head>
 <body>
@@ -40,7 +53,6 @@ h2 { text-align:center; margin-bottom:15px; }
     <p><b>Serial/Part:</b> <span id="vserial"></span></p>
     <p><b>Area:</b> <span id="varea"></span></p>
     <p><b>House No:</b> <span id="vhouse"></span></p>
-    <p><b>Ward:</b> <span id="vward"></span></p>
     <p><b>Relation:</b> <span id="vrelation"></span></p>
     <p><b>Age/Gender:</b> <span id="vage"></span> / <span id="vgender"></span></p>
     <p><b>Saved Color:</b> <span class="voter-color-tag" id="colortag"></span></p>
@@ -131,7 +143,6 @@ function openCard(key){
   document.getElementById("vserial").innerText = activeVoter.sl_no_in_part;
   document.getElementById("varea").innerText = activeVoter.area;
   document.getElementById("vhouse").innerText = activeVoter.house_no;
-  document.getElementById("vward").innerText = activeVoter.ward;
   document.getElementById("vrelation").innerText = `${activeVoter.relation_name} (${activeVoter.relation_type})`;
   document.getElementById("vage").innerText = activeVoter.age;
   document.getElementById("vgender").innerText = activeVoter.gender;
@@ -164,47 +175,91 @@ function deleteMessage(){
   alert("Message deleted!");
 }
 
+// --- Print / WhatsApp / Download functions ---
+
 function printCard(){
   if(!activeVoter) return;
-  let text = document.querySelector(".card-content").innerText;
+
+  let content = `
+  <div class="card-content" style="font-family: Arial; padding:10px;">
+    <div style="text-align:center;">
+      <img src="https://i.ibb.co/2t5x7Yq/clock-logo.png" style="max-width:100px; height:auto;"><br>
+      <b style="font-size:16px;">🕒 विजयी बनाएं / विजयी बनवा 🕒</b>
+    </div>
+    <hr>
+    <p><b>नाम / नाव:</b> ${activeVoter.voter_full_name}</p>
+    <p><b>EPIC:</b> ${activeVoter.epic_no}</p>
+    <p><b>क्रमांक/भाग:</b> ${activeVoter.sl_no_in_part}</p>
+    <p><b>क्षेत्र / Area:</b> ${activeVoter.area}</p>
+    <p><b>घर नंबर / House No:</b> ${activeVoter.house_no}</p>
+    <p><b>संबंध / Relation:</b> ${activeVoter.relation_name} (${activeVoter.relation_type})</p>
+    <p><b>वय / Age:</b> ${activeVoter.age} / <b>लिंग / Gender:</b> ${activeVoter.gender}</p>
+    <p><b>रंग / Saved Color:</b> <span style="display:inline-block;width:20px;height:20px;background:${activeVoter.color};border:1px solid #000;"></span></p>
+    <hr>
+    <p style="font-size:14px; font-weight:bold; color:#d32f2f;">
+      भारी मतों से घड़ी को जिताओ!<br>
+      भरपूर मतदान करा, 🕒🕒🕒 घड्याळ जिंका!
+    </p>
+    <hr>
+    <p><b>Message / संदेश:</b></p>
+    <pre>${activeVoter.message}</pre>
+  </div>`;
+
   let w = window.open("", "", "width=450,height=600");
-  w.document.write("<pre>"+text+"</pre>");
+  w.document.write(`<html><head>
+    <style>
+      body { margin:0; padding:5px; }
+      pre { white-space: pre-wrap; word-break: break-word; }
+      img { max-width:100%; height:auto; }
+    </style>
+  </head><body>${content}</body></html>`);
+  w.document.close();
   w.print();
 }
 
 function sendWhatsApp(){
   if(!activeVoter) return;
-  let text = `*Voter Details*
-Name: ${activeVoter.voter_full_name}
-EPIC: ${activeVoter.epic_no}
-Serial/Part: ${activeVoter.sl_no_in_part}
-Area: ${activeVoter.area}
-House No: ${activeVoter.house_no}
-Ward: ${activeVoter.ward}
-Relation: ${activeVoter.relation_name} (${activeVoter.relation_type})
-Age/Gender: ${activeVoter.age} / ${activeVoter.gender}
+  let logoText = "🕒🕒🕒";
+  let text = `${logoText} *विजयी बनाएं / विजयी बनवा* ${logoText}
 
-Message:
+*मतदाता विवरण / मतदार तपशील*
+नाम / नाव: ${activeVoter.voter_full_name}
+EPIC: ${activeVoter.epic_no}
+क्रमांक/भाग: ${activeVoter.sl_no_in_part}
+क्षेत्र / Area: ${activeVoter.area}
+घर नंबर / House No: ${activeVoter.house_no}
+संबंध / Relation: ${activeVoter.relation_name} (${activeVoter.relation_type})
+वय / Age: ${activeVoter.age} / लिंग / Gender: ${activeVoter.gender}
+
+भारी मतों से घड़ी को जिताओ!  
+भरपूर मतदान करा, 🕒🕒🕒 घड्याळ जिंका!
+
+Message / संदेश:
 ${activeVoter.message}`;
+
   window.open("https://wa.me/?text=" + encodeURIComponent(text), "_blank");
 }
 
 function downloadPDF(){
   if(!activeVoter) return;
   let content =
-`Voter Details
---------------------
-Name: ${activeVoter.voter_full_name}
-EPIC: ${activeVoter.epic_no}
-Serial/Part: ${activeVoter.sl_no_in_part}
-Area: ${activeVoter.area}
-House No: ${activeVoter.house_no}
-Ward: ${activeVoter.ward}
-Relation: ${activeVoter.relation_name} (${activeVoter.relation_type})
-Age/Gender: ${activeVoter.age} / ${activeVoter.gender}
+`🕒🕒🕒 विजयी बनाएं / विजयी बनवा 🕒🕒🕒
 
-Message:
+Voter Details / मतदार तपशील
+Name / नाव: ${activeVoter.voter_full_name}
+EPIC: ${activeVoter.epic_no}
+Serial/Part / क्रमांक/भाग: ${activeVoter.sl_no_in_part}
+Area / क्षेत्र: ${activeVoter.area}
+House No / घर नंबर: ${activeVoter.house_no}
+Relation / संबंध: ${activeVoter.relation_name} (${activeVoter.relation_type})
+Age / वय: ${activeVoter.age} / Gender / लिंग: ${activeVoter.gender}
+
+भारी मतों से घड़ी को जिताओ!  
+भरपूर मतदान करा, 🕒🕒🕒 घड्याळ जिंका!
+
+Message / संदेश:
 ${activeVoter.message}`;
+
   const blob = new Blob([content], {type: "text/plain"});
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -214,6 +269,5 @@ ${activeVoter.message}`;
   URL.revokeObjectURL(url);
 }
 </script>
-
 </body>
 </html>
