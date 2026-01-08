@@ -43,7 +43,7 @@ h2 { text-align:center; margin-bottom:15px; }
 
 <h2>Voter Search</h2>
 <input type="text" id="searchBox" placeholder="Type name or EPIC to search..." />
-<div id="results"></div>
+<div id="results">Loading voters...</div>
 
 <!-- CARD -->
 <div id="card">
@@ -115,97 +115,99 @@ db.ref("voters").once("value")
         color: data[key].color || "#ffffff",
         message: data[key].message || ""
     }));
-    renderResults();
+
+    renderResults(); // show first 20 voters initially
 })
-.catch(err => alert("Error loading voter data!"));
+.catch(err => {
+    console.error("Firebase error:", err);
+    document.getElementById("results").innerHTML = "<p>Error loading voter data!</p>";
+});
 
-// Render results with initial 20 voters
+// Render results
 function renderResults() {
-  const q = document.getElementById("searchBox").value.trim().toLowerCase();
-  let filtered = voters.filter(v => {
-    const name = (v.voter_full_name || "").toLowerCase();
-    const epic = (v.epic_no || "").toLowerCase();
-    return q === "" ? true : name.includes(q) || epic.includes(q);
-  });
+    const q = document.getElementById("searchBox").value.trim().toLowerCase();
+    let filtered = voters.filter(v => {
+        const name = (v.voter_full_name || "").toLowerCase();
+        const epic = (v.epic_no || "").toLowerCase();
+        return q === "" ? true : name.includes(q) || epic.includes(q);
+    });
 
-  // Show only first 20 on initial load
-  let display = q === "" ? filtered.slice(0,20) : filtered;
+    let display = q === "" ? filtered.slice(0,20) : filtered;
 
-  let html = "";
-  display.forEach(v => {
-      html += `<div class="result-item" onclick="openCard('${v.key}')">
-                 <span><b>${v.voter_full_name}</b> (${v.epic_no})</span>
-                 <span class="voter-color-tag" style="background:${v.color || '#fff'}"></span>
-               </div>`;
-  });
+    if(display.length === 0) {
+        document.getElementById("results").innerHTML = "<p>No voters found</p>";
+        return;
+    }
 
-  document.getElementById("results").innerHTML = html;
+    let html = "";
+    display.forEach(v => {
+        html += `<div class="result-item" onclick="openCard('${v.key}')">
+                    <span><b>${v.voter_full_name}</b> (${v.epic_no})</span>
+                    <span class="voter-color-tag" style="background:${v.color || '#fff'}"></span>
+                 </div>`;
+    });
+
+    document.getElementById("results").innerHTML = html;
 }
 
-// Search input live
+// Live search
 document.getElementById("searchBox").addEventListener("input", renderResults);
 
 // Card open / close
 function openCard(key){
-  activeVoter = voters.find(v=>v.key===key);
-  if(!activeVoter) return;
+    activeVoter = voters.find(v=>v.key===key);
+    if(!activeVoter) return;
 
-  document.getElementById("vname").innerText = activeVoter.voter_full_name;
-  document.getElementById("vepic").innerText = activeVoter.epic_no;
-  document.getElementById("vserial").innerText = activeVoter.sl_no_in_part;
-  document.getElementById("varea").innerText = activeVoter.area;
-  document.getElementById("vhouse").innerText = activeVoter.house_no;
-  document.getElementById("vrelation").innerText = `${activeVoter.relation_name} (${activeVoter.relation_type})`;
-  document.getElementById("vage").innerText = activeVoter.age;
-  document.getElementById("vgender").innerText = activeVoter.gender;
-  document.getElementById("colortag").style.background = activeVoter.color;
-  document.getElementById("msg").value = activeVoter.message;
+    document.getElementById("vname").innerText = activeVoter.voter_full_name;
+    document.getElementById("vepic").innerText = activeVoter.epic_no;
+    document.getElementById("vserial").innerText = activeVoter.sl_no_in_part;
+    document.getElementById("varea").innerText = activeVoter.area;
+    document.getElementById("vhouse").innerText = activeVoter.house_no;
+    document.getElementById("vrelation").innerText = `${activeVoter.relation_name} (${activeVoter.relation_type})`;
+    document.getElementById("vage").innerText = activeVoter.age;
+    document.getElementById("vgender").innerText = activeVoter.gender;
+    document.getElementById("colortag").style.background = activeVoter.color;
+    document.getElementById("msg").value = activeVoter.message;
 
-  // Highlight selected color button
-  document.querySelectorAll(".color-btn").forEach(btn => {
-    btn.classList.remove("active");
-    if(btn.style.background === activeVoter.color) btn.classList.add("active");
-  });
+    document.querySelectorAll(".color-btn").forEach(btn => {
+        btn.classList.remove("active");
+        if(btn.style.background === activeVoter.color) btn.classList.add("active");
+    });
 
-  document.getElementById("card").style.display = "flex";
+    document.getElementById("card").style.display = "flex";
 }
 function closeCard(){ document.getElementById("card").style.display="none"; }
-
-// Close card on outside click
 document.getElementById("card").addEventListener("click", function(e){
   if(e.target.id === "card") closeCard();
 });
 
-// Color / Message
+// Color / Message functions
 function saveColor(c, btn){
-  if(!activeVoter) return;
-  activeVoter.color=c;
-  db.ref("voters/"+activeVoter.key+"/color").set(c);
-  document.getElementById("colortag").style.background=c;
-
-  // Highlight selected button
-  document.querySelectorAll(".color-btn").forEach(b=>b.classList.remove("active"));
-  btn.classList.add("active");
-
-  renderResults();
+    if(!activeVoter) return;
+    activeVoter.color=c;
+    db.ref("voters/"+activeVoter.key+"/color").set(c);
+    document.getElementById("colortag").style.background=c;
+    document.querySelectorAll(".color-btn").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    renderResults();
 }
 function saveMessage(){
-  if(!activeVoter) return;
-  activeVoter.message = document.getElementById("msg").value;
-  db.ref("voters/"+activeVoter.key+"/message").set(activeVoter.message);
-  alert("Message saved!");
+    if(!activeVoter) return;
+    activeVoter.message = document.getElementById("msg").value;
+    db.ref("voters/"+activeVoter.key+"/message").set(activeVoter.message);
+    alert("Message saved!");
 }
 function deleteMessage(){
-  if(!activeVoter) return;
-  db.ref("voters/"+activeVoter.key+"/message").remove();
-  document.getElementById("msg").value="";
-  alert("Message deleted!");
+    if(!activeVoter) return;
+    db.ref("voters/"+activeVoter.key+"/message").remove();
+    document.getElementById("msg").value="";
+    alert("Message deleted!");
 }
 
 // Print / WhatsApp / Download
 function printCard(){
-  if(!activeVoter) return;
-  let content = `<div style="text-align:center;font-family:Arial">
+    if(!activeVoter) return;
+    let content = `<div style="text-align:center;font-family:Arial">
       <img src="https://i.ibb.co/2t5x7Yq/clock-logo.png" style="width:80px;height:auto;"><br>
       <b style="font-size:14px;">🕒 विजयी बनाएं / विजयी बनवा 🕒</b>
       <hr>
@@ -226,15 +228,15 @@ function printCard(){
       <pre>${activeVoter.message}</pre>
     </div>`;
 
-  let w = window.open("","Print","width=250,height=400");
-  w.document.write(content);
-  w.document.close();
-  w.print();
+    let w = window.open("","Print","width=250,height=400");
+    w.document.write(content);
+    w.document.close();
+    w.print();
 }
 
 function sendWhatsApp(){
-  if(!activeVoter) return;
-  let text = `🕒🕒🕒 विजयी बनाएं / विजयी बनवा 🕒🕒🕒
+    if(!activeVoter) return;
+    let text = `🕒🕒🕒 विजयी बनाएं / विजयी बनवा 🕒🕒🕒
   
 मतदाता विवरण / मतदार तपशील
 नाम / नाव: ${activeVoter.voter_full_name}
@@ -251,12 +253,12 @@ EPIC: ${activeVoter.epic_no}
 Message / संदेश:
 ${activeVoter.message}`;
 
-  window.open("https://wa.me/?text=" + encodeURIComponent(text), "_blank");
+    window.open("https://wa.me/?text=" + encodeURIComponent(text), "_blank");
 }
 
 function downloadPDF(){
-  if(!activeVoter) return;
-  let content = `🕒🕒🕒 विजयी बनाएं / विजयी बनवा 🕒🕒🕒
+    if(!activeVoter) return;
+    let content = `🕒🕒🕒 विजयी बनाएं / विजयी बनवा 🕒🕒🕒
 
 Name / नाव: ${activeVoter.voter_full_name}
 EPIC: ${activeVoter.epic_no}
@@ -272,13 +274,13 @@ Age / वय: ${activeVoter.age} / Gender / लिंग: ${activeVoter.gender}
 Message / संदेश:
 ${activeVoter.message}`;
 
-  const blob = new Blob([content], {type: "text/plain"});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = activeVoter.epic_no + "_voter_details.txt";
-  a.click();
-  URL.revokeObjectURL(url);
+    const blob = new Blob([content], {type: "text/plain"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = activeVoter.epic_no + "_voter_details.txt";
+    a.click();
+    URL.revokeObjectURL(url);
 }
 </script>
 </body>
