@@ -95,7 +95,7 @@ const db = firebase.database();
 let voters = [];
 let activeVoter = null;
 
-// Fetch voters
+// Fetch voters from Firebase
 db.ref("voters").once("value").then(snap => {
     const data = snap.val() || {};
     voters = Object.keys(data).map(key => ({
@@ -113,24 +113,30 @@ db.ref("voters").once("value").then(snap => {
         color: data[key].color || "#ffffff",
         message: data[key].message || ""
     }));
-    renderResults();
+    renderResults(); // Render all initially
 });
 
-// Render results
+// Live search: Name / EPIC
 function renderResults() {
   const q = document.getElementById("searchBox").value.trim().toLowerCase();
   let html = "";
+
   voters.forEach(v => {
-    if(q === "" || v.voter_full_name.toLowerCase().includes(q) || v.epic_no.toLowerCase().includes(q)){
+    const name = (v.voter_full_name || "").toLowerCase();
+    const epic = (v.epic_no || "").toLowerCase();
+
+    if(q === "" || name.includes(q) || epic.includes(q)) {
       html += `<div class="result-item" onclick="openCard('${v.key}')">
                  <span><b>${v.voter_full_name}</b> (${v.epic_no})</span>
-                 <span class="voter-color-tag" style="background:${v.color}"></span>
+                 <span class="voter-color-tag" style="background:${v.color || '#fff'}"></span>
                </div>`;
     }
   });
+
   document.getElementById("results").innerHTML = html;
 }
 
+// Trigger live search on typing
 document.getElementById("searchBox").addEventListener("input", renderResults);
 
 // CARD functions
@@ -269,5 +275,6 @@ ${activeVoter.message}`;
   URL.revokeObjectURL(url);
 }
 </script>
+
 </body>
 </html>
