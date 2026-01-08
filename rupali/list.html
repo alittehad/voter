@@ -24,9 +24,9 @@ h2 { text-align:center; margin-bottom:15px; }
 .btn-whatsapp { background:#25d366; }
 .btn-download { background:#6a1b9a; }
 
-/* Responsive print for all printers */
+/* Responsive print */
 @media print {
-  body, .card-content { width: 100%; max-width: 200px; font-size: 10px; padding: 2px; margin: 0 auto; }
+  body, .card-content { width:100%; max-width:200px; font-size:10px; padding:2px; margin:0 auto; }
   img { max-width:50px; height:auto; }
   pre { white-space: pre-wrap; word-break: break-word; }
   hr { border:1px solid #000; }
@@ -94,13 +94,11 @@ let activeVoter = null;
 db.ref("voters").once("value")
 .then(snap => {
     const data = snap.val() || {};
-    console.log("Firebase data:", data); // 🔍 debug
-
+    console.log("Firebase data:", data);
     voters = Object.keys(data).map(key => ({
         key: key,
         epic_no: data[key].EPIC_NO || key,
         voter_full_name: data[key].VoterName || "NA",
-        search_name: data[key].search_name || data[key].VoterName || "",
         sl_no_in_part: data[key].PartNo || "NA",
         area: data[key].Area || "NA",
         house_no: data[key].HouseNo || "NA",
@@ -112,8 +110,6 @@ db.ref("voters").once("value")
         color: data[key].color || "#ffffff",
         message: data[key].message || ""
     }));
-
-    console.log("Mapped voters:", voters); // 🔍 debug
     renderResults();
 })
 .catch(err => {
@@ -129,14 +125,11 @@ function renderResults() {
         const epic = (v.epic_no || "").toLowerCase();
         return q === "" ? true : name.includes(q) || epic.includes(q);
     });
-
     let display = q === "" ? filtered.slice(0,20) : filtered;
-
     if(display.length === 0) {
         document.getElementById("results").innerHTML = "<p>No voters found</p>";
         return;
     }
-
     let html = "";
     display.forEach(v => {
         html += `<div class="result-item" onclick="openCard('${v.key}')">
@@ -144,18 +137,16 @@ function renderResults() {
                     <span class="voter-color-tag" style="background:${v.color || '#fff'}"></span>
                  </div>`;
     });
-
     document.getElementById("results").innerHTML = html;
 }
 
 // Live search
 document.getElementById("searchBox").addEventListener("input", renderResults);
 
-// Card functions
+// Card open / close
 function openCard(key){
     activeVoter = voters.find(v=>v.key===key);
     if(!activeVoter) return;
-
     document.getElementById("vname").innerText = activeVoter.voter_full_name;
     document.getElementById("vepic").innerText = activeVoter.epic_no;
     document.getElementById("vserial").innerText = activeVoter.sl_no_in_part;
@@ -166,12 +157,10 @@ function openCard(key){
     document.getElementById("vgender").innerText = activeVoter.gender;
     document.getElementById("colortag").style.background = activeVoter.color;
     document.getElementById("msg").value = activeVoter.message;
-
     document.querySelectorAll(".color-btn").forEach(btn => {
         btn.classList.remove("active");
         if(btn.style.background === activeVoter.color) btn.classList.add("active");
     });
-
     document.getElementById("card").style.display = "flex";
 }
 function closeCard(){ document.getElementById("card").style.display="none"; }
@@ -179,7 +168,7 @@ document.getElementById("card").addEventListener("click", function(e){
   if(e.target.id === "card") closeCard();
 });
 
-// Color / Message functions
+// Color / Message
 function saveColor(c, btn){
     if(!activeVoter) return;
     activeVoter.color=c;
@@ -206,15 +195,7 @@ function deleteMessage(){
 function printCard(){
     if(!activeVoter) return;
     let content = `<div style="text-align:center;font-family:Arial">
-      <b>${activeVoter.voter_full_name}</b><br>
-      EPIC: ${activeVoter.epic_no}<br>
-      Serial/Part: ${activeVoter.sl_no_in_part}<br>
-      Area: ${activeVoter.area}<br>
-      House No: ${activeVoter.house_no}<br>
-      Relation: ${activeVoter.relation_name} (${activeVoter.relation_type})<br>
-      Age/Gender: ${activeVoter.age} / ${activeVoter.gender}<br>
-      Color: <span style="display:inline-block;width:20px;height:20px;background:${activeVoter.color};border:1px solid #000;"></span><br>
-      Message: <pre>${activeVoter.message}</pre>
+      <b>${activeVoter.voter_full_name}</b><br>EPIC: ${activeVoter.epic_no}<br>Part: ${activeVoter.sl_no_in_part}
     </div>`;
     let w = window.open("","Print","width=250,height=400");
     w.document.write(content);
@@ -224,18 +205,18 @@ function printCard(){
 
 function sendWhatsApp(){
     if(!activeVoter) return;
-    let text = `Voter: ${activeVoter.voter_full_name}\nEPIC: ${activeVoter.epic_no}\nSerial/Part: ${activeVoter.sl_no_in_part}\nMessage: ${activeVoter.message}`;
+    let text = `Voter: ${activeVoter.voter_full_name}\nEPIC: ${activeVoter.epic_no}\nPart: ${activeVoter.sl_no_in_part}`;
     window.open("https://wa.me/?text=" + encodeURIComponent(text), "_blank");
 }
 
 function downloadPDF(){
     if(!activeVoter) return;
-    let content = `Voter: ${activeVoter.voter_full_name}\nEPIC: ${activeVoter.epic_no}\nSerial/Part: ${activeVoter.sl_no_in_part}\nMessage: ${activeVoter.message}`;
+    let content = `Voter: ${activeVoter.voter_full_name}\nEPIC: ${activeVoter.epic_no}\nPart: ${activeVoter.sl_no_in_part}`;
     const blob = new Blob([content], {type: "text/plain"});
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = activeVoter.epic_no + "_voter_details.txt";
+    a.download = activeVoter.epic_no + "_voter.txt";
     a.click();
     URL.revokeObjectURL(url);
 }
