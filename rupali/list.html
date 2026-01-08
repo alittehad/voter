@@ -2,209 +2,193 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Voter List</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <style>
-body { font-family: Arial; margin:0; padding:10px; background:#f1f1f1; }
-h2 { text-align:center; margin-bottom:15px; }
-#searchBox { width:100%; padding:10px; border:2px solid #999; border-radius:6px; font-size:18px; margin-bottom:15px; }
-.result-item { padding:10px; margin:5px 0; background:white; border-radius:6px; border-left:5px solid #007bff; cursor:pointer; display:flex; justify-content:space-between; align-items:center; }
-.voter-color-tag { width:20px; height:20px; border-radius:4px; display:inline-block; }
+body{font-family:Arial;background:#f2f2f2;margin:0;padding:10px}
+h2{text-align:center}
+#searchBox{width:100%;padding:10px;font-size:16px;border-radius:6px;border:1px solid #888}
 
-#card { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); justify-content:center; align-items:flex-start; padding:20px; overflow-y:auto; z-index:999; }
-.card-content{ background:white; padding:15px; border-radius:10px; max-width:450px; width:95%; position:relative; }
-.close-btn{ position:absolute; top:10px; right:10px; background:red; border:none; color:white; padding:5px 10px; border-radius:5px; cursor:pointer; }
-.color-btn { width:30px; height:30px; border-radius:6px; border:none; margin-right:8px; cursor:pointer; }
-.color-btn.active { border:3px solid #000; }
-#msg { width:100%; height:80px; padding:8px; border:2px solid #aaa; border-radius:6px; }
-.btn-small { padding:8px 15px; border:none; border-radius:6px; margin-right:10px; cursor:pointer; color:white; }
-.btn-save { background:#28a745; }
-.btn-del { background:#dc3545; }
-.btn-print { background:#007bff; }
-.btn-whatsapp { background:#25d366; }
-.btn-download { background:#6a1b9a; }
-
-/* Responsive print for all printers */
-@media print {
-  body, .card-content {
-      width: 100%;
-      max-width: 200px;
-      font-size: 10px;
-      padding: 2px;
-      margin: 0 auto;
-  }
-  img { max-width:50px; height:auto; }
-  pre { white-space: pre-wrap; word-break: break-word; }
-  hr { border:1px solid #000; }
+.card{
+  background:#fff;
+  padding:10px;
+  margin:8px 0;
+  border-radius:6px;
+  border-left:5px solid #007bff;
+  cursor:pointer;
 }
+.card:hover{background:#f9f9f9}
+
+#results{margin-top:10px}
+
+#popup{
+  display:none;
+  position:fixed;
+  top:0;left:0;
+  width:100%;height:100%;
+  background:rgba(0,0,0,.6);
+  justify-content:center;
+  align-items:center;
+}
+.popup-content{
+  background:#fff;
+  padding:15px;
+  width:95%;
+  max-width:400px;
+  border-radius:8px;
+  position:relative;
+}
+.close{position:absolute;top:8px;right:10px;background:red;color:#fff;border:none;padding:5px 8px}
+
+.color-btn{
+  width:25px;height:25px;border-radius:5px;border:none;margin-right:5px;cursor:pointer
+}
+.active{border:3px solid #000}
+
+textarea{width:100%;height:70px}
+
+.btn{padding:7px 12px;margin-top:6px;border:none;border-radius:5px;color:#fff;cursor:pointer}
+.green{background:#28a745}
+.blue{background:#007bff}
+.red{background:#dc3545}
+.whatsapp{background:#25d366}
 </style>
 </head>
+
 <body>
 
 <h2>Voter Search</h2>
-<input type="text" id="searchBox" placeholder="Type name or EPIC to search..." />
-<div id="results">Loading voters...</div>
+<input id="searchBox" placeholder="नाम या EPIC टाइप करें">
+<div id="results">Loading...</div>
 
-<!-- CARD -->
-<div id="card">
-  <div class="card-content">
-    <button class="close-btn" onclick="closeCard()">X</button>
-    <h3 id="vname"></h3>
-    <p><b>EPIC:</b> <span id="vepic"></span></p>
-    <p><b>Serial/Part:</b> <span id="vserial"></span></p>
-    <p><b>Area:</b> <span id="varea"></span></p>
-    <p><b>House No:</b> <span id="vhouse"></span></p>
-    <p><b>Relation:</b> <span id="vrelation"></span></p>
-    <p><b>Age/Gender:</b> <span id="vage"></span> / <span id="vgender"></span></p>
-    <p><b>Saved Color:</b> <span class="voter-color-tag" id="colortag"></span></p>
+<!-- POPUP -->
+<div id="popup">
+  <div class="popup-content">
+    <button class="close" onclick="closePopup()">X</button>
+    <h3 id="p_name"></h3>
+    <p><b>EPIC:</b> <span id="p_epic"></span></p>
+    <p><b>घर नं:</b> <span id="p_house"></span></p>
+    <p><b>क्षेत्र:</b> <span id="p_area"></span></p>
+    <p><b>संबंध:</b> <span id="p_relation"></span></p>
+    <p><b>उम्र / लिंग:</b> <span id="p_age"></span> / <span id="p_gender"></span></p>
 
     <hr>
-    <p><b>Change Color:</b></p>
-    <button class="color-btn" style="background:#ff4444" onclick="saveColor('#ff4444', this)"></button>
-    <button class="color-btn" style="background:#44cc44" onclick="saveColor('#44cc44', this)"></button>
-    <button class="color-btn" style="background:#4477ff" onclick="saveColor('#4477ff', this)"></button>
+    <button class="color-btn" style="background:red" onclick="saveColor('red',this)"></button>
+    <button class="color-btn" style="background:green" onclick="saveColor('green',this)"></button>
+    <button class="color-btn" style="background:blue" onclick="saveColor('blue',this)"></button>
 
     <hr>
-    <p><b>Sender Message:</b></p>
-    <textarea id="msg"></textarea>
-    <button class="btn-small btn-save" onclick="saveMessage()">Save</button>
-    <button class="btn-small btn-del" onclick="deleteMessage()">Delete</button>
+    <textarea id="msg"></textarea><br>
+    <button class="btn green" onclick="saveMsg()">Save</button>
+    <button class="btn red" onclick="deleteMsg()">Delete</button>
 
     <hr>
-    <button class="btn-small btn-print" onclick="printCard()">Print</button>
-    <button class="btn-small btn-whatsapp" onclick="sendWhatsApp()">Send</button>
-    <button class="btn-small btn-download" onclick="downloadPDF()">Download</button>
+    <button class="btn blue" onclick="printCard()">Print</button>
+    <button class="btn whatsapp" onclick="sendWhatsApp()">WhatsApp</button>
   </div>
 </div>
 
+<!-- FIREBASE -->
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
 <script>
-// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
   authDomain: "voter-25c94.firebaseapp.com",
   databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
-  projectId: "voter-25c94",
-  storageBucket: "voter-25c94.appspot.com",
-  messagingSenderId: "297773534400",
-  appId: "1:297773534400:web:3722c487b8c83e9b787125"
+  projectId: "voter-25c94"
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 let voters = [];
-let activeVoter = null;
+let active = null;
 
-// Fetch voters from Firebase
-db.ref("voters").once("value").then(snap => {
-    const data = snap.val() || {};
-    console.log("Firebase data:", data); // check what is loaded
-    voters = Object.keys(data).map(key => ({
-        key: key,
-        epic_no: data[key].EPIC_NO || key,
-        voter_full_name: data[key].VoterName || "NA",
-        sl_no_in_part: data[key].PartNo || "NA",
-        area: data[key].Area || "NA",
-        house_no: data[key].HouseNo || "NA",
-        ward: data[key].Ward || "NA",
-        relation_name: data[key].RelationName || "NA",
-        relation_type: data[key].RelationType || "NA",
-        age: data[key].Age || "NA",
-        gender: data[key].Gender || "NA",
-        color: data[key].color || "#ffffff",
-        message: data[key].message || ""
-    }));
-
-    renderResults();
-}).catch(err => {
-    console.error("Firebase error:", err);
-    document.getElementById("results").innerHTML = "<p>Error loading voters!</p>";
+// LOAD DATA
+db.ref("voters").once("value").then(snap=>{
+  const data = snap.val() || {};
+  voters = Object.keys(data).map(k=>({
+    key:k,
+    name:String(data[k].VoterName||""),
+    epic:String(data[k].EPIC_NO||k),
+    age:String(data[k].Age||""),
+    gender:String(data[k].Gender||""),
+    house:String(data[k].HouseNo||""),
+    area:String(data[k].Area||""),
+    relation:String(data[k].RelationName||"")+" ("+String(data[k].RelationType||"")+")",
+    color:String(data[k].color||""),
+    message:String(data[k].message||"")
+  }));
+  render();
 });
 
-// Render results
-function renderResults() {
-    const q = document.getElementById("searchBox").value.trim().toLowerCase();
-    let filtered = voters.filter(v => {
-        const name = (v.voter_full_name || "").toLowerCase();
-        const epic = (v.epic_no || "").toLowerCase();
-        return q === "" ? true : name.includes(q) || epic.includes(q);
-    });
+function render(){
+  const q = document.getElementById("searchBox").value.toLowerCase();
+  let list = voters.filter(v=>{
+    return q==="" || v.name.toLowerCase().includes(q) || v.epic.toLowerCase().includes(q);
+  });
+  if(q==="") list=list.slice(0,20);
 
-    let display = q === "" ? filtered.slice(0,20) : filtered;
+  const res=document.getElementById("results");
+  res.innerHTML="";
+  if(list.length===0){res.innerHTML="No data";return;}
 
-    if(display.length === 0) {
-        document.getElementById("results").innerHTML = "<p>No voters found</p>";
-        return;
-    }
-
-    let html = "";
-    display.forEach(v => {
-        html += `<div class="result-item" onclick="openCard('${v.key}')">
-                    <span><b>${v.voter_full_name}</b> (${v.epic_no})</span>
-                    <span class="voter-color-tag" style="background:${v.color || '#fff'}"></span>
-                 </div>`;
-    });
-
-    document.getElementById("results").innerHTML = html;
+  list.forEach(v=>{
+    const d=document.createElement("div");
+    d.className="card";
+    d.innerHTML=`<b>${v.name}</b><br>EPIC: ${v.epic}`;
+    d.onclick=()=>openPopup(v);
+    res.appendChild(d);
+  });
 }
 
-// Search live
-document.getElementById("searchBox").addEventListener("input", renderResults);
+document.getElementById("searchBox").addEventListener("input",render);
 
-// Card functions
-function openCard(key){
-    activeVoter = voters.find(v => v.key === key);
-    if(!activeVoter) return;
-
-    document.getElementById("vname").innerText = activeVoter.voter_full_name;
-    document.getElementById("vepic").innerText = activeVoter.epic_no;
-    document.getElementById("vserial").innerText = activeVoter.sl_no_in_part;
-    document.getElementById("varea").innerText = activeVoter.area;
-    document.getElementById("vhouse").innerText = activeVoter.house_no;
-    document.getElementById("vrelation").innerText = `${activeVoter.relation_name} (${activeVoter.relation_type})`;
-    document.getElementById("vage").innerText = activeVoter.age;
-    document.getElementById("vgender").innerText = activeVoter.gender;
-    document.getElementById("colortag").style.background = activeVoter.color;
-    document.getElementById("msg").value = activeVoter.message;
-
-    document.querySelectorAll(".color-btn").forEach(btn => {
-        btn.classList.remove("active");
-        if(btn.style.background === activeVoter.color) btn.classList.add("active");
-    });
-
-    document.getElementById("card").style.display = "flex";
+// POPUP
+function openPopup(v){
+  active=v;
+  p_name.innerText=v.name;
+  p_epic.innerText=v.epic;
+  p_house.innerText=v.house;
+  p_area.innerText=v.area;
+  p_relation.innerText=v.relation;
+  p_age.innerText=v.age;
+  p_gender.innerText=v.gender;
+  msg.value=v.message;
+  popup.style.display="flex";
 }
-function closeCard(){ document.getElementById("card").style.display="none"; }
-document.getElementById("card").addEventListener("click", e => { if(e.target.id==="card") closeCard(); });
+function closePopup(){popup.style.display="none"}
 
-// Color / Message
-function saveColor(c, btn){
-    if(!activeVoter) return;
-    activeVoter.color=c;
-    db.ref("voters/"+activeVoter.key+"/color").set(c);
-    document.getElementById("colortag").style.background=c;
-    document.querySelectorAll(".color-btn").forEach(b=>b.classList.remove("active"));
-    btn.classList.add("active");
-    renderResults();
+// SAVE
+function saveColor(c,btn){
+  active.color=c;
+  db.ref("voters/"+active.epic+"/color").set(c);
 }
-function saveMessage(){
-    if(!activeVoter) return;
-    activeVoter.message = document.getElementById("msg").value;
-    db.ref("voters/"+activeVoter.key+"/message").set(activeVoter.message);
-    alert("Message saved!");
+function saveMsg(){
+  active.message=msg.value;
+  db.ref("voters/"+active.epic+"/message").set(msg.value);
+  alert("Saved");
 }
-function deleteMessage(){
-    if(!activeVoter) return;
-    db.ref("voters/"+activeVoter.key+"/message").remove();
-    document.getElementById("msg").value="";
-    alert("Message deleted!");
+function deleteMsg(){
+  msg.value="";
+  db.ref("voters/"+active.epic+"/message").remove();
 }
 
-// Print / WhatsApp / Download
-function printCard(){ /* same as before */ }
-function sendWhatsApp(){ /* same as before */ }
-function downloadPDF(){ /* same as before */ }
+// PRINT
+function printCard(){
+  const w=window.open("");
+  w.document.write(`<p>${active.name}<br>${active.epic}</p>`);
+  w.print();
+}
+
+// WHATSAPP
+function sendWhatsApp(){
+  const t=`नाम: ${active.name}\nEPIC: ${active.epic}`;
+  window.open("https://wa.me/?text="+encodeURIComponent(t));
+}
 </script>
+
 </body>
 </html>
