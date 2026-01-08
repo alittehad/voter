@@ -23,11 +23,13 @@ h2 { text-align:center; margin-bottom:15px; }
 .btn-print { background:#007bff; }
 .btn-whatsapp { background:#25d366; }
 .btn-download { background:#6a1b9a; }
-#loadMore { display:block; margin:10px auto; padding:10px 20px; border:none; border-radius:6px; background:#007bff; color:white; cursor:pointer; }
+
+#loadMore { display:block; margin:10px auto; padding:10px 15px; border:none; border-radius:6px; background:#007bff; color:white; cursor:pointer; }
 
 @media print {
   body, .card-content {
       width: 100%;
+      max-width: 200px;
       font-size: 10px;
       padding: 2px;
       margin: 0 auto;
@@ -43,7 +45,7 @@ h2 { text-align:center; margin-bottom:15px; }
 <h2>Voter Search</h2>
 <input type="text" id="searchBox" placeholder="Type name or EPIC to search..." />
 <div id="results">Loading voters...</div>
-<button id="loadMore" style="display:none;">Load More</button>
+<button id="loadMore" style="display:none;" onclick="loadMore()">Load More</button>
 
 <!-- CARD -->
 <div id="card">
@@ -73,13 +75,12 @@ h2 { text-align:center; margin-bottom:15px; }
     <hr>
     <button class="btn-small btn-print" onclick="printCard()">Print</button>
     <button class="btn-small btn-whatsapp" onclick="sendWhatsApp()">Send</button>
-    <button class="btn-small btn-download" onclick="downloadPDF()">Download PDF</button>
+    <button class="btn-small btn-download" onclick="downloadPDF()">Download</button>
   </div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 // Firebase config
 const firebaseConfig = {
@@ -99,12 +100,14 @@ let activeVoter = null;
 let displayedCount = 20;
 
 // Fetch voters
-db.ref("voters").once("value").then(snap => {
+db.ref("voters").once("value")
+.then(snap => {
     const data = snap.val() || {};
     voters = Object.keys(data).map(key => ({
         key: key,
         epic_no: data[key].EPIC_NO || key,
         voter_full_name: data[key].VoterName || "NA",
+        search_name: data[key].search_name || data[key].VoterName || "",
         sl_no_in_part: data[key].PartNo || "NA",
         area: data[key].Area || "NA",
         house_no: data[key].HouseNo || "NA",
@@ -117,24 +120,25 @@ db.ref("voters").once("value").then(snap => {
         message: data[key].message || ""
     }));
     renderResults();
-}).catch(err => {
-    console.error(err);
+})
+.catch(err => {
+    console.error("Firebase error:", err);
     document.getElementById("results").innerHTML = "<p>Error loading voter data!</p>";
 });
 
-// Render Results
+// Render results
 function renderResults(reset=false){
     const q = document.getElementById("searchBox").value.trim().toLowerCase();
     let filtered = voters.filter(v => {
         const name = (v.voter_full_name || "").toLowerCase();
         const epic = (v.epic_no || "").toLowerCase();
-        return q === "" ? true : name.includes(q) || epic.includes(q);
+        const sname = (v.search_name || "").toLowerCase();
+        return q==="" ? true : name.includes(q) || epic.includes(q) || sname.includes(q);
     });
 
     if(reset) displayedCount = 20;
 
     let display = filtered.slice(0, displayedCount);
-
     let html = "";
     if(display.length===0){
         html="<p>No voters found</p>";
@@ -144,25 +148,22 @@ function renderResults(reset=false){
                     <span><b>${v.voter_full_name}</b> (${v.epic_no})</span>
                     <span class="voter-color-tag" style="background:${v.color || '#fff'}"></span>
                   </div>`;
-    });
+        });
     }
-
     document.getElementById("results").innerHTML = html;
-
-    // Show load more button
     document.getElementById("loadMore").style.display = (displayedCount < filtered.length) ? "block" : "none";
 }
 
-// Load more button
-document.getElementById("loadMore").addEventListener("click", ()=>{
+// Load more function
+function loadMore(){
     displayedCount += 20;
     renderResults();
-});
+}
 
-// Search input
+// Live search
 document.getElementById("searchBox").addEventListener("input", ()=>renderResults(true));
 
-// Card functions
+// Card open / close
 function openCard(key){
     activeVoter = voters.find(v=>v.key===key);
     if(!activeVoter) return;
@@ -180,14 +181,15 @@ function openCard(key){
 
     document.querySelectorAll(".color-btn").forEach(btn=>{
         btn.classList.remove("active");
-        if(btn.style.background.toLowerCase() === activeVoter.color.toLowerCase()) btn.classList.add("active");
+        if(btn.style.background === activeVoter.color) btn.classList.add("active");
     });
 
-    document.getElementById("card").style.display="flex";
+    document.getElementById("card").style.display = "flex";
 }
 function closeCard(){ document.getElementById("card").style.display="none"; }
-document.getElementById("card").addEventListener("click", e=>{if(e.target.id==="card") closeCard();});
-document.addEventListener("keydown", e=>{if(e.key==="Escape") closeCard();});
+document.getElementById("card").addEventListener("click", e=>{
+    if(e.target.id === "card") closeCard();
+});
 
 // Color / Message
 function saveColor(c, btn){
@@ -201,7 +203,7 @@ function saveColor(c, btn){
 }
 function saveMessage(){
     if(!activeVoter) return;
-    activeVoter.message = document.getElementById("msg").value;
+    activeVoter.message=document.getElementById("msg").value;
     db.ref("voters/"+activeVoter.key+"/message").set(activeVoter.message);
     alert("Message saved!");
 }
@@ -212,46 +214,69 @@ function deleteMessage(){
     alert("Message deleted!");
 }
 
-// Print
+// Print / WhatsApp / Download
 function printCard(){
     if(!activeVoter) return;
-    let content = `<div style="text-align:center;font-family:Arial">
-      <b>${activeVoter.voter_full_name} (${activeVoter.epic_no})</b><br>
-      Area: ${activeVoter.area}, House: ${activeVoter.house_no}<br>
-      Relation: ${activeVoter.relation_name} (${activeVoter.relation_type})<br>
-      Age/Gender: ${activeVoter.age}/${activeVoter.gender}<br>
-      Message: ${activeVoter.message}
+    let content=`<div style="text-align:center;font-family:Arial">
+      <img src="https://i.ibb.co/2t5x7Yq/clock-logo.png" style="width:80px;height:auto;"><br>
+      <b style="font-size:14px;">🕒 विजयी बनाएं / विजयी बनवा 🕒</b>
+      <hr>
+      <p><b>नाम / नाव:</b> ${activeVoter.voter_full_name}</p>
+      <p><b>EPIC:</b> ${activeVoter.epic_no}</p>
+      <p><b>क्रमांक/भाग:</b> ${activeVoter.sl_no_in_part}</p>
+      <p><b>क्षेत्र / Area:</b> ${activeVoter.area}</p>
+      <p><b>घर नंबर / House No:</b> ${activeVoter.house_no}</p>
+      <p><b>संबंध / Relation:</b> ${activeVoter.relation_name} (${activeVoter.relation_type})</p>
+      <p><b>वय / Age:</b> ${activeVoter.age} / <b>लिंग / Gender:</b> ${activeVoter.gender}</p>
+      <p><b>रंग / Color:</b> <span style="display:inline-block;width:20px;height:20px;background:${activeVoter.color};border:1px solid #000;"></span></p>
+      <hr>
+      <pre>${activeVoter.message}</pre>
     </div>`;
-    let w = window.open("","Print");
+    let w=window.open("","Print","width=250,height=400");
     w.document.write(content);
     w.document.close();
     w.print();
 }
 
-// WhatsApp
 function sendWhatsApp(){
     if(!activeVoter) return;
-    let text = `Name: ${activeVoter.voter_full_name}\nEPIC: ${activeVoter.epic_no}\nMessage: ${activeVoter.message}`;
+    let text=`🕒🕒🕒 विजयी बनाएं / विजयी बनवा 🕒🕒🕒
+    
+मतदाता विवरण / मतदार तपशील
+नाम / नाव: ${activeVoter.voter_full_name}
+EPIC: ${activeVoter.epic_no}
+क्रमांक/भाग: ${activeVoter.sl_no_in_part}
+क्षेत्र / Area: ${activeVoter.area}
+घर नंबर / House No: ${activeVoter.house_no}
+संबंध / Relation: ${activeVoter.relation_name} (${activeVoter.relation_type})
+वय / Age: ${activeVoter.age} / लिंग / Gender: ${activeVoter.gender}
+
+Message / संदेश:
+${activeVoter.message}`;
     window.open("https://wa.me/?text="+encodeURIComponent(text), "_blank");
 }
 
-// Download PDF using jsPDF
 function downloadPDF(){
     if(!activeVoter) return;
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    doc.setFontSize(12);
-    let y=10;
-    doc.text(`Voter Details`, 10, y); y+=10;
-    doc.text(`Name: ${activeVoter.voter_full_name}`,10,y); y+=7;
-    doc.text(`EPIC: ${activeVoter.epic_no}`,10,y); y+=7;
-    doc.text(`Serial/Part: ${activeVoter.sl_no_in_part}`,10,y); y+=7;
-    doc.text(`Area: ${activeVoter.area}`,10,y); y+=7;
-    doc.text(`House: ${activeVoter.house_no}`,10,y); y+=7;
-    doc.text(`Relation: ${activeVoter.relation_name} (${activeVoter.relation_type})`,10,y); y+=7;
-    doc.text(`Age/Gender: ${activeVoter.age}/${activeVoter.gender}`,10,y); y+=7;
-    doc.text(`Message: ${activeVoter.message}`,10,y); 
-    doc.save(`${activeVoter.epic_no}_voter.pdf`);
+    let content=`🕒🕒🕒 विजयी बनाएं / विजयी बनवा 🕒🕒🕒
+
+Name / नाव: ${activeVoter.voter_full_name}
+EPIC: ${activeVoter.epic_no}
+Serial/Part / क्रमांक/भाग: ${activeVoter.sl_no_in_part}
+Area / क्षेत्र: ${activeVoter.area}
+House No / घर नंबर: ${activeVoter.house_no}
+Relation / संबंध: ${activeVoter.relation_name} (${activeVoter.relation_type})
+Age / वय: ${activeVoter.age} / Gender / लिंग: ${activeVoter.gender}
+
+Message / संदेश:
+${activeVoter.message}`;
+    const blob=new Blob([content],{type:"text/plain"});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");
+    a.href=url;
+    a.download=activeVoter.epic_no+"_voter_details.txt";
+    a.click();
+    URL.revokeObjectURL(url);
 }
 </script>
 </body>
