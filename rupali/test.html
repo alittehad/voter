@@ -106,12 +106,12 @@ const db = firebase.database();
 let voters = [];
 let active = null;
 
-// INFINITE SCROLL VARIABLES
+// Infinite Scroll Variables
 let page = 1;
 const PAGE_SIZE = 50;
 let loading = false;
 
-// LOAD DATA
+// Load Data from Firebase
 db.ref("voters").once("value").then(snap=>{
   const data = snap.val() || {};
   voters = Object.keys(data).map(k=>({
@@ -129,17 +129,16 @@ db.ref("voters").once("value").then(snap=>{
   render(true); // load first 50
 });
 
-// RENDER FUNCTION
-function render(reset = false){
+// Render function
+function render(reset=false){
   if(loading) return;
   loading = true;
-
   const q = document.getElementById("searchBox").value.toLowerCase();
   const res = document.getElementById("results");
 
   if(reset){
-    page = 1;
-    res.innerHTML = "";
+    page=1;
+    res.innerHTML="";
   }
 
   let list = voters.filter(v=>{
@@ -160,20 +159,20 @@ function render(reset = false){
 
   if(end < list.length) page++;
   loading = false;
+
+  if(list.length===0) res.innerHTML="No data";
 }
 
-// SEARCH
-document.getElementById("searchBox").addEventListener("input", ()=>{
-  render(true);
-});
+// Search
+document.getElementById("searchBox").addEventListener("input", ()=>{ render(true); });
 
-// SCROLL AUTO LOAD
+// Scroll auto load
 window.addEventListener("scroll", ()=>{
   const nearBottom = window.innerHeight + window.scrollY >= document.body.offsetHeight - 150;
   if(nearBottom) render(false);
 });
 
-// POPUP
+// Popup
 function openPopup(v){
   active=v;
   p_name.innerText=v.name;
@@ -188,7 +187,7 @@ function openPopup(v){
 }
 function closePopup(){popup.style.display="none"}
 
-// SAVE
+// Save/Delete
 function saveColor(c,btn){
   active.color=c;
   db.ref("voters/"+active.epic+"/color").set(c);
@@ -205,7 +204,7 @@ function deleteMsg(){
 
 // PRINT FUNCTION
 function printCard(){
-  const senderName = firebase.auth?.currentUser?.displayName || "आपले नाव";
+  let senderName = "आपले नाव"; // default
   const w = window.open("");
   w.document.write(`
     <html>
@@ -242,9 +241,9 @@ function printCard(){
   `);
 }
 
-// WHATSAPP FUNCTION
+// WHATSAPP
 function sendWhatsApp(){
-  const senderName = firebase.auth?.currentUser?.displayName || "आपले नाव";
+  let senderName = "आपले नाव"; // default
   const t = `⏰ घडी को जिताये, आपला आपला बहुमूल्य मत देऊन विजयी बनवा
 वोटर: ${active.name}
 EPIC: ${active.epic}
