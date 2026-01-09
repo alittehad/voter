@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hi">
 <head>
 <meta charset="UTF-8">
 <title>Voter List</title>
@@ -19,40 +19,92 @@ h2{text-align:center}
   cursor:pointer;
 }
 .card:hover{background:#f9f9f9}
-
 #results{margin-top:10px}
 
+/* POPUP */
 #popup{
   display:none;
   position:fixed;
-  top:0;left:0;
-  width:100%;height:100%;
+  inset:0;
   background:rgba(0,0,0,.6);
   justify-content:center;
   align-items:center;
+  z-index:999;
 }
 .popup-content{
   background:#fff;
-  padding:15px;
+  padding:12px;
   width:95%;
   max-width:400px;
   border-radius:8px;
   position:relative;
 }
-.close{position:absolute;top:8px;right:10px;background:red;color:#fff;border:none;padding:5px 8px}
+.close{
+  position:absolute;
+  top:6px;right:8px;
+  background:red;color:#fff;
+  border:none;padding:4px 7px;
+  cursor:pointer;
+}
 
 .color-btn{
-  width:25px;height:25px;border-radius:5px;border:none;margin-right:5px;cursor:pointer
+  width:25px;height:25px;
+  border-radius:5px;border:none;
+  margin-right:5px;cursor:pointer
 }
-.active{border:3px solid #000}
+textarea{width:100%;height:60px}
 
-textarea{width:100%;height:70px}
-
-.btn{padding:7px 12px;margin-top:6px;border:none;border-radius:5px;color:#fff;cursor:pointer}
+.btn{
+  padding:7px 12px;margin-top:6px;
+  border:none;border-radius:5px;
+  color:#fff;cursor:pointer
+}
 .green{background:#28a745}
 .blue{background:#007bff}
 .red{background:#dc3545}
 .whatsapp{background:#25d366}
+
+/* ===== PRINT FIX (MOST IMPORTANT) ===== */
+@media print{
+  body *{
+    visibility:hidden;
+  }
+
+  .print-area, .print-area *{
+    visibility:visible;
+  }
+
+ .print-area{
+  position:fixed;
+  top:0;
+  left:50%;
+  transform:translateX(-50%);   /* 🔥 center fix */
+  width:58mm;                   /* 🔥 thermal exact */
+  font-size:11px;               /* thermal safe */
+  line-height:1.35;
+  text-align:center;
+  padding:0;
+}
+
+
+  h3{
+    font-size:14px;
+    margin:4px 0;
+  }
+
+  hr{
+    border:0;
+    border-top:1px dashed #000;
+    margin:4px 0;
+  }
+
+  @page{
+    size: auto;
+    margin: 2mm;        /* 👈 बहुत जरूरी */
+  }
+
+
+}
 </style>
 </head>
 
@@ -66,20 +118,32 @@ textarea{width:100%;height:70px}
 <div id="popup">
   <div class="popup-content">
     <button class="close" onclick="closePopup()">X</button>
-    <h3 id="p_name"></h3>
-    <p><b>EPIC:</b> <span id="p_epic"></span></p>
-    <p><b>घर नं:</b> <span id="p_house"></span></p>
-    <p><b>क्षेत्र:</b> <span id="p_area"></span></p>
-    <p><b>संबंध:</b> <span id="p_relation"></span></p>
-    <p><b>उम्र / लिंग:</b> <span id="p_age"></span> / <span id="p_gender"></span></p>
+
+    <!-- PRINT AREA -->
+    <div class="print-area">
+      <h3 id="p_name"></h3>
+      <p><b>EPIC:</b> <span id="p_epic"></span></p>
+      <p><b>घर नं:</b> <span id="p_house"></span></p>
+      <p><b>क्षेत्र:</b> <span id="p_area"></span></p>
+      <p><b>उम्र / लिंग:</b> <span id="p_age"></span> / <span id="p_gender"></span></p>
+
+      <hr>
+      <div style="font-size:28px">🕒</div>
+      <div style="font-weight:bold">
+        घडीला भरघोस मत देऊन विजयी करा
+      </div>
+      <div style="font-size:11px">
+        आपला बहुमूल्य मतदानाचा हक्क बजावा
+      </div>
+    </div>
 
     <hr>
-    <button class="color-btn" style="background:red" onclick="saveColor('red',this)"></button>
-    <button class="color-btn" style="background:green" onclick="saveColor('green',this)"></button>
-    <button class="color-btn" style="background:blue" onclick="saveColor('blue',this)"></button>
+    <button class="color-btn" style="background:red" onclick="saveColor('red')"></button>
+    <button class="color-btn" style="background:green" onclick="saveColor('green')"></button>
+    <button class="color-btn" style="background:blue" onclick="saveColor('blue')"></button>
 
     <hr>
-    <textarea id="msg"></textarea><br>
+    <textarea id="msg" placeholder="Note..."></textarea><br>
     <button class="btn green" onclick="saveMsg()">Save</button>
     <button class="btn red" onclick="deleteMsg()">Delete</button>
 
@@ -94,94 +158,63 @@ textarea{width:100%;height:70px}
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
 <script>
-const firebaseConfig = {
-  apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
-  authDomain: "voter-25c94.firebaseapp.com",
-  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
-  projectId: "voter-25c94"
+const firebaseConfig={
+  apiKey:"AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
+  authDomain:"voter-25c94.firebaseapp.com",
+  databaseURL:"https://voter-25c94-default-rtdb.firebaseio.com",
+  projectId:"voter-25c94"
 };
 firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
+const db=firebase.database();
 
-let voters = [];
-let active = null;
+let voters=[],active=null;
+let page=1,PAGE_SIZE=50,loading=false;
 
-// INFINITE SCROLL VARIABLES
-let page = 1;
-const PAGE_SIZE = 50;
-let loading = false;
-
-// LOAD DATA
-db.ref("voters").once("value").then(snap=>{
-  const data = snap.val() || {};
-  voters = Object.keys(data).map(k=>({
-    key:k,
-    name:String(data[k].VoterName||""),
-    epic:String(data[k].EPIC_NO||k),
-    age:String(data[k].Age||""),
-    gender:String(data[k].Gender||""),
-    house:String(data[k].HouseNo||""),
-    area:String(data[k].Area||""),
-    relation:String(data[k].RelationName||"")+" ("+String(data[k].RelationType||"")+")",
-    color:String(data[k].color||""),
-    message:String(data[k].message||"")
+db.ref("voters").once("value").then(s=>{
+  const d=s.val()||{};
+  voters=Object.keys(d).map(k=>({
+    name:String(d[k].VoterName||""),
+    epic:String(d[k].EPIC_NO||k),
+    age:String(d[k].Age||""),
+    gender:String(d[k].Gender||""),
+    house:String(d[k].HouseNo||""),
+    area:String(d[k].Area||""),
+    color:d[k].color||"",
+    message:d[k].message||""
   }));
-  render(true); // load first 50
-});
-
-// RENDER FUNCTION
-function render(reset = false){
-  if(loading) return;
-  loading = true;
-
-  const q = document.getElementById("searchBox").value.toLowerCase();
-  const res = document.getElementById("results");
-
-  if(reset){
-    page = 1;
-    res.innerHTML = "";
-  }
-
-  let list = voters.filter(v=>{
-    return q==="" || v.name.toLowerCase().includes(q) || v.epic.toLowerCase().includes(q);
-  });
-
-  const start = (page-1)*PAGE_SIZE;
-  const end = page*PAGE_SIZE;
-  const chunk = list.slice(start,end);
-
-  chunk.forEach(v=>{
-    const d = document.createElement("div");
-    d.className = "card";
-    d.innerHTML = `<b>${v.name}</b><br>EPIC: ${v.epic}`;
-    d.onclick = ()=>openPopup(v);
-    res.appendChild(d);
-  });
-
-  if(end < list.length) page++;
-
-  loading = false;
-}
-
-// SEARCH
-document.getElementById("searchBox").addEventListener("input", ()=>{
   render(true);
 });
 
-// SCROLL AUTO LOAD
-window.addEventListener("scroll", ()=>{
-  const nearBottom = window.innerHeight + window.scrollY >= document.body.offsetHeight - 150;
-  if(nearBottom) render(false);
-});
+function render(reset=false){
+  if(reset){page=1;results.innerHTML=""}
+  if(loading)return;
+  loading=true;
 
-// POPUP
+  const q=searchBox.value.toLowerCase();
+  const list=voters.filter(v=>!q||v.name.toLowerCase().includes(q)||v.epic.toLowerCase().includes(q));
+
+  list.slice((page-1)*PAGE_SIZE,page*PAGE_SIZE).forEach(v=>{
+    const d=document.createElement("div");
+    d.className="card";
+    d.style.borderLeftColor=v.color||"#007bff";
+    d.innerHTML=`<b>${v.name}</b><br>EPIC: ${v.epic}`;
+    d.onclick=()=>openPopup(v);
+    results.appendChild(d);
+  });
+
+  if(page*PAGE_SIZE<list.length)page++;
+  loading=false;
+}
+
+searchBox.oninput=()=>render(true);
+window.onscroll=()=>window.innerHeight+scrollY>=document.body.offsetHeight-150&&render();
+
 function openPopup(v){
   active=v;
   p_name.innerText=v.name;
   p_epic.innerText=v.epic;
   p_house.innerText=v.house;
   p_area.innerText=v.area;
-  p_relation.innerText=v.relation;
   p_age.innerText=v.age;
   p_gender.innerText=v.gender;
   msg.value=v.message;
@@ -189,8 +222,7 @@ function openPopup(v){
 }
 function closePopup(){popup.style.display="none"}
 
-// SAVE
-function saveColor(c,btn){
+function saveColor(c){
   active.color=c;
   db.ref("voters/"+active.epic+"/color").set(c);
 }
@@ -204,16 +236,17 @@ function deleteMsg(){
   db.ref("voters/"+active.epic+"/message").remove();
 }
 
-// PRINT
 function printCard(){
-  const w=window.open("");
-  w.document.write(`<p>${active.name}<br>${active.epic}</p>`);
-  w.print();
+  if(!active){alert("Voter select kare");return;}
+  setTimeout(()=>window.print(),300);
 }
 
-// WHATSAPP
 function sendWhatsApp(){
-  const t=`नाम: ${active.name}\nEPIC: ${active.epic}`;
+  const t=`🕒 घडीला भरघोस मत देऊन विजयी करा
+नाव: ${active.name}
+EPIC: ${active.epic}
+घर नं: ${active.house}
+क्षेत्र: ${active.area}`;
   window.open("https://wa.me/?text="+encodeURIComponent(t));
 }
 </script>
