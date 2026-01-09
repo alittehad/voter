@@ -8,89 +8,38 @@
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 
 <style>
-body{
-  font-family: Arial;
-  margin:0;
-  background:#f2f2f2;
-}
-header{
-  background:#1e88e5;
-  color:#fff;
-  padding:10px;
-  text-align:center;
-}
-#search{
-  width:95%;
-  padding:10px;
-  margin:10px;
-  font-size:16px;
-}
-.list{
-  max-height:60vh;
-  overflow:auto;
-}
-.card{
-  background:#fff;
-  margin:8px;
-  padding:10px;
-  border-radius:6px;
-  cursor:pointer;
-}
+body{font-family:Arial;margin:0;background:#f2f2f2}
+header{background:#1e88e5;color:#fff;padding:10px;text-align:center}
+#search{width:95%;padding:10px;margin:10px;font-size:16px}
+.card{background:#fff;margin:8px;padding:10px;border-radius:6px;cursor:pointer}
 .card:hover{background:#e3f2fd}
+#detail{display:none;background:#fff;margin:10px;padding:12px;border-radius:8px}
 
-#detail{
-  display:none;
-  background:#fff;
-  margin:10px;
-  padding:12px;
-  border-radius:8px;
-}
-
-.btn{
-  padding:10px;
-  margin:5px 0;
-  width:100%;
-  font-size:16px;
-  border:none;
-  border-radius:5px;
-}
+.btn{padding:10px;margin-top:6px;width:100%;font-size:16px;border:none;border-radius:5px}
 .print{background:#4caf50;color:#fff}
 .wa{background:#25d366;color:#fff}
 
-/* ================= PRINT FIX ================= */
+/* PRINT ONLY SELECTED VOTER */
 @media print{
   body *{display:none}
-  #printArea, #printArea *{
-    display:block;
-  }
+  #printArea, #printArea *{display:block}
 }
 
-/* ====== THERMAL 58mm ====== */
-#printArea{
-  width:58mm;
-  font-size:12px;
-}
-.big{
-  font-size:20px;
-  font-weight:bold;
-  text-align:center;
-}
+#printArea{width:58mm;font-size:12px}
+.big{font-size:22px;font-weight:bold;text-align:center}
 .center{text-align:center}
 </style>
 </head>
 
 <body>
 
-<header>
-  <h2>मतदार यादी</h2>
-</header>
+<header><h2>मतदार यादी</h2></header>
 
 <input id="search" placeholder="नाव / EPIC शोधा">
 
-<div class="list" id="list">Loading...</div>
+<div id="list">Loading...</div>
 
 <div id="detail">
   <div id="printArea">
@@ -109,11 +58,11 @@ header{
 </div>
 
 <script>
-// 🔥 Firebase Config (अपना डालें)
+// 🔥 REAL Firebase config डालना जरूरी
 firebase.initializeApp({
-  apiKey:"YOUR_KEY",
-  authDomain:"PROJECT.firebaseapp.com",
-  projectId:"PROJECT"
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT"
 });
 
 const db = firebase.firestore();
@@ -121,51 +70,66 @@ let voters = [];
 let active = null;
 
 // LOAD DATA
-db.collection("voters").limit(500).onSnapshot(s=>{
+db.collection("voters").onSnapshot(s=>{
   voters=[];
-  s.forEach(d=>voters.push(d.data()));
+  s.forEach(d=>{
+    const x=d.data();
+    voters.push({
+      name: x.VoterName || "",
+      epic: x.EPIC_NO || "",
+      house: x.HouseNo || "",
+      booth: x.BoothNo || ""
+    });
+  });
   render(voters);
 });
 
-// RENDER LIST
+// RENDER LIST (✔ FIXED)
 function render(data){
-  let h="";
-  data.forEach(v=>{
-    h+=`<div class="card" onclick='openVoter(${JSON.stringify(v)})'>
-      <b>${v.name}</b><br>
-      EPIC: ${v.epic}
-    </div>`;
+  const list=document.getElementById("list");
+  if(data.length===0){
+    list.innerHTML="No data";
+    return;
+  }
+  list.innerHTML="";
+  data.forEach((v,i)=>{
+    const div=document.createElement("div");
+    div.className="card";
+    div.innerHTML=`<b>${v.name}</b><br>EPIC: ${v.epic}`;
+    div.onclick=()=>openVoter(i);
+    list.appendChild(div);
   });
-  document.getElementById("list").innerHTML=h || "No data";
 }
 
-// SEARCH FIX
+// SEARCH (✔ FIXED)
 search.oninput=()=>{
-  let q=search.value.toLowerCase();
+  const q=search.value.toLowerCase();
   render(voters.filter(v=>
     v.name.toLowerCase().includes(q) ||
     v.epic.toLowerCase().includes(q)
   ));
 };
 
-// OPEN SINGLE VOTER
-function openVoter(v){
-  active=v;
+// OPEN VOTER
+function openVoter(i){
+  active=voters[i];
   detail.style.display="block";
-  pName.innerHTML="नाव: "+v.name;
-  pEpic.innerHTML="EPIC: "+v.epic;
-  pHouse.innerHTML="घर नं: "+v.house;
-  pBooth.innerHTML="बूथ: "+v.booth;
+  pName.innerHTML="नाव: "+active.name;
+  pEpic.innerHTML="EPIC: "+active.epic;
+  pHouse.innerHTML="घर नं: "+active.house;
+  pBooth.innerHTML="बूथ: "+active.booth;
 }
 
-// PRINT FIX
+// PRINT (✔ ONLY ONE VOTER)
 function printVoter(){
+  if(!active){alert("Voter select करा");return;}
   window.print();
 }
 
-// WHATSAPP
+// WHATSAPP (✔ Marathi message)
 function sendWhatsApp(){
-  let msg=
+  if(!active){alert("Voter select करा");return;}
+  const msg=
 `⏰ घडीला भारी मतांनी विजयी करा
 आपला बहुमूल्य मत नक्की द्या
 
