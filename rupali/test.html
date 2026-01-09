@@ -1,14 +1,14 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
 <title>Voter List</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
 body{font-family:Arial;background:#f2f2f2;margin:0;padding:10px}
 h2{text-align:center}
-#searchBox{width:100%;padding:10px;font-size:16px;border-radius:6px;border:1px solid #888}
+#searchBox{width:100%;padding:10px;font-size:16px}
 
 .card{
   background:#fff;
@@ -18,15 +18,11 @@ h2{text-align:center}
   border-left:5px solid #007bff;
   cursor:pointer;
 }
-.card:hover{background:#f9f9f9}
-
-#results{margin-top:10px}
 
 #popup{
   display:none;
   position:fixed;
-  top:0;left:0;
-  width:100%;height:100%;
+  inset:0;
   background:rgba(0,0,0,.6);
   justify-content:center;
   align-items:center;
@@ -37,21 +33,12 @@ h2{text-align:center}
   width:95%;
   max-width:400px;
   border-radius:8px;
-  position:relative;
 }
-.close{position:absolute;top:8px;right:10px;background:red;color:#fff;border:none;padding:5px 8px}
+.close{float:right;background:red;color:#fff;border:none;padding:5px}
 
-.color-btn{
-  width:25px;height:25px;border-radius:5px;border:none;margin-right:5px;cursor:pointer
-}
-.active{border:3px solid #000}
-
-textarea{width:100%;height:70px}
-
-.btn{padding:7px 12px;margin-top:6px;border:none;border-radius:5px;color:#fff;cursor:pointer}
-.green{background:#28a745}
+.btn{padding:7px 10px;margin-top:5px;border:none;border-radius:5px;color:#fff}
 .blue{background:#007bff}
-.red{background:#dc3545}
+.green{background:#28a745}
 .whatsapp{background:#25d366}
 </style>
 </head>
@@ -59,120 +46,82 @@ textarea{width:100%;height:70px}
 <body>
 
 <h2>Voter Search</h2>
-<input id="searchBox" placeholder="नाम या EPIC टाइप करें">
+<input id="searchBox" placeholder="नाम या EPIC लिखें">
 <div id="results">Loading...</div>
 
-<!-- POPUP -->
 <div id="popup">
   <div class="popup-content">
     <button class="close" onclick="closePopup()">X</button>
     <h3 id="p_name"></h3>
-    <p><b>EPIC:</b> <span id="p_epic"></span></p>
-    <p><b>घर नं:</b> <span id="p_house"></span></p>
-    <p><b>क्षेत्र:</b> <span id="p_area"></span></p>
-    <p><b>संबंध:</b> <span id="p_relation"></span></p>
-    <p><b>उम्र / लिंग:</b> <span id="p_age"></span> / <span id="p_gender"></span></p>
+    <p>EPIC: <span id="p_epic"></span></p>
+    <p>घर नं: <span id="p_house"></span></p>
+    <p>क्षेत्र: <span id="p_area"></span></p>
+    <p>संबंध: <span id="p_relation"></span></p>
+    <p>उम्र / लिंग: <span id="p_age"></span> / <span id="p_gender"></span></p>
 
-    <hr>
-    <button class="color-btn" style="background:red" onclick="saveColor('red',this)"></button>
-    <button class="color-btn" style="background:green" onclick="saveColor('green',this)"></button>
-    <button class="color-btn" style="background:blue" onclick="saveColor('blue',this)"></button>
-
-    <hr>
-    <textarea id="msg"></textarea><br>
-    <button class="btn green" onclick="saveMsg()">Save</button>
-    <button class="btn red" onclick="deleteMsg()">Delete</button>
-
-    <hr>
     <button class="btn blue" onclick="printCard()">Print</button>
     <button class="btn whatsapp" onclick="sendWhatsApp()">WhatsApp</button>
   </div>
 </div>
 
-<!-- FIREBASE -->
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
 <script>
-const firebaseConfig = {
+firebase.initializeApp({
   apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
-  authDomain: "voter-25c94.firebaseapp.com",
-  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
-  projectId: "voter-25c94"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-
-let voters = [];
-let active = null;
-
-// Infinite Scroll Variables
-let page = 1;
-const PAGE_SIZE = 50;
-let loading = false;
-
-// Load Data from Firebase
-db.ref("voters").once("value").then(snap=>{
-  const data = snap.val() || {};
-  voters = Object.keys(data).map(k=>({
-    key:k,
-    name:String(data[k].VoterName||""),
-    epic:String(data[k].EPIC_NO||k),
-    age:String(data[k].Age||""),
-    gender:String(data[k].Gender||""),
-    house:String(data[k].HouseNo||""),
-    area:String(data[k].Area||""),
-    relation:String(data[k].RelationName||"")+" ("+String(data[k].RelationType||"")+")",
-    color:String(data[k].color||""),
-    message:String(data[k].message||"")
-  }));
-  render(true); // load first 50
+  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com"
 });
 
-// Render function
-function render(reset=false){
-  if(loading) return;
-  loading = true;
-  const q = document.getElementById("searchBox").value.toLowerCase();
-  const res = document.getElementById("results");
+var db = firebase.database();
+var voters = [];
+var active = null;
+var page = 0;
+var SIZE = 50;
 
-  if(reset){
-    page=1;
-    res.innerHTML="";
-  }
-
-  let list = voters.filter(v=>{
-    return q==="" || v.name.toLowerCase().includes(q) || v.epic.toLowerCase().includes(q);
+db.ref("voters").once("value", function(snap){
+  snap.forEach(function(c){
+    var v = c.val();
+    voters.push({
+      name: v.VoterName || "",
+      epic: v.EPIC_NO || c.key,
+      age: v.Age || "",
+      gender: v.Gender || "",
+      house: v.HouseNo || "",
+      area: v.Area || "",
+      relation: (v.RelationName||"")+" ("+(v.RelationType||"")+")"
+    });
   });
+  render(true);
+});
 
-  const start = (page-1)*PAGE_SIZE;
-  const end = page*PAGE_SIZE;
-  const chunk = list.slice(start,end);
+function render(reset){
+  var res = document.getElementById("results");
+  if(reset){ res.innerHTML=""; page=0; }
 
-  chunk.forEach(v=>{
-    const d = document.createElement("div");
-    d.className = "card";
-    d.innerHTML = `<b>${v.name}</b><br>EPIC: ${v.epic}`;
-    d.onclick = ()=>openPopup(v);
+  var q = document.getElementById("searchBox").value.toLowerCase();
+  var list = voters.filter(v =>
+    v.name.toLowerCase().includes(q) || v.epic.toLowerCase().includes(q)
+  );
+
+  var slice = list.slice(page*SIZE, (page+1)*SIZE);
+  slice.forEach(v=>{
+    var d=document.createElement("div");
+    d.className="card";
+    d.innerHTML="<b>"+v.name+"</b><br>EPIC: "+v.epic;
+    d.onclick=function(){ openPopup(v); };
     res.appendChild(d);
   });
-
-  if(end < list.length) page++;
-  loading = false;
-
-  if(list.length===0) res.innerHTML="No data";
+  page++;
 }
 
-// Search
-document.getElementById("searchBox").addEventListener("input", ()=>{ render(true); });
+window.onscroll=function(){
+  if(window.innerHeight+window.scrollY>=document.body.offsetHeight-100)
+    render(false);
+};
 
-// Scroll auto load
-window.addEventListener("scroll", ()=>{
-  const nearBottom = window.innerHeight + window.scrollY >= document.body.offsetHeight - 150;
-  if(nearBottom) render(false);
-});
+document.getElementById("searchBox").oninput=function(){ render(true); };
 
-// Popup
 function openPopup(v){
   active=v;
   p_name.innerText=v.name;
@@ -182,76 +131,31 @@ function openPopup(v){
   p_relation.innerText=v.relation;
   p_age.innerText=v.age;
   p_gender.innerText=v.gender;
-  msg.value=v.message;
   popup.style.display="flex";
 }
-function closePopup(){popup.style.display="none"}
+function closePopup(){ popup.style.display="none"; }
 
-// Save/Delete
-function saveColor(c,btn){
-  active.color=c;
-  db.ref("voters/"+active.epic+"/color").set(c);
-}
-function saveMsg(){
-  active.message=msg.value;
-  db.ref("voters/"+active.epic+"/message").set(msg.value);
-  alert("Saved");
-}
-function deleteMsg(){
-  msg.value="";
-  db.ref("voters/"+active.epic+"/message").remove();
-}
-
-// PRINT FUNCTION
 function printCard(){
-  let senderName = "आपले नाव"; // default
-  const w = window.open("");
-  w.document.write(`
-    <html>
-    <head>
-      <title>Voter Card</title>
-      <style>
-        body{font-family:Arial,sans-serif;text-align:center;margin:0;padding:10px;background:#fff;}
-        h2{font-size:22px;margin:5px 0;}
-        p{font-size:16px;margin:3px 0;}
-        .clock-icon{font-size:120px;margin:15px;}
-        hr{margin:10px 0;border:none;border-top:2px solid #000;}
-        @media print{
-          body{margin:0;padding:5px;zoom:0.85;}
-          h2{font-size:20px;}
-          p{font-size:14px;}
-          .clock-icon{font-size:100px;}
-        }
-      </style>
-    </head>
-    <body>
-      <div class="clock-icon">⏰</div>
-      <h2>${active.name}</h2>
-      <p><b>EPIC:</b> ${active.epic}</p>
-      <p><b>घर नं:</b> ${active.house}</p>
-      <p><b>क्षेत्र:</b> ${active.area}</p>
-      <p><b>संबंध:</b> ${active.relation}</p>
-      <p><b>उम्र / लिंग:</b> ${active.age} / ${active.gender}</p>
-      <hr>
-      <p style="font-size:18px;font-weight:bold;">⏰ घडी को जिताये, आपला आपला बहुमूल्य मत देऊन विजयी बनवा</p>
-      <p style="margin-top:10px;font-size:14px;">Sender: ${senderName}</p>
-      <script>window.print();</script>
-    </body>
-    </html>
-  `);
+  var w=window.open("");
+  w.document.write(
+    "<div style='text-align:center;font-family:Arial'>" +
+    "<div style='font-size:100px'>⏰</div>" +
+    "<h2>"+active.name+"</h2>" +
+    "<p>EPIC: "+active.epic+"</p>" +
+    "<p>घर नं: "+active.house+"</p>" +
+    "<p>"+active.area+"</p>" +
+    "<b>घडी को जिताये, आपला बहुमूल्य मत देऊन विजयी बनवा</b>" +
+    "<script>window.print()</script>"
+  );
 }
 
-// WHATSAPP
 function sendWhatsApp(){
-  let senderName = "आपले नाव"; // default
-  const t = `⏰ घडी को जिताये, आपला आपला बहुमूल्य मत देऊन विजयी बनवा
-वोटर: ${active.name}
-EPIC: ${active.epic}
-घर नं: ${active.house}
-क्षेत्र: ${active.area}
-संबंध: ${active.relation}
-उम्र / लिंग: ${active.age} / ${active.gender}
-Sender: ${senderName}`;
+  var t =
+"⏰ घडी को जिताये\n"+
+"नाव: "+active.name+"\n"+
+"EPIC: "+active.epic+"\n"+
+"घर नं: "+active.house+"\n"+
+"घडी को जिताये, बहुमूल्य मत द्या";
   window.open("https://wa.me/?text="+encodeURIComponent(t));
 }
 </script>
