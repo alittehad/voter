@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="mr">
+<html lang="hi">
 <head>
 <meta charset="UTF-8">
 <title>Voter List</title>
@@ -7,7 +7,7 @@
 
 <style>
 body{font-family:Arial;background:#f2f2f2;margin:0;padding:10px}
-h2{text-align:center;margin:5px 0}
+h2{text-align:center}
 #searchBox{width:100%;padding:10px;font-size:16px;border-radius:6px;border:1px solid #888}
 
 .card{
@@ -15,13 +15,13 @@ h2{text-align:center;margin:5px 0}
   padding:10px;
   margin:8px 0;
   border-radius:6px;
-  border-left:6px solid #007bff;
+  border-left:5px solid #007bff;
   cursor:pointer;
 }
-.card small{color:#555}
-
+.card:hover{background:#f9f9f9}
 #results{margin-top:10px}
 
+/* POPUP */
 #popup{
   display:none;
   position:fixed;
@@ -29,44 +29,59 @@ h2{text-align:center;margin:5px 0}
   background:rgba(0,0,0,.6);
   justify-content:center;
   align-items:center;
+  z-index:999;
 }
 .popup-content{
   background:#fff;
-  padding:15px;
+  padding:12px;
   width:95%;
-  max-width:380px;
+  max-width:400px;
   border-radius:8px;
   position:relative;
 }
 .close{
-  position:absolute;top:8px;right:10px;
-  background:#dc3545;color:#fff;border:none;
-  padding:5px 8px;border-radius:4px
+  position:absolute;
+  top:6px;right:8px;
+  background:red;color:#fff;
+  border:none;padding:4px 7px;
+  cursor:pointer;
 }
 
 .color-btn{
-  width:26px;height:26px;border-radius:50%;
-  border:2px solid #ccc;margin-right:6px;cursor:pointer
+  width:25px;height:25px;
+  border-radius:5px;
+  border:none;margin-right:5px;
+  cursor:pointer
 }
-
-textarea{width:100%;height:70px}
+textarea{width:100%;height:60px}
 
 .btn{
-  padding:8px 12px;margin-top:6px;border:none;
-  border-radius:5px;color:#fff;cursor:pointer;width:100%
+  padding:7px 12px;margin-top:6px;
+  border:none;border-radius:5px;
+  color:#fff;cursor:pointer
 }
 .green{background:#28a745}
 .blue{background:#007bff}
 .red{background:#dc3545}
 .whatsapp{background:#25d366}
 
+/* PRINT FIX – ONLY ONE VOTER */
 @media print{
-  body{background:#fff;padding:0}
-  #popup,.close,.btn,.color-btn,textarea,input{display:none!important}
+  body *{display:none !important}
+  .print-area,.print-area *{display:block !important}
+
   .print-area{
     width:58mm;
+    max-width:100%;
     font-size:12px;
-    line-height:1.3;
+    line-height:1.4;
+    text-align:center;
+    margin:0 auto;
+  }
+
+  @page{
+    size:auto;
+    margin:5mm;
   }
 }
 </style>
@@ -74,30 +89,40 @@ textarea{width:100%;height:70px}
 
 <body>
 
-<h2>मतदार शोध</h2>
-<input id="searchBox" placeholder="नाव किंवा EPIC नंबर टाका">
+<h2>Voter Search</h2>
+<input id="searchBox" placeholder="नाम या EPIC टाइप करें">
 <div id="results">Loading...</div>
 
 <!-- POPUP -->
 <div id="popup">
-  <div class="popup-content print-area">
+  <div class="popup-content">
     <button class="close" onclick="closePopup()">X</button>
 
-    <h3 id="p_name"></h3>
-    <p><b>EPIC:</b> <span id="p_epic"></span></p>
-    <p><b>घर नं:</b> <span id="p_house"></span></p>
-    <p><b>क्षेत्र:</b> <span id="p_area"></span></p>
-    <p><b>संबंध:</b> <span id="p_relation"></span></p>
-    <p><b>उम्र / लिंग:</b> <span id="p_age"></span> / <span id="p_gender"></span></p>
+    <div class="print-area" id="printArea">
+      <h3 id="p_name"></h3>
+      <p><b>EPIC:</b> <span id="p_epic"></span></p>
+      <p><b>घर नं:</b> <span id="p_house"></span></p>
+      <p><b>क्षेत्र:</b> <span id="p_area"></span></p>
+      <p><b>संबंध:</b> <span id="p_relation"></span></p>
+      <p><b>उम्र / लिंग:</b> <span id="p_age"></span> / <span id="p_gender"></span></p>
+
+      <hr>
+      <div style="font-size:28px">🕒</div>
+      <div style="font-weight:bold">
+        घडीला भरघोस मत देऊन विजयी करा
+      </div>
+      <div style="font-size:11px">
+        आपला बहुमूल्य मतदानाचा हक्क बजावा
+      </div>
+    </div>
 
     <hr>
-    <b>रंग मार्किंग:</b><br>
     <button class="color-btn" style="background:red" onclick="saveColor('red')"></button>
     <button class="color-btn" style="background:green" onclick="saveColor('green')"></button>
     <button class="color-btn" style="background:blue" onclick="saveColor('blue')"></button>
 
     <hr>
-    <textarea id="msg" placeholder="टीप लिहा..."></textarea>
+    <textarea id="msg" placeholder="Note..."></textarea><br>
     <button class="btn green" onclick="saveMsg()">Save</button>
     <button class="btn red" onclick="deleteMsg()">Delete</button>
 
@@ -112,52 +137,55 @@ textarea{width:100%;height:70px}
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
 <script>
-const firebaseConfig = {
-  apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
-  authDomain: "voter-25c94.firebaseapp.com",
-  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com",
-  projectId: "voter-25c94"
+const firebaseConfig={
+  apiKey:"AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
+  authDomain:"voter-25c94.firebaseapp.com",
+  databaseURL:"https://voter-25c94-default-rtdb.firebaseio.com",
+  projectId:"voter-25c94"
 };
 firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
+const db=firebase.database();
 
-let voters=[],active=null,page=1;
-const PAGE_SIZE=50;
+let voters=[],active=null;
+let page=1,PAGE_SIZE=50,loading=false;
 
-db.ref("voters").on("value",snap=>{
-  const d=snap.val()||{};
+db.ref("voters").once("value").then(s=>{
+  const d=s.val()||{};
   voters=Object.keys(d).map(k=>({
-    key:k,
-    name:d[k].VoterName||"",
-    epic:d[k].EPIC_NO||k,
-    age:d[k].Age||"",
-    gender:d[k].Gender||"",
-    house:d[k].HouseNo||"",
-    area:d[k].Area||"",
-    relation:(d[k].RelationName||"")+" "+(d[k].RelationType||""),
+    name:String(d[k].VoterName||""),
+    epic:String(d[k].EPIC_NO||k),
+    age:String(d[k].Age||""),
+    gender:String(d[k].Gender||""),
+    house:String(d[k].HouseNo||""),
+    area:String(d[k].Area||""),
+    relation:(d[k].RelationName||"")+" ("+(d[k].RelationType||"")+")",
     color:d[k].color||"",
     message:d[k].message||""
   }));
   render(true);
 });
 
-function render(reset){
-  const q=searchBox.value.toLowerCase();
+function render(reset=false){
   if(reset){page=1;results.innerHTML=""}
+  if(loading)return;
+  loading=true;
+
+  const q=searchBox.value.toLowerCase();
   const list=voters.filter(v=>!q||v.name.toLowerCase().includes(q)||v.epic.toLowerCase().includes(q));
   list.slice((page-1)*PAGE_SIZE,page*PAGE_SIZE).forEach(v=>{
     const d=document.createElement("div");
     d.className="card";
     d.style.borderLeftColor=v.color||"#007bff";
-    d.innerHTML=`<b>${v.name}</b><br><small>EPIC: ${v.epic}</small>`;
+    d.innerHTML=`<b>${v.name}</b><br>EPIC: ${v.epic}`;
     d.onclick=()=>openPopup(v);
     results.appendChild(d);
   });
   if(page*PAGE_SIZE<list.length)page++;
+  loading=false;
 }
 
 searchBox.oninput=()=>render(true);
-window.onscroll=()=>{if(innerHeight+scrollY>=document.body.offsetHeight-150)render()};
+window.onscroll=()=>window.innerHeight+scrollY>=document.body.offsetHeight-150&&render();
 
 function openPopup(v){
   active=v;
@@ -175,31 +203,30 @@ function closePopup(){popup.style.display="none"}
 
 function saveColor(c){
   active.color=c;
-  db.ref("voters/"+active.key+"/color").set(c);
+  db.ref("voters/"+active.epic+"/color").set(c);
 }
 function saveMsg(){
-  db.ref("voters/"+active.key+"/message").set(msg.value);
+  active.message=msg.value;
+  db.ref("voters/"+active.epic+"/message").set(msg.value);
   alert("Saved");
 }
 function deleteMsg(){
   msg.value="";
-  db.ref("voters/"+active.key+"/message").remove();
+  db.ref("voters/"+active.epic+"/message").remove();
 }
 
 function printCard(){
-  window.print();
+  popup.style.display="flex";
+  setTimeout(()=>window.print(),200);
 }
 
 function sendWhatsApp(){
-  const text=`⏰ घडीला भरघोस मत देऊन विजयी करा!
-🕒 घडी हेच आपले चिन्ह
-
-मतदार: ${active.name}
+  const t=`🕒 घडीला भरघोस मत देऊन विजयी करा
+नाव: ${active.name}
 EPIC: ${active.epic}
 घर नं: ${active.house}
-
-आपला बहुमूल्य मतदानाचा हक्क नक्की बजावा 🙏`;
-  window.open("https://wa.me/?text="+encodeURIComponent(text));
+क्षेत्र: ${active.area}`;
+  window.open("https://wa.me/?text="+encodeURIComponent(t));
 }
 </script>
 
