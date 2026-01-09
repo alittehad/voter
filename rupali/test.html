@@ -8,37 +8,42 @@
 body{
   font-family: Arial, sans-serif;
   margin:0;
-  padding:0;
-  background:#f5f5f5;
+  background:#f2f2f2;
 }
 
 header{
-  background:#1e88e5;
+  background:#1976d2;
   color:#fff;
-  padding:10px;
+  padding:12px;
   text-align:center;
   font-size:20px;
 }
 
-#list{
+#search{
+  width:95%;
+  margin:10px auto;
   padding:10px;
+  font-size:16px;
+  display:block;
+  border-radius:6px;
+  border:1px solid #ccc;
 }
+
+#list{padding:10px;}
 
 .card{
   background:#fff;
-  border-radius:8px;
   padding:10px;
   margin-bottom:10px;
-  box-shadow:0 2px 5px rgba(0,0,0,0.1);
+  border-radius:8px;
+  box-shadow:0 2px 5px rgba(0,0,0,.15);
   cursor:pointer;
 }
 
-.card strong{font-size:16px;}
-
 #popup{
   position:fixed;
-  top:0; left:0;
-  width:100%; height:100%;
+  top:0;left:0;
+  width:100%;height:100%;
   background:rgba(0,0,0,.6);
   display:none;
   justify-content:center;
@@ -53,10 +58,15 @@ header{
   border-radius:10px;
 }
 
+.clock{
+  font-size:36px;
+  text-align:center;
+}
+
 .btn{
   width:100%;
-  padding:10px;
   margin-top:8px;
+  padding:10px;
   font-size:15px;
   border:none;
   border-radius:6px;
@@ -67,20 +77,11 @@ header{
 .whatsapp{background:#25d366;color:#fff;}
 .close{background:#f44336;color:#fff;}
 
-.clock{
-  font-size:30px;
-  text-align:center;
-  margin-bottom:10px;
-}
-
-/* PRINT FIX */
 @media print{
-  body{background:#fff;}
-  header,#list,.btn{display:none;}
+  header,#search,#list,.btn{display:none;}
   #popup{display:block;position:static;background:none;}
   #popupContent{
     box-shadow:none;
-    border:none;
     width:100%;
     max-width:100%;
     page-break-after:avoid;
@@ -93,13 +94,13 @@ header{
 
 <header>मतदार यादी</header>
 
-<div id="list">Loading...</div>
+<input id="search" placeholder="नाव / EPIC / घर नं शोधा">
 
-<!-- POPUP -->
+<div id="list"></div>
+
 <div id="popup">
   <div id="popupContent">
     <div class="clock">⏰</div>
-
     <div id="printArea"></div>
 
     <button class="btn print" onclick="doPrint()">🖨 Print</button>
@@ -109,45 +110,48 @@ header{
 </div>
 
 <script>
-/* SAMPLE DATA (CSV / Firebase से replace कर सकते हो) */
-const voters = [
-  {
-    name:"दवे पार्थ अनिल",
-    epic:"WEH5630116",
-    house:"A/204",
-    booth:"132",
-    part:"237",
-    relation:"दवे अनिल",
-    age:"29",
-    gender:"पुरुष"
-  }
+const voters=[
+ {name:"दवे पार्थ अनिल",epic:"WEH5630116",house:"A/204",booth:"132",part:"237",relation:"दवे अनिल",age:"29",gender:"पुरुष"},
+ {name:"गावडे भावेश प्रकाश",epic:"WEH5828835",house:"A/101",booth:"132",part:"237",relation:"गावडे प्रकाश",age:"28",gender:"पुरुष"},
+ {name:"पाटील सुमन राजू",epic:"ABC1234567",house:"B/12",booth:"133",part:"240",relation:"राजू पाटील",age:"35",gender:"स्त्री"}
 ];
 
-let active = null;
+let active=null;
+const list=document.getElementById("list");
 
-/* LOAD LIST */
-const listDiv = document.getElementById("list");
-listDiv.innerHTML="";
+function render(data){
+  list.innerHTML="";
+  data.forEach(v=>{
+    const d=document.createElement("div");
+    d.className="card";
+    d.innerHTML=`<b>${v.name}</b><br>EPIC: ${v.epic}`;
+    d.onclick=()=>openPop(v);
+    list.appendChild(d);
+  });
+}
+render(voters);
 
-voters.forEach((v,i)=>{
-  const d=document.createElement("div");
-  d.className="card";
-  d.innerHTML=`<strong>${v.name}</strong><br>EPIC: ${v.epic}`;
-  d.onclick=()=>openPop(v);
-  listDiv.appendChild(d);
+/* SEARCH */
+document.getElementById("search").addEventListener("input",e=>{
+  const q=e.target.value.toLowerCase();
+  render(voters.filter(v=>
+    v.name.toLowerCase().includes(q) ||
+    v.epic.toLowerCase().includes(q) ||
+    v.house.toLowerCase().includes(q)
+  ));
 });
 
-/* OPEN CARD */
 function openPop(v){
   active=v;
   document.getElementById("printArea").innerHTML=`
-    <b>नाव:</b> ${v.name}<br>
-    <b>EPIC:</b> ${v.epic}<br>
-    <b>घर नं:</b> ${v.house}<br>
-    <b>बूथ:</b> ${v.booth}<br>
-    <b>भाग:</b> ${v.part}<br>
-    <b>संबंध:</b> ${v.relation}<br>
-    <b>वय / लिंग:</b> ${v.age} / ${v.gender}
+  <b>नाव:</b> ${v.name}<br>
+  <b>EPIC:</b> ${v.epic}<br>
+  <b>घर नं:</b> ${v.house}<br>
+  <b>बूथ:</b> ${v.booth}<br>
+  <b>भाग:</b> ${v.part}<br>
+  <b>वय / लिंग:</b> ${v.age} / ${v.gender}<br><br>
+  <b>⏰ घडीला भारी मतांनी विजयी करा,<br>
+  आपले बहुमूल्य मत नक्की द्या</b>
   `;
   document.getElementById("popup").style.display="flex";
 }
@@ -156,16 +160,11 @@ function closePop(){
   document.getElementById("popup").style.display="none";
 }
 
-/* PRINT */
-function doPrint(){
-  window.print();
-}
+function doPrint(){window.print();}
 
-/* WHATSAPP */
 function sendWhatsApp(){
-  if(!active)return;
-  const msg =
-`⏰ घडी को जिताये
+  const m=
+`⏰ घडीला भारी मतांनी विजयी करा
 
 मतदार माहिती:
 नाव: ${active.name}
@@ -174,9 +173,8 @@ EPIC: ${active.epic}
 बूथ: ${active.booth}
 भाग: ${active.part}
 
-आपले बहुमूल्य मत जरूर द्या 🙏`;
-
-  window.open("https://wa.me/?text="+encodeURIComponent(msg));
+आपले बहुमूल्य मत नक्की द्या 🙏`;
+  window.open("https://wa.me/?text="+encodeURIComponent(m));
 }
 </script>
 
