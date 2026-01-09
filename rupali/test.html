@@ -1,162 +1,182 @@
 <!DOCTYPE html>
-<html>
+<html lang="mr">
 <head>
 <meta charset="UTF-8">
 <title>Voter List</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
-body{font-family:Arial;background:#f2f2f2;margin:0;padding:10px}
-h2{text-align:center}
-#searchBox{width:100%;padding:10px;font-size:16px}
+body{
+  font-family: Arial, sans-serif;
+  margin:0;
+  padding:0;
+  background:#f5f5f5;
+}
+
+header{
+  background:#1e88e5;
+  color:#fff;
+  padding:10px;
+  text-align:center;
+  font-size:20px;
+}
+
+#list{
+  padding:10px;
+}
 
 .card{
   background:#fff;
+  border-radius:8px;
   padding:10px;
-  margin:8px 0;
-  border-radius:6px;
-  border-left:5px solid #007bff;
+  margin-bottom:10px;
+  box-shadow:0 2px 5px rgba(0,0,0,0.1);
   cursor:pointer;
 }
 
+.card strong{font-size:16px;}
+
 #popup{
-  display:none;
   position:fixed;
-  inset:0;
+  top:0; left:0;
+  width:100%; height:100%;
   background:rgba(0,0,0,.6);
+  display:none;
   justify-content:center;
   align-items:center;
 }
-.popup-content{
-  background:#fff;
-  padding:15px;
-  width:95%;
-  max-width:400px;
-  border-radius:8px;
-}
-.close{float:right;background:red;color:#fff;border:none;padding:5px}
 
-.btn{padding:7px 10px;margin-top:5px;border:none;border-radius:5px;color:#fff}
-.blue{background:#007bff}
-.green{background:#28a745}
-.whatsapp{background:#25d366}
+#popupContent{
+  background:#fff;
+  width:90%;
+  max-width:380px;
+  padding:15px;
+  border-radius:10px;
+}
+
+.btn{
+  width:100%;
+  padding:10px;
+  margin-top:8px;
+  font-size:15px;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+}
+
+.print{background:#4caf50;color:#fff;}
+.whatsapp{background:#25d366;color:#fff;}
+.close{background:#f44336;color:#fff;}
+
+.clock{
+  font-size:30px;
+  text-align:center;
+  margin-bottom:10px;
+}
+
+/* PRINT FIX */
+@media print{
+  body{background:#fff;}
+  header,#list,.btn{display:none;}
+  #popup{display:block;position:static;background:none;}
+  #popupContent{
+    box-shadow:none;
+    border:none;
+    width:100%;
+    max-width:100%;
+    page-break-after:avoid;
+  }
+}
 </style>
 </head>
 
 <body>
 
-<h2>Voter Search</h2>
-<input id="searchBox" placeholder="नाम या EPIC लिखें">
-<div id="results">Loading...</div>
+<header>मतदार यादी</header>
 
+<div id="list">Loading...</div>
+
+<!-- POPUP -->
 <div id="popup">
-  <div class="popup-content">
-    <button class="close" onclick="closePopup()">X</button>
-    <h3 id="p_name"></h3>
-    <p>EPIC: <span id="p_epic"></span></p>
-    <p>घर नं: <span id="p_house"></span></p>
-    <p>क्षेत्र: <span id="p_area"></span></p>
-    <p>संबंध: <span id="p_relation"></span></p>
-    <p>उम्र / लिंग: <span id="p_age"></span> / <span id="p_gender"></span></p>
+  <div id="popupContent">
+    <div class="clock">⏰</div>
 
-    <button class="btn blue" onclick="printCard()">Print</button>
-    <button class="btn whatsapp" onclick="sendWhatsApp()">WhatsApp</button>
+    <div id="printArea"></div>
+
+    <button class="btn print" onclick="doPrint()">🖨 Print</button>
+    <button class="btn whatsapp" onclick="sendWhatsApp()">📲 WhatsApp</button>
+    <button class="btn close" onclick="closePop()">❌ Close</button>
   </div>
 </div>
 
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-
 <script>
-firebase.initializeApp({
-  apiKey: "AIzaSyCdjqVFKOQ1dtaXCGFUUtsJWbFdGNTo-xw",
-  databaseURL: "https://voter-25c94-default-rtdb.firebaseio.com"
+/* SAMPLE DATA (CSV / Firebase से replace कर सकते हो) */
+const voters = [
+  {
+    name:"दवे पार्थ अनिल",
+    epic:"WEH5630116",
+    house:"A/204",
+    booth:"132",
+    part:"237",
+    relation:"दवे अनिल",
+    age:"29",
+    gender:"पुरुष"
+  }
+];
+
+let active = null;
+
+/* LOAD LIST */
+const listDiv = document.getElementById("list");
+listDiv.innerHTML="";
+
+voters.forEach((v,i)=>{
+  const d=document.createElement("div");
+  d.className="card";
+  d.innerHTML=`<strong>${v.name}</strong><br>EPIC: ${v.epic}`;
+  d.onclick=()=>openPop(v);
+  listDiv.appendChild(d);
 });
 
-var db = firebase.database();
-var voters = [];
-var active = null;
-var page = 0;
-var SIZE = 50;
-
-db.ref("voters").once("value", function(snap){
-  snap.forEach(function(c){
-    var v = c.val();
-    voters.push({
-      name: v.VoterName || "",
-      epic: v.EPIC_NO || c.key,
-      age: v.Age || "",
-      gender: v.Gender || "",
-      house: v.HouseNo || "",
-      area: v.Area || "",
-      relation: (v.RelationName||"")+" ("+(v.RelationType||"")+")"
-    });
-  });
-  render(true);
-});
-
-function render(reset){
-  var res = document.getElementById("results");
-  if(reset){ res.innerHTML=""; page=0; }
-
-  var q = document.getElementById("searchBox").value.toLowerCase();
-  var list = voters.filter(v =>
-    v.name.toLowerCase().includes(q) || v.epic.toLowerCase().includes(q)
-  );
-
-  var slice = list.slice(page*SIZE, (page+1)*SIZE);
-  slice.forEach(v=>{
-    var d=document.createElement("div");
-    d.className="card";
-    d.innerHTML="<b>"+v.name+"</b><br>EPIC: "+v.epic;
-    d.onclick=function(){ openPopup(v); };
-    res.appendChild(d);
-  });
-  page++;
-}
-
-window.onscroll=function(){
-  if(window.innerHeight+window.scrollY>=document.body.offsetHeight-100)
-    render(false);
-};
-
-document.getElementById("searchBox").oninput=function(){ render(true); };
-
-function openPopup(v){
+/* OPEN CARD */
+function openPop(v){
   active=v;
-  p_name.innerText=v.name;
-  p_epic.innerText=v.epic;
-  p_house.innerText=v.house;
-  p_area.innerText=v.area;
-  p_relation.innerText=v.relation;
-  p_age.innerText=v.age;
-  p_gender.innerText=v.gender;
-  popup.style.display="flex";
-}
-function closePopup(){ popup.style.display="none"; }
-
-function printCard(){
-  var w=window.open("");
-  w.document.write(
-    "<div style='text-align:center;font-family:Arial'>" +
-    "<div style='font-size:100px'>⏰</div>" +
-    "<h2>"+active.name+"</h2>" +
-    "<p>EPIC: "+active.epic+"</p>" +
-    "<p>घर नं: "+active.house+"</p>" +
-    "<p>"+active.area+"</p>" +
-    "<b>घडी को जिताये, आपला बहुमूल्य मत देऊन विजयी बनवा</b>" +
-    "<script>window.print()</script>"
-  );
+  document.getElementById("printArea").innerHTML=`
+    <b>नाव:</b> ${v.name}<br>
+    <b>EPIC:</b> ${v.epic}<br>
+    <b>घर नं:</b> ${v.house}<br>
+    <b>बूथ:</b> ${v.booth}<br>
+    <b>भाग:</b> ${v.part}<br>
+    <b>संबंध:</b> ${v.relation}<br>
+    <b>वय / लिंग:</b> ${v.age} / ${v.gender}
+  `;
+  document.getElementById("popup").style.display="flex";
 }
 
+function closePop(){
+  document.getElementById("popup").style.display="none";
+}
+
+/* PRINT */
+function doPrint(){
+  window.print();
+}
+
+/* WHATSAPP */
 function sendWhatsApp(){
-  var t =
-"⏰ घडी को जिताये\n"+
-"नाव: "+active.name+"\n"+
-"EPIC: "+active.epic+"\n"+
-"घर नं: "+active.house+"\n"+
-"घडी को जिताये, बहुमूल्य मत द्या";
-  window.open("https://wa.me/?text="+encodeURIComponent(t));
+  if(!active)return;
+  const msg =
+`⏰ घडी को जिताये
+
+मतदार माहिती:
+नाव: ${active.name}
+EPIC: ${active.epic}
+घर नं: ${active.house}
+बूथ: ${active.booth}
+भाग: ${active.part}
+
+आपले बहुमूल्य मत जरूर द्या 🙏`;
+
+  window.open("https://wa.me/?text="+encodeURIComponent(msg));
 }
 </script>
 
