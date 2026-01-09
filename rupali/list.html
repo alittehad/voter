@@ -11,6 +11,7 @@ h2{text-align:center;}
 .card{background:#fff;padding:10px;margin:8px 0;border-radius:6px;border-left:5px solid #007bff;cursor:pointer;}
 .card:hover{background:#f9f9f9;}
 #results{margin-top:10px;}
+#loading{text-align:center;color:#555;margin-top:10px;}
 #popup{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);justify-content:center;align-items:center;overflow:auto;}
 .popup-content{background:#fff;padding:15px;width:95%;max-width:400px;border-radius:8px;position:relative;}
 .close{position:absolute;top:8px;right:10px;background:red;color:#fff;border:none;padding:5px 8px;cursor:pointer;}
@@ -22,7 +23,7 @@ textarea{width:100%;height:70px;margin-top:5px;}
 .blue{background:#007bff;}
 .red{background:#dc3545;}
 .whatsapp{background:#25d366;}
-#loading{margin-top:10px;text-align:center;color:#555;}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#000;color:#fff;padding:8px 12px;border-radius:6px;opacity:0.9;z-index:9999;}
 </style>
 </head>
 <body>
@@ -56,6 +57,8 @@ textarea{width:100%;height:70px;margin-top:5px;}
   </div>
 </div>
 
+<div id="toast" class="toast" style="display:none;"></div>
+
 <!-- FIREBASE -->
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
@@ -72,9 +75,17 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 let voters = [], active = null;
-let page = 1, PAGE_SIZE = 50, loading = false;
+let page = 1, PAGE_SIZE = 50;
 
-// Load data from Firebase
+// Toast notification
+function showToast(msg){
+  const t = document.getElementById("toast");
+  t.innerText = msg;
+  t.style.display="block";
+  setTimeout(()=>{ t.style.display="none"; }, 2000);
+}
+
+// Load data
 function loadData(){
   document.getElementById("loading").style.display = "block";
   db.ref("voters").once("value").then(snap=>{
@@ -120,7 +131,11 @@ function render(reset=false){
 }
 
 // Search
-document.getElementById("searchBox").addEventListener("input", ()=>render(true));
+let debounceTimer;
+document.getElementById("searchBox").addEventListener("input", ()=>{
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(()=>render(true),300);
+});
 
 // Infinite scroll
 window.addEventListener("scroll", ()=>{
@@ -129,7 +144,7 @@ window.addEventListener("scroll", ()=>{
   }
 });
 
-// Popup functions
+// Popup
 function openPopup(v){
   active=v;
   document.getElementById("p_name").innerText=v.name;
@@ -142,7 +157,6 @@ function openPopup(v){
   document.getElementById("msg").value=v.message;
   document.getElementById("popup").style.display="flex";
 
-  // Update active color button
   document.querySelectorAll(".color-btn").forEach(btn=>btn.classList.remove("active"));
   if(v.color){
     const btn = Array.from(document.querySelectorAll(".color-btn")).find(b=>b.style.background===v.color);
@@ -151,11 +165,11 @@ function openPopup(v){
 }
 function closePopup(){document.getElementById("popup").style.display="none";}
 
-// Save color/message
+// Save/Delete color/message
 function saveColor(c, btn){
   if(!active) return;
   active.color = c;
-  db.ref("voters/"+active.epic+"/color").set(c).catch(err=>alert("Save color failed"));
+  db.ref("voters/"+active.epic+"/color").set(c).then(()=>showToast("Color saved")).catch(()=>showToast("Save failed"));
   document.querySelectorAll(".color-btn").forEach(b=>b.classList.remove("active"));
   btn.classList.add("active");
 }
@@ -163,15 +177,15 @@ function saveMsg(){
   if(!active) return;
   const val = document.getElementById("msg").value;
   active.message = val;
-  db.ref("voters/"+active.epic+"/message").set(val).then(()=>alert("Saved")).catch(()=>alert("Save failed"));
+  db.ref("voters/"+active.epic+"/message").set(val).then(()=>showToast("Saved")).catch(()=>showToast("Save failed"));
 }
 function deleteMsg(){
   if(!active) return;
   document.getElementById("msg").value="";
-  db.ref("voters/"+active.epic+"/message").remove().then(()=>alert("Deleted")).catch(()=>alert("Delete failed"));
+  db.ref("voters/"+active.epic+"/message").remove().then(()=>showToast("Deleted")).catch(()=>showToast("Delete failed"));
 }
 
-// Print card
+// Print
 function printCard(){
   const senderName = firebase.auth().currentUser?.displayName || "आपले नाव";
   const w = window.open("");
@@ -182,18 +196,17 @@ function printCard(){
     body{font-family:Arial,sans-serif;text-align:center;padding:20px;}
     h2{font-size:24px;font-weight:bold;margin-bottom:5px;}
     p{font-size:18px;margin:5px 0;}
-    .bold{font-weight:bold;}
     .clock-icon{font-size:120px;margin:15px;}
     hr{margin:15px 0;}
   </style>
   </head><body>
     <div class="clock-icon">🕒</div>
-    <h2 class="bold">${active.name}</h2>
-    <p><span class="bold">EPIC:</span> ${active.epic}</p>
-    <p><span class="bold">घर नं:</span> ${active.house}</p>
-    <p><span class="bold">क्षेत्र:</span> ${active.area}</p>
-    <p><span class="bold">संबंध:</span> ${active.relation}</p>
-    <p><span class="bold">उम्र / लिंग:</span> ${active.age} / ${active.gender}</p>
+    <h2>${active.name}</h2>
+    <p><b>EPIC:</b> ${active.epic}</p>
+    <p><b>घर नं:</b> ${active.house}</p>
+    <p><b>क्षेत्र:</b> ${active.area}</p>
+    <p><b>संबंध:</b> ${active.relation}</p>
+    <p><b>उम्र / लिंग:</b> ${active.age} / ${active.gender}</p>
     <hr>
     <p style="font-size:20px;font-weight:bold;">⏰ घडी को जिताये, आपला आपला बहुमूल्य मत देऊन</p>
     <p style="margin-top:10px;font-size:16px;">Sender: ${senderName}</p>
