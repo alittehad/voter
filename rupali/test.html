@@ -49,9 +49,8 @@ h2{text-align:center}
 
 .color-btn{
   width:25px;height:25px;
-  border-radius:5px;
-  border:none;margin-right:5px;
-  cursor:pointer
+  border-radius:5px;border:none;
+  margin-right:5px;cursor:pointer
 }
 textarea{width:100%;height:60px}
 
@@ -65,23 +64,25 @@ textarea{width:100%;height:60px}
 .red{background:#dc3545}
 .whatsapp{background:#25d366}
 
-/* PRINT FIX – ONLY ONE VOTER */
+/* ===== PRINT FIX (MOST IMPORTANT) ===== */
 @media print{
-  body *{display:none !important}
-  .print-area,.print-area *{display:block !important}
-
+  body *{
+    visibility:hidden;
+  }
+  .print-area, .print-area *{
+    visibility:visible;
+  }
   .print-area{
+    position:absolute;
+    left:0; top:0;
     width:58mm;
-    max-width:100%;
     font-size:12px;
     line-height:1.4;
     text-align:center;
-    margin:0 auto;
   }
-
   @page{
-    size:auto;
     margin:5mm;
+    size:auto;
   }
 }
 </style>
@@ -98,12 +99,12 @@ textarea{width:100%;height:60px}
   <div class="popup-content">
     <button class="close" onclick="closePopup()">X</button>
 
-    <div class="print-area" id="printArea">
+    <!-- PRINT AREA -->
+    <div class="print-area">
       <h3 id="p_name"></h3>
       <p><b>EPIC:</b> <span id="p_epic"></span></p>
       <p><b>घर नं:</b> <span id="p_house"></span></p>
       <p><b>क्षेत्र:</b> <span id="p_area"></span></p>
-      <p><b>संबंध:</b> <span id="p_relation"></span></p>
       <p><b>उम्र / लिंग:</b> <span id="p_age"></span> / <span id="p_gender"></span></p>
 
       <hr>
@@ -158,7 +159,6 @@ db.ref("voters").once("value").then(s=>{
     gender:String(d[k].Gender||""),
     house:String(d[k].HouseNo||""),
     area:String(d[k].Area||""),
-    relation:(d[k].RelationName||"")+" ("+(d[k].RelationType||"")+")",
     color:d[k].color||"",
     message:d[k].message||""
   }));
@@ -172,6 +172,7 @@ function render(reset=false){
 
   const q=searchBox.value.toLowerCase();
   const list=voters.filter(v=>!q||v.name.toLowerCase().includes(q)||v.epic.toLowerCase().includes(q));
+
   list.slice((page-1)*PAGE_SIZE,page*PAGE_SIZE).forEach(v=>{
     const d=document.createElement("div");
     d.className="card";
@@ -180,6 +181,7 @@ function render(reset=false){
     d.onclick=()=>openPopup(v);
     results.appendChild(d);
   });
+
   if(page*PAGE_SIZE<list.length)page++;
   loading=false;
 }
@@ -193,7 +195,6 @@ function openPopup(v){
   p_epic.innerText=v.epic;
   p_house.innerText=v.house;
   p_area.innerText=v.area;
-  p_relation.innerText=v.relation;
   p_age.innerText=v.age;
   p_gender.innerText=v.gender;
   msg.value=v.message;
@@ -216,8 +217,8 @@ function deleteMsg(){
 }
 
 function printCard(){
-  popup.style.display="flex";
-  setTimeout(()=>window.print(),200);
+  if(!active){alert("Voter select kare");return;}
+  setTimeout(()=>window.print(),300);
 }
 
 function sendWhatsApp(){
