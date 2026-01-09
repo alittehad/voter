@@ -205,17 +205,56 @@ function deleteMsg(){
 }
 
 // PRINT
+<!-- PRINT FUNCTION -->
 function printCard(){
-  const w=window.open("");
-  w.document.write(`<p>${active.name}<br>${active.epic}</p>`);
-  w.print();
+  const senderName = firebase.auth?.currentUser?.displayName || "आपले नाव";
+  const w = window.open("");
+  w.document.write(`
+    <html>
+    <head>
+      <title>Voter Card</title>
+      <style>
+        body{font-family:Arial,sans-serif;text-align:center;padding:20px;}
+        h2{font-size:24px;margin:5px 0;}
+        p{font-size:18px;margin:3px 0;}
+        .clock-icon{font-size:120px;margin:15px;}
+        hr{margin:10px 0;}
+        @media print{
+          body{margin:0;padding:10px;zoom:90%;}
+        }
+      </style>
+    </head>
+    <body>
+      <div class="clock-icon">⏰</div>
+      <h2>${active.name}</h2>
+      <p><b>EPIC:</b> ${active.epic}</p>
+      <p><b>घर नं:</b> ${active.house}</p>
+      <p><b>क्षेत्र:</b> ${active.area}</p>
+      <p><b>संबंध:</b> ${active.relation}</p>
+      <p><b>उम्र / लिंग:</b> ${active.age} / ${active.gender}</p>
+      <hr>
+      <p style="font-size:20px;font-weight:bold;">⏰ घडी को जिताये, आपला आपला बहुमूल्य मत देऊन विजयी बनवा</p>
+      <p style="margin-top:10px;font-size:16px;">Sender: ${senderName}</p>
+      <script>window.print();</script>
+    </body>
+    </html>
+  `);
 }
 
 // WHATSAPP
 function sendWhatsApp(){
-  const t=`नाम: ${active.name}\nEPIC: ${active.epic}`;
+  const senderName = firebase.auth?.currentUser?.displayName || "आपले नाव";
+  const t = `⏰ घडी को जिताये, आपला आपला बहुमूल्य मत देऊन विजयी बनवा
+वोटर: ${active.name}
+EPIC: ${active.epic}
+घर नं: ${active.house}
+क्षेत्र: ${active.area}
+संबंध: ${active.relation}
+उम्र / लिंग: ${active.age} / ${active.gender}
+Sender: ${senderName}`;
   window.open("https://wa.me/?text="+encodeURIComponent(t));
 }
+
 </script>
 
 </body>
